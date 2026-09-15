@@ -29,8 +29,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         FundTxnEntity::class,
         InvestmentEntity::class,
         ContributionEntity::class,
+        TaskStateEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -51,6 +52,7 @@ abstract class KilkariDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
     abstract fun fundDao(): FundDao
     abstract fun investmentDao(): InvestmentDao
+    abstract fun taskStateDao(): TaskStateDao
 
     companion object {
         @Volatile private var instance: KilkariDatabase? = null
@@ -60,7 +62,7 @@ abstract class KilkariDatabase : RoomDatabase() {
                 context.applicationContext,
                 KilkariDatabase::class.java,
                 DB_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { instance = it }
         }
 
         /** Drops the cached handle so a restore can swap the file underneath us. */
@@ -102,6 +104,51 @@ abstract class KilkariDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_investment_contribution_investmentId_date` ON `investment_contribution` (`investmentId`, `date`)"
                 )
+            }
+        }
+
+        /** Adds reminder scheduling and per-occurrence task state. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE reminder ADD COLUMN builtIn INTEGER NOT NULL DEFAULT 1"
+                )
+                db.execSQL(
+                    "ALTER TABLE reminder ADD COLUMN minuteOfDay INTEGER"
+                )
+                db.execSQL(
+                    "ALTER TABLE reminder ADD COLUMN repeatRule TEXT NOT NULL DEFAULT 'none'"
+                )
+                db.execSQL(
+                    "ALTER TABLE reminder ADD COLUMN weekday INTEGER"
+                )
+                db.execSQL(
+                    "ALTER TABLE reminder ADD COLUMN dayOfMonth INTEGER"
+                )
+                db.execSQL(
+                    "ALTER TABLE reminder ADD COLUMN startDate TEXT"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `task_state` (`taskKey` TEXT NOT NULL, `occurrenceDate` TEXT NOT NULL, `done` INTEGER NOT NULL, `dismissed` INTEGER NOT NULL, PRIMARY KEY(`taskKey`, `occurrenceDate`))"
+                )
+                db.execSQL(
+                    "UPDATE reminder SET repeatRule = 'daily' WHERE key = 'meds'"
+                )
+                db.execSQL(
+                    "UPDATE reminder SET repeatRule = 'weekly', weekday = 7 WHERE key IN ('weigh', 'album')"
+                )
+                db.execSQL(
+                    "UPDATE reminder SET repeatRule = 'monthly' WHERE key = 'fund'"
+                )
+                db.execSQL(
+                    "UPDATE reminder SET title = 'Photo check-in', " +
+                        "subtitle = 'Sundays — stays until you deal with it', " +
+                        "minuteOfDay = 600 WHERE key = 'album'"
+                )
+                db.execSQL(
+                    "UPDATE reminder SET subtitle = 'Sundays', minuteOfDay = 540 WHERE key = 'weigh'"
+                )
+                db.execSQL("DELETE FROM checklist WHERE key IN ('album', 'weigh')")
             }
         }
     }

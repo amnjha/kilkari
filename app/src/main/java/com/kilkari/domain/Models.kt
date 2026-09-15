@@ -194,3 +194,40 @@ data class InvestmentSummary(
 
     val gainInr: Long? get() = currentValueInr?.let { it - investedInr }
 }
+
+
+/** How often a reminder comes round. */
+enum class RepeatRule(val key: String, val label: String) {
+    NONE("none", "Once"),
+    DAILY("daily", "Every day"),
+    WEEKLY("weekly", "Every week"),
+    MONTHLY("monthly", "Every month");
+
+    companion object {
+        fun of(key: String?) = entries.firstOrNull { it.key == key } ?: NONE
+    }
+}
+
+enum class DueTaskKind { MEDICATION, APPOINTMENT, VACCINE, CHECKLIST, REMINDER, SLEEP }
+
+/**
+ * One thing outstanding today, whatever produced it — a medicine dose, an appointment, an
+ * overdue vaccine group, a daily checklist item or a reminder. Every Today layout renders the
+ * same list so they cannot drift apart.
+ */
+data class DueTask(
+    val id: String,
+    val kind: DueTaskKind,
+    val title: String,
+    val subtitle: String,
+    val trailing: String,
+    val icon: String,
+    val done: Boolean,
+    /** Whether ticking it off makes sense here, as opposed to opening the screen that owns it. */
+    val completable: Boolean,
+    val dismissible: Boolean,
+    /** The occurrence this instance belongs to; the same task on a later week is a new one. */
+    val occurrence: LocalDate,
+    val overdue: Boolean,
+    val route: String? = null,
+)

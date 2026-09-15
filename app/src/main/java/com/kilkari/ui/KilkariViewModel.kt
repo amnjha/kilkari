@@ -24,6 +24,9 @@ import com.kilkari.data.repo.KilkariRepository
 import com.kilkari.domain.BreastSide
 import com.kilkari.domain.Currency
 import com.kilkari.domain.DiaperKind
+import com.kilkari.data.db.TaskStateEntity
+import com.kilkari.domain.DueTask
+import com.kilkari.domain.RepeatRule
 import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.FeedType
 import com.kilkari.domain.FundLedgerOrigin
@@ -244,6 +247,66 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     val selectedDocument: StateFlow<DocumentEntity?> =
         combine(documents, _selectedDocument) { docs, id -> docs.firstOrNull { it.id == id } }
             .state(null)
+
+    // ── Due today ───────────────────────────────────────────────────────────
+
+    private val taskStates: StateFlow<List<TaskStateEntity>> = repo.taskStates().state(emptyList())
+
+    /**
+     * Everything outstanding today, from every source. All three Today layouts render this list,
+     * so they cannot drift apart the way the agenda and checklist views had.
+     */
+    val dueTasks: StateFlow<List<DueTask>> = combine(
+        combine(medications, medicationDoses, appointments, vaccineGroups) { m, d, a, v ->
+            listOf(m, d, a, v)
+        },
+        combine(reminders, checklist, taskStates, openSleep) { r, c, t, s ->
+            listOf(r, c, t, s)
+        },
+        settings,
+        today,
+    ) { first, second, settings, today ->
+        @Suppress("UNCHECKED_CAST")
+        DueTaskBuilder.build(
+            today = today,
+            now = LocalDateTime.now(),
+            medications = first[0] as List<MedicationEntity>,
+            medicationDoses = first[1] as List<MedicationDoseEntity>,
+            appointments = first[2] as List<AppointmentEntity>,
+            vaccineGroups = first[3] as List<VaccineGroupState>,
+            reminders = second[0] as List<ReminderEntity>,
+            checklist = second[1] as List<ChecklistEntity>,
+            taskStates = second[2] as List<TaskStateEntity>,
+            openSleep = second[3] as LogEntryEntity?,
+            fundDepositDue = if (settings.fundMonthlyInr > 0) {
+                today.withDayOfMonth(settings.fundDepositDay.coerceIn(1, 28))
+            } else {
+                null
+            },
+        )
+    }.state(emptyList())
+
+    /** Ticking a task writes wherever that task actually lives. */
+    fun setTaskDone(task: DueTask, done: Boolean) = viewModelScope.launch {
+        val id = task.id
+        when {
+            id.startsWith("med:") -> id.removePrefix("med:").toLongOrNull()?.let {
+                repo.setDoseTaken(it, LocalDate.now(), done)
+            }
+            id.startsWith("check:") -> {
+                val key = id.removePrefix("check:")
+                checklist.value.firstOrNull { it.key == key }
+                    ?.let { repo.setChecklistDone(it, done) }
+            }
+            id.startsWith("rem:") -> repo.setTaskDone(id.removePrefix("rem:"), task.occurrence, done)
+        }
+    }
+
+    fun dismissTask(task: DueTask) = viewModelScope.launch {
+        if (task.id.startsWith("rem:")) {
+            repo.dismissTask(task.id.removePrefix("rem:"), task.occurrence)
+        }
+    }
 
     // ── Transient UI ────────────────────────────────────────────────────────
 
@@ -485,6 +548,47 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun setReminderEnabled(row: ReminderEntity, enabled: Boolean) =
         viewModelScope.launch { repo.setReminderEnabled(row, enabled) }
+
+    fun saveCustomReminder(
+        key: String?,
+        title: String,
+        subtitle: String,
+        minuteOfDay: Int?,
+        repeat: RepeatRule,
+        weekday: Int?,
+        dayOfMonth: Int?,
+        startDate: LocalDate?,
+    ) = viewModelScope.launch {
+        repo.saveCustomReminder(key, title, subtitle, minuteOfDay, repeat, weekday, dayOfMonth, startDate)
+        toast(if (key == null) "Reminder added" else "Reminder updated")
+    }
+
+    fun deleteReminder(key: String) = viewModelScope.launch {
+        repo.deleteReminder(key)
+        toast("Reminder removed")
+    }
+
+    fun updateBabyDetails(
+        name: String,
+        dob: LocalDate,
+        place: String?,
+        weightKg: Double?,
+        lengthCm: Double?,
+        headCm: Double?,
+    ) = viewModelScope.launch {
+        val current = baby.value ?: return@launch
+        repo.updateBaby(
+            current.copy(
+                name = name,
+                dob = dob,
+                birthPlace = place,
+                birthWeightKg = weightKg,
+                birthLengthCm = lengthCm,
+                birthHeadCm = headCm,
+            )
+        )
+        toast("Details saved")
+    }
 
     fun setCurrency(c: Currency) = viewModelScope.launch { repo.setCurrency(c) }
 

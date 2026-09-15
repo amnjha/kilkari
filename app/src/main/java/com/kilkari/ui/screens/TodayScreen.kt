@@ -19,6 +19,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +34,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kilkari.domain.DueTask
+import com.kilkari.domain.DueTaskKind
+import com.kilkari.data.db.BabyEntity
+import com.kilkari.ui.components.KSheet
+import com.kilkari.ui.sheets.BabySheet
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
 import com.kilkari.ui.KilkariViewModel
@@ -60,20 +67,31 @@ import java.time.LocalDateTime
 fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
     val baby by vm.baby.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
+    var editing by remember { mutableStateOf(false) }
     val b = baby ?: return
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
-            .padding(top = 12.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        when (settings.todayVariant) {
-            "B" -> TodayHero(vm, go, b.name, b.dob)
-            "C" -> TodayChecklist(vm, go, b.dob)
-            else -> TodayAgenda(vm, go, b.name, b.dob)
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(top = 12.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            val editDetails = { editing = true }
+            when (settings.todayVariant) {
+                "B" -> TodayHero(vm, go, b.name, b.dob, editDetails)
+                "C" -> TodayChecklist(vm, go, b.dob)
+                else -> TodayAgenda(vm, go, b.name, b.dob, editDetails)
+            }
+        }
+
+        KSheet(editing, onDismiss = { editing = false }) {
+            BabySheet(b) { name, dob, place, weight, length, head ->
+                vm.updateBabyDetails(name, dob, place, weight, length, head)
+                editing = false
+            }
         }
     }
 }
@@ -81,7 +99,13 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
 // ── Variant A · Agenda ──────────────────────────────────────────────────────
 
 @Composable
-private fun TodayAgenda(vm: KilkariViewModel, go: NavActions, name: String, dob: LocalDate) {
+private fun TodayAgenda(
+    vm: KilkariViewModel,
+    go: NavActions,
+    name: String,
+    dob: LocalDate,
+    onEditDetails: () -> Unit,
+) {
     val nextVac by vm.nextVaccine.collectAsStateWithLifecycle()
     val latest by vm.latestPerKind.collectAsStateWithLifecycle()
     val openSleep by vm.openSleep.collectAsStateWithLifecycle()
@@ -95,7 +119,10 @@ private fun TodayAgenda(vm: KilkariViewModel, go: NavActions, name: String, dob:
             Text(greeting(), fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
             Text("$name is ${Fmt.age(dob)}", style = ScreenTitle, color = KC.Ink)
         }
-        Monogram(name.take(1).uppercase())
+        // The avatar is the way into the child's details from here.
+        Box(Modifier.clip(RoundedCornerShape(percent = 50)).clickable(onClick = onEditDetails)) {
+            Monogram(name.take(1).uppercase())
+        }
     }
 
     nextVac?.let { g ->
@@ -125,7 +152,7 @@ private fun TodayAgenda(vm: KilkariViewModel, go: NavActions, name: String, dob:
     }
 
     SectionLabel("Today", Modifier.padding(top = 2.dp))
-    TodayTaskList(vm, go)
+    DueTaskList(vm, go, "Nothing due right now. 🎈")
 
     SectionLabel("Last logged", Modifier.padding(top = 2.dp))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -153,7 +180,13 @@ private fun TodayAgenda(vm: KilkariViewModel, go: NavActions, name: String, dob:
 // ── Variant B · Hero ────────────────────────────────────────────────────────
 
 @Composable
-private fun TodayHero(vm: KilkariViewModel, go: NavActions, name: String, dob: LocalDate) {
+private fun TodayHero(
+    vm: KilkariViewModel,
+    go: NavActions,
+    name: String,
+    dob: LocalDate,
+    onEditDetails: () -> Unit,
+) {
     val nextVac by vm.nextVaccine.collectAsStateWithLifecycle()
     val growth by vm.growth.collectAsStateWithLifecycle()
     val timeline by vm.timeline.collectAsStateWithLifecycle()
@@ -180,7 +213,8 @@ private fun TodayHero(vm: KilkariViewModel, go: NavActions, name: String, dob: L
                     Modifier
                         .size(64.dp)
                         .clip(RoundedCornerShape(percent = 50))
-                        .background(Color.White.copy(alpha = 0.2f)),
+                        .background(Color.White.copy(alpha = 0.2f))
+                        .clickable(onClick = onEditDetails),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -190,7 +224,12 @@ private fun TodayHero(vm: KilkariViewModel, go: NavActions, name: String, dob: L
                 }
                 Icon(
                     KIcons["notifications"], null,
-                    tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(24.dp),
+                    tint = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .clickable { go.push(Routes.REMINDERS) }
+                        .padding(8.dp),
                 )
             }
             Column {
@@ -217,7 +256,7 @@ private fun TodayHero(vm: KilkariViewModel, go: NavActions, name: String, dob: L
     }
 
     SectionLabel("Today")
-    TodayTaskList(vm, go)
+    DueTaskList(vm, go, "Nothing due right now. 🎈")
 
     Row(
         Modifier.fillMaxWidth(),
@@ -282,14 +321,14 @@ private fun HeroStat(caption: String, value: String, modifier: Modifier = Modifi
 
 @Composable
 private fun TodayChecklist(vm: KilkariViewModel, go: NavActions, dob: LocalDate) {
-    val checklist by vm.checklist.collectAsStateWithLifecycle()
+    val tasks by vm.dueTasks.collectAsStateWithLifecycle()
     val nextVac by vm.nextVaccine.collectAsStateWithLifecycle()
     val appointments by vm.appointments.collectAsStateWithLifecycle()
     val events by vm.events.collectAsStateWithLifecycle()
 
     val today = LocalDate.now()
-    val doneCount = checklist.count { it.done }
-    val pct = if (checklist.isEmpty()) 0 else doneCount * 100 / checklist.size
+    val doneCount = tasks.count { it.done }
+    val pct = if (tasks.isEmpty()) 0 else doneCount * 100 / tasks.size
     val dayCount = Fmt.daysSince(dob, today)
 
     Row(
@@ -302,47 +341,16 @@ private fun TodayChecklist(vm: KilkariViewModel, go: NavActions, dob: LocalDate)
                 "${Fmt.dayAndDate(today)} · day $dayCount",
                 fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
             )
-            Text("$doneCount of ${checklist.size} done", style = ScreenTitle, color = KC.Ink)
+            Text("$doneCount of ${tasks.size} done", style = ScreenTitle, color = KC.Ink)
         }
         ProgressRing(pct)
     }
 
-    KCard {
-        checklist.forEachIndexed { i, row ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { vm.setChecklistDone(row, !row.done) }
-                    .padding(horizontal = 14.dp, vertical = 13.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CheckRing(row.done)
-                Text(
-                    row.title,
-                    modifier = Modifier.weight(1f),
-                    fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
-                    color = if (row.done) KC.Faint else KC.Ink,
-                    textDecoration = if (row.done) TextDecoration.LineThrough else TextDecoration.None,
-                )
-                Text(row.timeText, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
-            }
-            if (i != checklist.lastIndex) {
-                Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Divider))
-            }
-        }
-        if (checklist.isEmpty()) {
-            Text(
-                "Nothing scheduled today.",
-                modifier = Modifier.padding(14.dp),
-                fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
-            )
-        }
-    }
+    DueTaskList(vm, go, "Nothing due right now. 🎈")
 
     SectionLabel("Coming up")
 
-    nextVac?.let { g ->
+    nextVac?.takeIf { it.inDays > 0 }?.let { g ->
         UpcomingRow(
             icon = "vaccines", tint = KC.FuchsiaDeep, background = KC.FuchsiaBg,
             border = KC.FuchsiaRing,
@@ -352,7 +360,7 @@ private fun TodayChecklist(vm: KilkariViewModel, go: NavActions, dob: LocalDate)
         ) { go.push(Routes.VACCINES) }
     }
 
-    appointments.firstOrNull { !it.startAt.isBefore(LocalDateTime.now()) }?.let { appt ->
+    appointments.firstOrNull { it.startAt.toLocalDate().isAfter(today) }?.let { appt ->
         UpcomingRow(
             icon = "stethoscope", tint = KC.Indigo, background = KC.Surface, border = KC.Border,
             title = appt.title,
@@ -365,7 +373,7 @@ private fun TodayChecklist(vm: KilkariViewModel, go: NavActions, dob: LocalDate)
         ) { go.push(Routes.APPOINTMENTS) }
     }
 
-    events.firstOrNull { !it.date.isBefore(today) }?.let { ev ->
+    events.firstOrNull { it.date.isAfter(today) }?.let { ev ->
         UpcomingRow(
             icon = ev.icon, tint = KC.Amber, background = KC.Surface, border = KC.Border,
             title = ev.title,
@@ -438,23 +446,18 @@ private fun UpcomingRow(
 
 // ── Shared ──────────────────────────────────────────────────────────────────
 
-/** The "Today" agenda: medicines still to take, a nap in progress, appointments today. */
+/**
+ * The one list of outstanding work, shared by all three layouts so they cannot disagree.
+ * Tapping a tickable task completes it; anything else opens the screen that owns it.
+ */
 @Composable
-private fun TodayTaskList(vm: KilkariViewModel, go: NavActions) {
-    val meds by vm.medications.collectAsStateWithLifecycle()
-    val doses by vm.medicationDoses.collectAsStateWithLifecycle()
-    val openSleep by vm.openSleep.collectAsStateWithLifecycle()
-    val appointments by vm.appointments.collectAsStateWithLifecycle()
-    val today = LocalDate.now()
+private fun DueTaskList(vm: KilkariViewModel, go: NavActions, emptyText: String) {
+    val tasks by vm.dueTasks.collectAsStateWithLifecycle()
 
-    val takenToday = remember(doses) { doses.filter { it.date == today }.map { it.medicationId }.toSet() }
-    val dueMeds = meds.filter { it.active && it.id !in takenToday }
-    val todayAppointments = appointments.filter { it.startAt.toLocalDate() == today }
-
-    if (dueMeds.isEmpty() && openSleep == null && todayAppointments.isEmpty()) {
+    if (tasks.isEmpty()) {
         KCard(corner = 14) {
             Text(
-                "Nothing due right now. 🎈",
+                emptyText,
                 modifier = Modifier.padding(14.dp),
                 fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
             )
@@ -462,66 +465,78 @@ private fun TodayTaskList(vm: KilkariViewModel, go: NavActions) {
         return
     }
 
-    dueMeds.forEach { med ->
-        TaskRow(
-            icon = "pill", tint = KC.RoseDeep, background = KC.RoseBg2,
-            title = "${med.name} · ${med.dose}",
-            subtitle = med.scheduleText,
-            trailing = "due",
-        ) { go.push(Routes.MEDS) }
-    }
-
-    openSleep?.let { sleep ->
-        TaskRow(
-            icon = "bedtime", tint = KC.IndigoDeep, background = KC.IndigoBg,
-            title = "Napping now",
-            subtitle = "Since ${Fmt.time(sleep.startAt)}${sleep.place?.let { " · $it" }.orEmpty()}",
-            trailing = Fmt.elapsed(sleep.startAt),
-        ) { go.tab(Routes.LOG) }
-    }
-
-    todayAppointments.forEach { appt ->
-        TaskRow(
-            icon = "stethoscope", tint = KC.Indigo, background = KC.IndigoBg,
-            title = appt.title,
-            subtitle = listOfNotNull(appt.doctor, appt.place).joinToString(" · "),
-            trailing = Fmt.time(appt.startAt),
-        ) { go.push(Routes.APPOINTMENTS) }
-    }
+    tasks.forEach { task -> DueTaskRow(task, vm, go) }
 }
 
 @Composable
-private fun TaskRow(
-    icon: String,
-    tint: Color,
-    background: Color,
-    title: String,
-    subtitle: String,
-    trailing: String,
-    onClick: () -> Unit,
-) {
-    KCard(corner = 14, onClick = onClick) {
+private fun DueTaskRow(task: DueTask, vm: KilkariViewModel, go: NavActions) {
+    val skin = taskSkin(task)
+    KCard(corner = 14) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier
+                .fillMaxWidth()
+                .clickable {
+                    when {
+                        task.completable -> vm.setTaskDone(task, !task.done)
+                        task.route != null -> go.push(task.route)
+                    }
+                }
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconBadge(icon, tint, background)
+            if (task.completable) {
+                CheckRing(task.done)
+            } else {
+                IconBadge(task.icon, skin.first, skin.second)
+            }
             Column(Modifier.weight(1f)) {
                 Text(
-                    title, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp, color = KC.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    task.title,
+                    fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
+                    color = if (task.done) KC.Faint else KC.Ink,
+                    textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
-                if (subtitle.isNotBlank()) {
+                if (task.subtitle.isNotBlank()) {
                     Text(
-                        subtitle, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                        task.subtitle,
+                        fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-            Text(trailing, fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = KC.Indigo)
+            if (task.dismissible && !task.done) {
+                Text(
+                    "Dismiss",
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .clickable { vm.dismissTask(task) }
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    fontFamily = Sans, fontSize = 12.sp, color = KC.Faint,
+                )
+            }
+            Text(
+                task.trailing,
+                fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp,
+                // Only genuine lateness is red; the per-kind tint made every medicine look overdue.
+                color = when {
+                    task.done -> KC.Faint
+                    task.overdue -> KC.Rose
+                    else -> KC.Muted
+                },
+            )
         }
     }
+}
+
+private fun taskSkin(task: DueTask): Pair<Color, Color> = when (task.kind) {
+    DueTaskKind.MEDICATION -> KC.RoseDeep to KC.RoseBg2
+    DueTaskKind.APPOINTMENT -> KC.Indigo to KC.IndigoBg
+    DueTaskKind.VACCINE -> KC.FuchsiaDeep to KC.FuchsiaBg
+    DueTaskKind.SLEEP -> KC.IndigoDeep to KC.IndigoBg
+    DueTaskKind.CHECKLIST -> KC.Indigo to KC.IndigoBg
+    DueTaskKind.REMINDER -> KC.SkyDeep to KC.SkyBg
 }
 
 @Composable

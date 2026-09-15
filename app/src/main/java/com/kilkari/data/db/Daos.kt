@@ -296,6 +296,12 @@ interface ReminderDao {
 
     @Query("SELECT COUNT(*) FROM reminder")
     suspend fun count(): Int
+
+    @Query("SELECT * FROM reminder WHERE key = :key")
+    suspend fun byKey(key: String): ReminderEntity?
+
+    @Query("DELETE FROM reminder WHERE key = :key AND builtIn = 0")
+    suspend fun deleteCustom(key: String)
 }
 
 @Dao
@@ -363,4 +369,16 @@ interface InvestmentDao {
 
     @Query("DELETE FROM investment_contribution WHERE investmentId = :investmentId")
     suspend fun deleteContributionsFor(investmentId: Long)
+}
+
+@Dao
+interface TaskStateDao {
+    @Query("SELECT * FROM task_state WHERE occurrenceDate >= :since")
+    fun observeSince(since: LocalDate): Flow<List<TaskStateEntity>>
+
+    @Upsert
+    suspend fun upsert(row: TaskStateEntity)
+
+    @Query("DELETE FROM task_state WHERE taskKey = :taskKey")
+    suspend fun clearFor(taskKey: String)
 }

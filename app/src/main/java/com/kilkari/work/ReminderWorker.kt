@@ -21,8 +21,8 @@ import java.time.LocalDateTime
 
 /**
  * Runs daily and posts whatever is due: medicine doses, vaccines at 7 and 1 day out,
- * appointments a day ahead, the Sunday weigh-in and the weekly photo nudge. One worker
- * covers all of them so the app schedules exactly one periodic job.
+ * appointments a day ahead, the fund top-up, and every weekly or custom reminder whose
+ * cadence lands today. One worker covers all of them so the app schedules exactly one job.
  */
 class ReminderWorker(
     context: Context,
@@ -61,10 +61,6 @@ class ReminderWorker(
                 .forEach { notes += "Tomorrow: ${it.title}" to listOfNotNull(Fmt.time(it.startAt), it.place).joinToString(" · ") }
         }
 
-        if ("weigh" in enabled && today.dayOfWeek.value == 7) {
-            notes += "Weekly weigh-in" to "How much does ${baby.name} weigh today?"
-        }
-
         if ("fund" in enabled) {
             val settings = repo.settings.first()
             val due = settings.fundMonthlyInr > 0 && today.dayOfMonth == settings.fundDepositDay.coerceIn(1, 28)
@@ -77,9 +73,14 @@ class ReminderWorker(
             }
         }
 
-        if ("album" in enabled && today.dayOfWeek.value == 6) {
-            notes += "Photo nudge" to "Add this week's photos to an album"
-        }
+        // Weekly prompts and anything custom, notified on the day their occurrence lands.
+        repo.reminders().first()
+            .filter { it.enabled && (!it.builtIn || it.key in SELF_STANDING) }
+            .forEach { r ->
+                if (dueToday(r, today)) {
+                    notes += r.title to r.subtitle.ifBlank { "Due today" }
+                }
+            }
 
         notes.forEachIndexed { i, (title, body) -> notify(i, title, body) }
         return Result.success()
@@ -109,8 +110,20 @@ class ReminderWorker(
         NotificationManagerCompat.from(ctx).notify(NOTIFICATION_BASE + id, notification)
     }
 
+    /** True when this reminder's cadence lands on [today]. */
+    private fun dueToday(r: com.kilkari.data.db.ReminderEntity, today: LocalDate): Boolean =
+        when (com.kilkari.domain.RepeatRule.of(r.repeatRule)) {
+            com.kilkari.domain.RepeatRule.DAILY -> true
+            com.kilkari.domain.RepeatRule.WEEKLY -> today.dayOfWeek.value == (r.weekday ?: 7)
+            com.kilkari.domain.RepeatRule.MONTHLY -> today.dayOfMonth == (r.dayOfMonth ?: 1).coerceIn(1, 28)
+            com.kilkari.domain.RepeatRule.NONE -> r.startDate == today
+        }
+
     companion object {
         private const val NOTIFICATION_BASE = 4200
+
+        /** Built-in reminders that stand on their own rather than gating derived tasks. */
+        private val SELF_STANDING = setOf("album", "weigh")
     }
 }
 

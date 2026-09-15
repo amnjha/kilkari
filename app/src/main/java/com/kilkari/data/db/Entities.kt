@@ -197,6 +197,32 @@ data class ReminderEntity(
     val title: String,
     val subtitle: String,
     val enabled: Boolean,
+    /** Built-ins are derived from app data and cannot be deleted, only switched off. */
+    val builtIn: Boolean = true,
+    /** Minutes past midnight, for reminders that name a time. */
+    val minuteOfDay: Int? = null,
+    /** none | daily | weekly | monthly */
+    val repeatRule: String = "none",
+    /** 1 (Monday) – 7 (Sunday), for weekly repeats. */
+    val weekday: Int? = null,
+    /** 1–28, for monthly repeats. */
+    val dayOfMonth: Int? = null,
+    /** The single occurrence for a non-repeating reminder. */
+    val startDate: LocalDate? = null,
+)
+
+/**
+ * Whether one occurrence of a task has been dealt with.
+ *
+ * Keyed by occurrence rather than by task, so a weekly prompt stays on the Today screen until
+ * it is actually ticked or dismissed instead of vanishing when the day rolls over.
+ */
+@Entity(tableName = "task_state", primaryKeys = ["taskKey", "occurrenceDate"])
+data class TaskStateEntity(
+    val taskKey: String,
+    val occurrenceDate: LocalDate,
+    val done: Boolean = false,
+    val dismissed: Boolean = false,
 )
 
 /**

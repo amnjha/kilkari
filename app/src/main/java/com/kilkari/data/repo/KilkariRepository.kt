@@ -17,6 +17,7 @@ import com.kilkari.data.db.LogEntryEntity
 import com.kilkari.data.db.MedicationDoseEntity
 import com.kilkari.data.db.MedicationEntity
 import com.kilkari.data.db.ReminderEntity
+import com.kilkari.data.db.TaskStateEntity
 import com.kilkari.data.db.TimelineEntity
 import com.kilkari.data.db.ToothEntity
 import com.kilkari.data.db.VaccineCostEntity
@@ -34,6 +35,7 @@ import com.kilkari.domain.FundTxnKind
 import com.kilkari.domain.InvestmentKind
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
+import com.kilkari.domain.RepeatRule
 import com.kilkari.domain.VaccineGroupState
 import com.kilkari.domain.VaccineItemState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -522,10 +524,8 @@ class KilkariRepository(
             }
             add(ChecklistEntity(id, date, "tummy", "Tummy time · 5 min", "anytime", false))
             add(ChecklistEntity(id, date, "bath", "Bath", "anytime", false))
-            if (date.dayOfWeek.value == 7) {
-                add(ChecklistEntity(id, date, "weigh", "Weekly weigh-in", "anytime", false))
-            }
-            add(ChecklistEntity(id, date, "album", "Add this week's photos", "anytime", false))
+            // The weekly weigh-in and photo check-in are reminders now, not checklist rows,
+            // so they survive past their day instead of disappearing at midnight.
         }
         db.checklistDao().upsertAll(rows)
     }
@@ -539,6 +539,50 @@ class KilkariRepository(
 
     suspend fun setReminderEnabled(row: ReminderEntity, enabled: Boolean) =
         db.reminderDao().upsert(row.copy(enabled = enabled))
+
+    suspend fun saveCustomReminder(
+        key: String?,
+        title: String,
+        subtitle: String,
+        minuteOfDay: Int?,
+        repeat: RepeatRule,
+        weekday: Int?,
+        dayOfMonth: Int?,
+        startDate: LocalDate?,
+    ) {
+        db.reminderDao().upsert(
+            ReminderEntity(
+                key = key ?: "custom:" + System.currentTimeMillis(),
+                title = title,
+                subtitle = subtitle,
+                enabled = true,
+                builtIn = false,
+                minuteOfDay = minuteOfDay,
+                repeatRule = repeat.key,
+                weekday = weekday,
+                dayOfMonth = dayOfMonth,
+                startDate = startDate,
+            )
+        )
+    }
+
+    /** Built-ins are switched off rather than deleted; only custom reminders go away. */
+    suspend fun deleteReminder(key: String) {
+        db.reminderDao().deleteCustom(key)
+        db.taskStateDao().clearFor(key)
+    }
+
+    // ── Task state ──────────────────────────────────────────────────────────
+
+    /** Only recent occurrences matter; anything older has been superseded. */
+    fun taskStates(): Flow<List<TaskStateEntity>> =
+        db.taskStateDao().observeSince(LocalDate.now().minusDays(120))
+
+    suspend fun setTaskDone(taskKey: String, occurrence: LocalDate, done: Boolean) =
+        db.taskStateDao().upsert(TaskStateEntity(taskKey, occurrence, done = done))
+
+    suspend fun dismissTask(taskKey: String, occurrence: LocalDate) =
+        db.taskStateDao().upsert(TaskStateEntity(taskKey, occurrence, dismissed = true))
 
     // ── Baby & settings ─────────────────────────────────────────────────────
 
@@ -654,12 +698,21 @@ class KilkariRepository(
         if (db.reminderDao().count() > 0) return
         db.reminderDao().upsertAll(
             listOf(
-                ReminderEntity("meds", "Medicines", "At each dose time", true),
+                ReminderEntity("meds", "Medicines", "At each dose time", true, repeatRule = "daily"),
                 ReminderEntity("vac", "Vaccines due", "7 days and 1 day before", true),
                 ReminderEntity("appt", "Appointments", "1 day before, 1 hour before", true),
-                ReminderEntity("weigh", "Weekly weigh-in", "Sundays 9:00 am", false),
-                ReminderEntity("album", "Photo nudge", "Weekly: add photos to album", true),
-                ReminderEntity("fund", "Monthly fund top-up", "On the day the deposit is due", true),
+                ReminderEntity(
+                    "weigh", "Weekly weigh-in", "Sundays", false,
+                    repeatRule = "weekly", weekday = 7, minuteOfDay = 9 * 60,
+                ),
+                ReminderEntity(
+                    "album", "Photo check-in", "Sundays — stays until you deal with it", true,
+                    repeatRule = "weekly", weekday = 7, minuteOfDay = 10 * 60,
+                ),
+                ReminderEntity(
+                    "fund", "Monthly fund top-up", "On the day the deposit is due", true,
+                    repeatRule = "monthly",
+                ),
             )
         )
     }

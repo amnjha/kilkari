@@ -12,7 +12,7 @@ Built in Kotlin with Jetpack Compose and Room, from the Claude Design canvas in
 | --- | --- |
 | Launch | System splash hands over to a branded Compose splash that covers the database read |
 | Onboarding | A short wizard: welcome → baby → measurements → schedule → currency → **catch-up** → summary |
-| Today | Three interchangeable layouts: **Agenda** (default), **Hero**, **Checklist**. Switch in Settings. |
+| Today | Three interchangeable layouts: **Agenda** (default), **Hero**, **Checklist**, all rendering the same due-today list. Switch in Settings. |
 | Log | Six quick-log tiles (feed, sleep, diaper, medicine, growth, teeth) over the day's entries |
 | Health | Hub → Vaccines, Vaccine group detail, Growth, Teeth, Medications, Appointments |
 | Money | Three views: **Spending** (monthly split, ledger), **Fund** (the savings account everything is paid from), **Invest** (FD, RD, SIP, PPF, Sukanya Samriddhi, gold) |
@@ -27,6 +27,18 @@ skippable, and the whole thing is written in one transaction at the end.
 **Vaccination schedules** are generated from the baby's date of birth against one of four
 published schedules — IAP (India private), UIP (India government), WHO, or CDC. Changing the
 schedule regenerates due dates; doses already recorded stay marked.
+
+**One due-today list.** Everything outstanding — medicine doses, today's appointments, overdue
+vaccine groups, the fund top-up, the daily checklist, weekly prompts and anything you added
+yourself — is derived in one place and rendered identically by all three Today layouts, so they
+cannot drift apart. Daily items clear themselves overnight; anything less frequent (the Sunday
+photo check-in, a monthly reminder) stays put until it is ticked off or dismissed, rather than
+vanishing when the day rolls over.
+
+**Reminders** are yours to define. The six built-in ones are switches over data the app already
+has; beyond those you can add your own with a time, an optional cadence (once, daily, weekly on a
+chosen day, monthly on a chosen date), and a note. They feed both the notification worker and the
+Today list.
 
 **Recording a dose** works the same whether you tap one vaccine's *Mark given* or *Mark all
 given*: both open the same sheet — date, clinic, doctor, an optional **brand** per vaccine, and
@@ -131,7 +143,8 @@ Nothing leaves the device unless you export it.
   metric-only, so switching it currently changes only the label.
 - Growth percentile curves. The design shows "55th pct" copy; the app charts raw weights
   without WHO reference data.
-- Editing existing entries — most screens support add and delete, not edit.
+- Editing existing entries — the child's details and custom reminders can be edited; most other
+  screens support add and delete only.
 - Catch-up runs at onboarding only. There is no way to bulk-backfill later from Settings.
 - The fund assumes a single account. Multiple accounts, transfers between them, and reconciling
   against a bank statement are not modelled.
