@@ -158,7 +158,7 @@ class KilkariRepository(
                     db.vaccineDao().observeDoses(b.id, s.scheduleId),
                     db.vaccineDao().observeCosts(b.id, s.scheduleId),
                 ) { doses, costs ->
-                    val given = doses.map { "${it.groupLabel}|${it.vaccineName}" }.toSet()
+                    val givenBy = doses.associateBy { "${it.groupLabel}|${it.vaccineName}" }
                     val costBy = costs.associate { it.groupLabel to it.costInr }
                     VaccineSchedules.byId(s.scheduleId).groups.mapIndexed { i, g ->
                         val due = b.dob.plusDays(g.days.toLong())
@@ -168,10 +168,13 @@ class KilkariRepository(
                             dueDate = due,
                             inDays = Fmt.daysUntil(due, today),
                             items = g.vaccines.map {
+                                val dose = givenBy["${g.label}|${it.name}"]
                                 VaccineItemState(
                                     name = it.name,
                                     desc = it.desc.ifBlank { "Routine dose" },
-                                    given = "${g.label}|${it.name}" in given,
+                                    given = dose != null,
+                                    givenOn = dose?.givenOn,
+                                    brand = dose?.brand,
                                 )
                             },
                             costMinor = costBy[g.label],
@@ -181,40 +184,86 @@ class KilkariRepository(
             }
         }
 
-    suspend fun toggleDose(groupLabel: String, vaccineName: String, given: Boolean, on: LocalDate = LocalDate.now(), clinic: String? = null) {
+    /**
+     * Records or withdraws a single dose. Withdrawing the last dose of a group also clears the
+     * group's recorded cost, so the "posted to Money" annotation cannot outlive the doses it
+     * describes. The Money entry itself is left alone — the spend happened either way, and
+     * deleting someone's financial record is theirs to decide.
+     */
+    suspend fun toggleDose(
+        groupLabel: String,
+        vaccineName: String,
+        given: Boolean,
+        on: LocalDate = LocalDate.now(),
+        clinic: String? = null,
+    ) {
         val id = babyId() ?: return
         val scheduleId = currentScheduleId()
         if (given) {
             db.vaccineDao().upsertDose(VaccineDoseEntity(id, scheduleId, groupLabel, vaccineName, on, clinic))
         } else {
             db.vaccineDao().removeDose(id, scheduleId, groupLabel, vaccineName)
+            if (db.vaccineDao().recordedDoseCount(id, scheduleId, groupLabel) == 0) {
+                db.vaccineDao().removeCost(id, scheduleId, groupLabel)
+            }
         }
     }
 
     /**
-     * Marks every dose in a group given, optionally posting a Medical expense, and always
-     * writing a timeline entry — the cross-screen effect the prototype demonstrates.
+     * Records one or more doses of a group as given, optionally posting a Medical expense, and
+     * always writing a timeline entry — the cross-screen effect the prototype demonstrates.
+     *
+     * [brands] maps vaccine name to the product administered; absent or blank entries store null.
+     * Marking part of a group and returning later accumulates the recorded cost rather than
+     * replacing it, so the group total stays correct.
      */
-    suspend fun markGroupGiven(
+    suspend fun markDosesGiven(
         group: VaccineGroupState,
+        doses: List<VaccineItemState>,
         on: LocalDate,
         clinic: String?,
         doctor: String?,
+        brands: Map<String, String?>,
         costInr: Long?,
         addExpense: Boolean,
     ) {
+        if (doses.isEmpty()) return
         val id = babyId() ?: return
         val scheduleId = currentScheduleId()
+
+        fun brandOf(name: String) = brands[name]?.trim()?.ifBlank { null }
+
         db.vaccineDao().upsertDoses(
-            group.items.map { VaccineDoseEntity(id, scheduleId, group.label, it.name, on, clinic) }
+            doses.map {
+                VaccineDoseEntity(
+                    babyId = id,
+                    scheduleId = scheduleId,
+                    groupLabel = group.label,
+                    vaccineName = it.name,
+                    givenOn = on,
+                    clinic = clinic,
+                    brand = brandOf(it.name),
+                )
+            }
         )
+
+        val wholeGroup = doses.size == group.count
+        // A single dose reads best by name; anything larger by group, so a Money row or timeline
+        // title does not become a comma-separated wall of vaccine names.
+        val label = when {
+            wholeGroup -> group.label + " vaccines"
+            doses.size == 1 -> doses.first().name
+            else -> group.label + " vaccines · " + doses.size + " doses"
+        }
+
         if (costInr != null && costInr > 0) {
-            db.vaccineDao().upsertCost(VaccineCostEntity(id, scheduleId, group.label, costInr))
+            val existing = db.vaccineDao().costFor(id, scheduleId, group.label) ?: 0L
+            db.vaccineDao().upsertCost(VaccineCostEntity(id, scheduleId, group.label, existing + costInr))
             if (addExpense) {
                 db.expenseDao().insert(
                     ExpenseEntity(
                         babyId = id,
-                        title = "${group.label} vaccines",
+                        title = label,
                         vendor = clinic,
                         category = ExpenseCategory.MEDICAL.key,
                         amountInr = costInr,
@@ -224,12 +273,20 @@ class KilkariRepository(
                 )
             }
         }
+
+        val named = doses.joinToString(", ") { dose ->
+            brandOf(dose.name)?.let { dose.name + " (" + it + ")" } ?: dose.name
+        }
         db.timelineDao().insert(
             TimelineEntity(
                 babyId = id,
                 date = on,
-                title = "${group.label} vaccines given",
-                subtitle = listOfNotNull(group.names, doctor).joinToString(" · "),
+                title = label + " given",
+                subtitle = listOfNotNull(
+                    named,
+                    if (wholeGroup) null else group.label,
+                    doctor,
+                ).joinToString(" · "),
                 icon = "vaccines",
             )
         )

@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,6 +29,7 @@ import com.kilkari.data.seed.VaccineSchedules
 import com.kilkari.domain.Currency
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.VaccineGroupState
+import com.kilkari.domain.VaccineItemState
 import com.kilkari.ui.components.KSwitch
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.RadioDot
@@ -38,29 +40,68 @@ import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
 
 /**
- * Confirm a whole vaccine group as given. Optionally records what it cost and posts that
- * to Medical expenses; either way a timeline entry is written.
+ * Records the given [doses] of a group. Used both by a single dose's CTA and by "Mark all
+ * given", so the data entry is identical either way: date, clinic, doctor, an optional brand
+ * per vaccine, and a cost that can post to Medical expenses.
  */
 @Composable
 fun ColumnScope.MarkVaccineSheet(
     group: VaccineGroupState,
+    doses: List<VaccineItemState>,
     currency: Currency,
     defaultClinic: String,
     defaultDoctor: String,
-    onConfirm: (clinic: String?, doctor: String?, costInr: Long?, addExpense: Boolean) -> Unit,
+    onConfirm: (
+        clinic: String?,
+        doctor: String?,
+        brands: Map<String, String?>,
+        costInr: Long?,
+        addExpense: Boolean,
+    ) -> Unit,
 ) {
     var clinic by remember { mutableStateOf(defaultClinic) }
     var doctor by remember { mutableStateOf(defaultDoctor) }
     var cost by remember { mutableStateOf("") }
     var addExpense by remember { mutableStateOf(true) }
+    val brands = remember(doses) {
+        mutableStateMapOf<String, String>().apply {
+            doses.forEach { put(it.name, it.brand.orEmpty()) }
+        }
+    }
 
-    SheetTitle("${group.label} vaccines given")
-    SheetHint(group.names)
-    SheetStatic("Date", "Today, ${Fmt.dateFull(LocalDate.now())}")
+    val wholeGroup = doses.size == group.count
+    val single = doses.singleOrNull()
+
+    SheetTitle(
+        when {
+            wholeGroup -> group.label + " vaccines given"
+            single != null -> single.name + " given"
+            else -> doses.size.toString() + " doses given"
+        }
+    )
+    SheetHint(if (single != null) single.desc else doses.joinToString(", ") { it.name })
+
+    SheetStatic("Date", "Today, " + Fmt.dateFull(LocalDate.now()))
     SheetField("Clinic", clinic, "Where it was given") { clinic = it }
     SheetField("Doctor", doctor, "Who gave it") { doctor = it }
+
+    if (single != null) {
+        SheetField("Brand (optional)", brands[single.name].orEmpty(), "e.g. Pentavac") {
+            brands[single.name] = it
+        }
+    } else {
+        Text(
+            "BRAND (OPTIONAL)",
+            fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp,
+            color = KC.Muted, letterSpacing = 0.6.sp,
+        )
+        doses.forEach { dose ->
+            SheetField(dose.name, brands[dose.name].orEmpty(), "Brand") { brands[dose.name] = it }
+        }
+    }
+
     SheetField(
-        "Cost (${currency.symbol})", cost, "0", big = true,
+        "Cost (" + currency.symbol + ")", cost, "0", big = true,
         keyboard = KeyboardOptions(keyboardType = KeyboardType.Number),
     ) { cost = it.filter(Char::isDigit) }
 
@@ -84,7 +125,13 @@ fun ColumnScope.MarkVaccineSheet(
 
     PrimaryButton("Save · add to timeline") {
         val amount = cost.toDoubleOrNull()?.let { Fmt.toInr(it, currency) }
-        onConfirm(clinic.ifBlank { null }, doctor.ifBlank { null }, amount, addExpense)
+        onConfirm(
+            clinic.ifBlank { null },
+            doctor.ifBlank { null },
+            brands.toMap(),
+            amount,
+            addExpense,
+        )
     }
 }
 

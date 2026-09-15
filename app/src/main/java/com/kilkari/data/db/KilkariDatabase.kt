@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
@@ -25,7 +27,7 @@ import androidx.room.TypeConverters
         ChecklistEntity::class,
         ReminderEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -53,7 +55,7 @@ abstract class KilkariDatabase : RoomDatabase() {
                 context.applicationContext,
                 KilkariDatabase::class.java,
                 DB_NAME,
-            ).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2).build().also { instance = it }
         }
 
         /** Drops the cached handle so a restore can swap the file underneath us. */
@@ -63,5 +65,12 @@ abstract class KilkariDatabase : RoomDatabase() {
         }
 
         const val DB_NAME = "kilkari.db"
+
+        /** Adds the optional vaccine brand; existing doses keep a null brand. */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE vaccine_dose ADD COLUMN brand TEXT")
+            }
+        }
     }
 }

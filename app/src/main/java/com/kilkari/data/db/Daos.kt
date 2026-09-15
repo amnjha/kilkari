@@ -123,6 +123,15 @@ interface VaccineDao {
     @Query("DELETE FROM vaccine_dose WHERE babyId = :babyId AND scheduleId = :s AND groupLabel = :g AND vaccineName = :v")
     suspend fun removeDose(babyId: Long, s: String, g: String, v: String)
 
+    @Query("SELECT COUNT(*) FROM vaccine_dose WHERE babyId = :babyId AND scheduleId = :s AND groupLabel = :g")
+    suspend fun recordedDoseCount(babyId: Long, s: String, g: String): Int
+
+    @Query("SELECT costInr FROM vaccine_cost WHERE babyId = :babyId AND scheduleId = :s AND groupLabel = :g")
+    suspend fun costFor(babyId: Long, s: String, g: String): Long?
+
+    @Query("DELETE FROM vaccine_cost WHERE babyId = :babyId AND scheduleId = :s AND groupLabel = :g")
+    suspend fun removeCost(babyId: Long, s: String, g: String)
+
     @Upsert
     suspend fun upsertCost(cost: VaccineCostEntity)
 }

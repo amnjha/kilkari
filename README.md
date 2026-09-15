@@ -20,8 +20,11 @@ Built in Kotlin with Jetpack Compose and Room, from the Claude Design canvas in
 published schedules — IAP (India private), UIP (India government), WHO, or CDC. Changing the
 schedule regenerates due dates; doses already recorded stay marked.
 
-**Cross-screen effects** are wired the way the design demonstrates: marking a vaccine group given
-records every dose, optionally posts a Medical expense to Money, and always writes a Timeline entry.
+**Recording a dose** works the same whether you tap one vaccine's *Mark given* or *Mark all
+given*: both open the same sheet — date, clinic, doctor, an optional **brand** per vaccine, and
+a cost. Recording a dose writes a Timeline entry and, if you enter a cost, posts a Medical
+expense to Money. Marking part of a group and returning later accumulates the group's cost
+rather than replacing it.
 
 **Currency** is a setting (₹ default, plus $ / € / £). Amounts are stored in whole rupees and
 converted for display, so switching currency reformats every screen at once.

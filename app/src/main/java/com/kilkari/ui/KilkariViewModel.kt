@@ -25,6 +25,7 @@ import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.FeedType
 import com.kilkari.domain.LogKind
 import com.kilkari.domain.VaccineGroupState
+import com.kilkari.domain.VaccineItemState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -203,14 +204,21 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     fun toggleDose(groupLabel: String, vaccineName: String, given: Boolean) =
         viewModelScope.launch { repo.toggleDose(groupLabel, vaccineName, given) }
 
-    fun markGroupGiven(
-        group: VaccineGroupState, on: LocalDate, clinic: String?, doctor: String?,
-        costInr: Long?, addExpense: Boolean,
+    fun markDosesGiven(
+        group: VaccineGroupState,
+        doses: List<VaccineItemState>,
+        on: LocalDate,
+        clinic: String?,
+        doctor: String?,
+        brands: Map<String, String?>,
+        costInr: Long?,
+        addExpense: Boolean,
     ) = viewModelScope.launch {
-        repo.markGroupGiven(group, on, clinic, doctor, costInr, addExpense)
+        repo.markDosesGiven(group, doses, on, clinic, doctor, brands, costInr, addExpense)
         toast(
             if (addExpense && costInr != null && costInr > 0)
                 "Saved · ${com.kilkari.domain.Fmt.money(costInr, currency.value)} added to Medical"
+            else if (doses.size == 1) "${doses.first().name} recorded"
             else "Saved to timeline"
         )
     }

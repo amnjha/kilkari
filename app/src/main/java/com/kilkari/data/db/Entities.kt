@@ -75,6 +75,8 @@ data class VaccineDoseEntity(
     val vaccineName: String,
     val givenOn: LocalDate,
     val clinic: String? = null,
+    /** Product actually administered, e.g. "Pentavac" — optional, often on the vial label. */
+    val brand: String? = null,
 )
 
 /** Cost recorded against a whole vaccine group, shown on the group detail screen. */

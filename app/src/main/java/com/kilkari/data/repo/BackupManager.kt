@@ -121,9 +121,9 @@ object BackupManager {
                 out.newLine()
 
                 row("VACCINES")
-                row("schedule", "group", "vaccine", "givenOn", "clinic")
+                row("schedule", "group", "vaccine", "brand", "givenOn", "clinic")
                 db.vaccineDao().allForExport(id).forEach { v ->
-                    row(v.scheduleId, v.groupLabel, v.vaccineName, v.givenOn, v.clinic)
+                    row(v.scheduleId, v.groupLabel, v.vaccineName, v.brand, v.givenOn, v.clinic)
                 }
                 out.newLine()
 
@@ -182,7 +182,13 @@ object BackupManager {
                 if (y > 800f) return@forEach
                 canvas.drawText(if (item.given) "[x]" else "[ ]", 48f, y, body)
                 canvas.drawText(item.name, 74f, y, body)
-                if (item.desc.isNotBlank()) canvas.drawText(item.desc, 250f, y, muted)
+                // Once given, the brand and date are what a clinic actually needs to see.
+                val detail = if (item.given) {
+                    listOfNotNull(item.brand, item.givenOn?.let(Fmt::dateFull)).joinToString(" · ")
+                } else {
+                    item.desc
+                }
+                if (detail.isNotBlank()) canvas.drawText(detail, 250f, y, muted)
                 y += 14f
             }
             y += 8f

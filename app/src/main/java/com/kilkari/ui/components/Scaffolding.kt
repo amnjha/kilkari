@@ -28,7 +28,11 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -175,6 +179,11 @@ fun KSheet(
 /** Dark pill toast floating above the nav bar. */
 @Composable
 fun BoxScope.KToast(message: String?, bottomInset: Dp = 16.dp) {
+    // Hold the last message: on dismissal `message` is already null while the exit animation
+    // still composes the pill, which would otherwise render empty.
+    var shown by remember { mutableStateOf("") }
+    LaunchedEffect(message) { if (message != null) shown = message }
+
     AnimatedVisibility(
         visible = message != null,
         modifier = Modifier.align(Alignment.BottomCenter),
@@ -194,7 +203,7 @@ fun BoxScope.KToast(message: String?, bottomInset: Dp = 16.dp) {
         ) {
             Icon(KIcons["check_circle"], null, tint = KC.IndigoPaler, modifier = Modifier.size(20.dp))
             Text(
-                message.orEmpty(),
+                shown,
                 color = Color.White, fontFamily = Sans,
                 fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
             )
