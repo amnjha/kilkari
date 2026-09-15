@@ -1,13 +1,15 @@
 # Release artifacts — Kilkari 1.0 (versionCode 1)
 
+Built from `51b2053` (bottom-nav fix included).
+
 Built from the repo with `./gradlew :app:bundleRelease :app:assembleRelease`
 (R8 + resource shrinking, targetSdk 35, minSdk 26).
 
 | File | Size | What it is |
 | --- | --- | --- |
-| `kilkari-1.0-unsigned.aab` | 5.0 MB | The Android App Bundle **Play requires for new apps**. Unsigned. |
-| `kilkari-1.0-unsigned.apk` | 2.5 MB | Universal APK for sideloading. Unsigned, so not installable as-is. |
-| `kilkari-1.0-DEBUGSIGNED-testing-only.apk` | 2.5 MB | The same release build signed with the SDK's public debug key, purely to verify the minified build runs. **Never publish this**, and uninstall it before installing a properly signed build — the signatures differ, so an update would be rejected. |
+| `kilkari-1.0-unsigned.aab` | 4.85 MB | The Android App Bundle **Play requires for new apps**. Unsigned. |
+| `kilkari-1.0-unsigned.apk` | 2.42 MB | Universal APK for sideloading. Unsigned, so not installable as-is. |
+| `kilkari-1.0-DEBUGSIGNED-testing-only.apk` | 2.44 MB | The same release build signed with the SDK's public debug key, purely to verify the minified build runs. **Never publish this**, and uninstall it before installing a properly signed build — the signatures differ, so an update would be rejected. |
 
 ## To make these uploadable
 
