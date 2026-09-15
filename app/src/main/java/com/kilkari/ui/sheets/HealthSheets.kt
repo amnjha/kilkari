@@ -25,11 +25,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kilkari.data.db.DoctorEntity
 import com.kilkari.data.seed.VaccineSchedules
 import com.kilkari.domain.Currency
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.VaccineGroupState
 import com.kilkari.domain.VaccineItemState
+import com.kilkari.ui.components.DoctorPickerField
 import com.kilkari.ui.components.KSwitch
 import com.kilkari.ui.components.KDateField
 import com.kilkari.ui.components.KTimeField
@@ -53,6 +55,7 @@ fun ColumnScope.MarkVaccineSheet(
     currency: Currency,
     defaultClinic: String,
     defaultDoctor: String,
+    onPickDoctor: (current: String?, apply: (DoctorEntity?) -> Unit) -> Unit,
     onConfirm: (
         clinic: String?,
         doctor: String?,
@@ -85,7 +88,12 @@ fun ColumnScope.MarkVaccineSheet(
 
     SheetStatic("Date", "Today, " + Fmt.dateFull(LocalDate.now()))
     SheetField("Clinic", clinic, "Where it was given") { clinic = it }
-    SheetField("Doctor", doctor, "Who gave it") { doctor = it }
+    DoctorPickerField("Doctor", doctor) {
+        onPickDoctor(doctor) { picked ->
+            doctor = picked?.name.orEmpty()
+            picked?.clinic?.takeIf { it.isNotBlank() }?.let { clinic = it }
+        }
+    }
 
     if (single != null) {
         SheetField("Brand (optional)", brands[single.name].orEmpty(), "e.g. Pentavac") {
@@ -165,7 +173,10 @@ fun ColumnScope.ScheduleSheet(currentId: String, onPick: (String) -> Unit) {
 }
 
 @Composable
-fun ColumnScope.MedicationSheet(onSave: (String, String, String, String?, Int?) -> Unit) {
+fun ColumnScope.MedicationSheet(
+    onPickDoctor: (current: String?, apply: (DoctorEntity?) -> Unit) -> Unit,
+    onSave: (String, String, String, String?, Int?) -> Unit,
+) {
     var name by remember { mutableStateOf("") }
     var dose by remember { mutableStateOf("") }
     var schedule by remember { mutableStateOf("Daily · 8:00 pm") }
@@ -176,7 +187,9 @@ fun ColumnScope.MedicationSheet(onSave: (String, String, String, String?, Int?) 
     SheetField("Medicine", name, "e.g. Vitamin D3 drops") { name = it }
     SheetField("Dose", dose, "e.g. 1 drop (400 IU)") { dose = it }
     SheetField("Schedule", schedule, "Daily · 8:00 pm") { schedule = it }
-    SheetField("Prescribed by", prescriber, "Doctor") { prescriber = it }
+    DoctorPickerField("Prescribed by", prescriber) {
+        onPickDoctor(prescriber) { picked -> prescriber = picked?.name.orEmpty() }
+    }
     KTimeField("Remind at", reminderMinute) { reminderMinute = it }
 
     PrimaryButton("Save medicine", enabled = name.isNotBlank() && dose.isNotBlank()) {
@@ -185,7 +198,10 @@ fun ColumnScope.MedicationSheet(onSave: (String, String, String, String?, Int?) 
 }
 
 @Composable
-fun ColumnScope.AppointmentSheet(onSave: (String, LocalDate, Int, String?, String?) -> Unit) {
+fun ColumnScope.AppointmentSheet(
+    onPickDoctor: (current: String?, apply: (DoctorEntity?) -> Unit) -> Unit,
+    onSave: (String, LocalDate, Int, String?, String?) -> Unit,
+) {
     var title by remember { mutableStateOf("") }
     var date by remember { mutableStateOf<LocalDate?>(null) }
     var minute by remember { mutableStateOf<Int?>(10 * 60 + 30) }
@@ -196,7 +212,12 @@ fun ColumnScope.AppointmentSheet(onSave: (String, LocalDate, Int, String?, Strin
     SheetField("What", title, "e.g. 6-week check") { title = it }
     KDateField("Date", date, selectableFrom = LocalDate.now().minusYears(2)) { date = it }
     KTimeField("Time", minute) { minute = it }
-    SheetField("Doctor", doctor, "Dr. …") { doctor = it }
+    DoctorPickerField("Doctor", doctor) {
+        onPickDoctor(doctor) { picked ->
+            doctor = picked?.name.orEmpty()
+            picked?.clinic?.takeIf { it.isNotBlank() }?.let { place = it }
+        }
+    }
     SheetField("Where", place, "Clinic or hospital") { place = it }
 
     PrimaryButton("Save appointment", enabled = title.isNotBlank() && date != null && minute != null) {

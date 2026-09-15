@@ -34,6 +34,8 @@ import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.IconButton44
 import com.kilkari.ui.components.DetailBar
+import com.kilkari.ui.components.DoctorPickerSheets
+import com.kilkari.ui.components.rememberDoctorPickerState
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
@@ -48,6 +50,8 @@ import java.time.LocalDate
 @Composable
 fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
     val meds by vm.medications.collectAsStateWithLifecycle()
+    val doctors by vm.doctors.collectAsStateWithLifecycle()
+    val picker = rememberDoctorPickerState()
     val doses by vm.medicationDoses.collectAsStateWithLifecycle()
     var sheetOpen by remember { mutableStateOf(false) }
 
@@ -126,11 +130,18 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
         }
 
         KSheet(sheetOpen, onDismiss = { sheetOpen = false }) {
-            MedicationSheet { name, dose, schedule, prescriber, minute ->
+            MedicationSheet(onPickDoctor = picker::open) { name, dose, schedule, prescriber, minute ->
                 vm.addMedication(name, dose, schedule, prescriber, minute)
                 sheetOpen = false
             }
         }
+        DoctorPickerSheets(
+            state = picker,
+            doctors = doctors,
+        ) { name, speciality, clinic, phone ->
+            vm.saveDoctor(null, name, speciality, clinic, phone)
+        }
+
     }
 }
 

@@ -3,6 +3,7 @@ package com.kilkari.ui.components
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.BabyChangingStation
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -117,6 +119,8 @@ object KIcons {
         // Health
         "vaccines" to Icons.Filled.Vaccines,
         "stethoscope" to Icons.Filled.MedicalInformation,
+        "call" to Icons.Filled.Call,
+        "chat" to Icons.AutoMirrored.Filled.Message,
         "medical_services" to Icons.Filled.MedicalServices,
         // Life
         "photo_camera" to Icons.Filled.PhotoCamera,

@@ -5,6 +5,20 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
+    <!-- Package visibility for the doctor directory's call and message actions, and for
+         opening photo album links. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <package android:name="com.whatsapp" />
+    </queries>
+
     <application
         android:name=".KilkariApp"
         android:allowBackup="true"

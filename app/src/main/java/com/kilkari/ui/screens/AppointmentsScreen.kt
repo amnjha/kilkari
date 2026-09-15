@@ -35,6 +35,8 @@ import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconButton44
+import com.kilkari.ui.components.DoctorPickerSheets
+import com.kilkari.ui.components.rememberDoctorPickerState
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.SectionLabel
@@ -49,6 +51,8 @@ import java.time.LocalDateTime
 @Composable
 fun AppointmentsScreen(vm: KilkariViewModel, go: NavActions) {
     val appointments by vm.appointments.collectAsStateWithLifecycle()
+    val doctors by vm.doctors.collectAsStateWithLifecycle()
+    val picker = rememberDoctorPickerState()
     var sheetOpen by remember { mutableStateOf(false) }
 
     val now = LocalDateTime.now()
@@ -99,13 +103,20 @@ fun AppointmentsScreen(vm: KilkariViewModel, go: NavActions) {
         }
 
         KSheet(sheetOpen, onDismiss = { sheetOpen = false }) {
-            AppointmentSheet { title, date, minute, doctor, place ->
+            AppointmentSheet(onPickDoctor = picker::open) { title, date, minute, doctor, place ->
                 vm.addAppointment(
                     title, date.atTime(minute / 60, minute % 60), doctor, place, reminderDaysBefore = 1,
                 )
                 sheetOpen = false
             }
         }
+        DoctorPickerSheets(
+            state = picker,
+            doctors = doctors,
+        ) { name, speciality, clinic, phone ->
+            vm.saveDoctor(null, name, speciality, clinic, phone)
+        }
+
     }
 }
 

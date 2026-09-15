@@ -382,3 +382,19 @@ interface TaskStateDao {
     @Query("DELETE FROM task_state WHERE taskKey = :taskKey")
     suspend fun clearFor(taskKey: String)
 }
+
+
+@Dao
+interface DoctorDao {
+    @Query("SELECT * FROM doctor WHERE babyId = :babyId ORDER BY name COLLATE NOCASE")
+    fun observeAll(babyId: Long): Flow<List<DoctorEntity>>
+
+    @Query("SELECT * FROM doctor WHERE babyId = :babyId ORDER BY name COLLATE NOCASE")
+    suspend fun allForExport(babyId: Long): List<DoctorEntity>
+
+    @Upsert
+    suspend fun upsert(row: DoctorEntity): Long
+
+    @Delete
+    suspend fun delete(row: DoctorEntity)
+}

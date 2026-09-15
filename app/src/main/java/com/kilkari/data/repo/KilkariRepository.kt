@@ -6,6 +6,7 @@ import com.kilkari.data.db.AppointmentEntity
 import com.kilkari.data.db.BabyEntity
 import com.kilkari.data.db.ChecklistEntity
 import com.kilkari.data.db.ContributionEntity
+import com.kilkari.data.db.DoctorEntity
 import com.kilkari.data.db.DocumentEntity
 import com.kilkari.data.db.EventEntity
 import com.kilkari.data.db.ExpenseEntity
@@ -367,6 +368,33 @@ class KilkariRepository(
     }
 
     suspend fun deleteExpense(row: ExpenseEntity) = db.expenseDao().delete(row)
+
+    // ── Doctors ─────────────────────────────────────────────────────────────
+
+    fun doctors(): Flow<List<DoctorEntity>> = forBaby { db.doctorDao().observeAll(it) }
+
+    /** Saves a new doctor or updates an existing one, returning the row id. */
+    suspend fun saveDoctor(
+        id: Long?,
+        name: String,
+        speciality: String?,
+        clinic: String?,
+        phone: String?,
+    ): Long {
+        val babyId = babyId() ?: return 0
+        return db.doctorDao().upsert(
+            DoctorEntity(
+                id = id ?: 0,
+                babyId = babyId,
+                name = name,
+                speciality = speciality,
+                clinic = clinic,
+                phone = phone,
+            )
+        )
+    }
+
+    suspend fun deleteDoctor(row: DoctorEntity) = db.doctorDao().delete(row)
 
     // ── Fund ────────────────────────────────────────────────────────────────
 

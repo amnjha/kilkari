@@ -275,3 +275,19 @@ data class ContributionEntity(
     /** Whether the money came out of the savings account rather than from elsewhere. */
     val paidFromFund: Boolean = true,
 )
+
+
+/**
+ * A doctor the family sees. Records keep the doctor's *name* rather than a reference, so a
+ * later rename does not rewrite history; this table exists so the name can be picked instead
+ * of retyped, and so a clinic can be filled in alongside it.
+ */
+@Entity(tableName = "doctor", indices = [Index("babyId")])
+data class DoctorEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val babyId: Long,
+    val name: String,
+    val speciality: String? = null,
+    val clinic: String? = null,
+    val phone: String? = null,
+)

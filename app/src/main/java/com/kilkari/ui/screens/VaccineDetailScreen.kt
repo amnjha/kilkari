@@ -34,6 +34,8 @@ import com.kilkari.domain.Fmt
 import com.kilkari.domain.VaccineItemState
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.DetailBar
+import com.kilkari.ui.components.DoctorPickerSheets
+import com.kilkari.ui.components.rememberDoctorPickerState
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
@@ -51,6 +53,8 @@ import java.time.LocalDate
 @Composable
 fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
     val group by vm.selectedGroup.collectAsStateWithLifecycle()
+    val doctors by vm.doctors.collectAsStateWithLifecycle()
+    val picker = rememberDoctorPickerState()
     val currency by vm.currency.collectAsStateWithLifecycle()
     val appointments by vm.appointments.collectAsStateWithLifecycle()
 
@@ -151,12 +155,20 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
                     currency = currency,
                     defaultClinic = lastClinic,
                     defaultDoctor = lastDoctor,
+                    onPickDoctor = picker::open,
                 ) { clinic, doctor, brands, cost, addExpense ->
                     vm.markDosesGiven(g, doses, LocalDate.now(), clinic, doctor, brands, cost, addExpense)
                     sheetDoses = emptyList()
                 }
             }
         }
+        DoctorPickerSheets(
+            state = picker,
+            doctors = doctors,
+        ) { name, speciality, clinic, phone ->
+            vm.saveDoctor(null, name, speciality, clinic, phone)
+        }
+
     }
 }
 

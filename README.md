@@ -14,7 +14,7 @@ Built in Kotlin with Jetpack Compose and Room, from the Claude Design canvas in
 | Onboarding | A short wizard: welcome → baby → measurements → schedule → currency → **catch-up** → summary |
 | Today | Three interchangeable layouts: **Agenda** (default), **Hero**, **Checklist**, all rendering the same due-today list. Switch in Settings. |
 | Log | Six quick-log tiles (feed, sleep, diaper, medicine, growth, teeth) over the day's entries |
-| Health | Hub → Vaccines, Vaccine group detail, Growth, Teeth, Medications, Appointments |
+| Health | Hub → Vaccines, Vaccine group detail, Growth, Teeth, Medications, Appointments, Doctors |
 | Money | Three views: **Spending** (monthly split, ledger), **Fund** (the savings account everything is paid from), **Invest** (FD, RD, SIP, PPF, Sukanya Samriddhi, gold) |
 | More | Timeline, Documents, Document detail, Photo albums, Birthdays & events, Reminders, Backup & export, Settings |
 
@@ -34,6 +34,13 @@ yourself — is derived in one place and rendered identically by all three Today
 cannot drift apart. Daily items clear themselves overnight; anything less frequent (the Sunday
 photo check-in, a monthly reminder) stays put until it is ticked off or dismissed, rather than
 vanishing when the day rolls over.
+
+**Doctors** are kept in one directory. Appointments, vaccination records and prescriptions pick
+from it through a secondary bottom sheet, with "Add a doctor" opening a third — so a new name can
+be saved without abandoning the form, and choosing someone fills in their clinic too. Where a
+phone number is saved, the row offers a call (which opens the dialler pre-filled rather than
+placing the call) and a WhatsApp message. Records store the doctor's *name*, not a reference, so
+renaming someone later does not rewrite past appointments.
 
 **Reminders** are yours to define. The six built-in ones are switches over data the app already
 has; beyond those you can add your own with a time, an optional cadence (once, daily, weekly on a
@@ -76,11 +83,22 @@ is not committed — Android Studio writes it for you, or:
 echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties
 ```
 
-Build a release APK (R8 + resource shrinking, ~1.5 MB) with:
+Build the release artifacts (R8 + resource shrinking):
 
 ```bash
-./gradlew :app:assembleRelease
+./gradlew :app:bundleRelease :app:assembleRelease
 ```
+
+`bundleRelease` produces the **.aab** that Google Play requires for new apps; `assembleRelease`
+produces an **.apk** for sideloading and manual testing. Both are unsigned unless you add a
+`keystore.properties` at the repo root — copy `keystore.properties.example` and create the key:
+
+```bash
+keytool -genkeypair -v -keystore kilkari-upload.jks -alias kilkari -keyalg RSA -keysize 2048 -validity 10000
+```
+
+The keystore and `keystore.properties` are gitignored. **Back the keystore up somewhere safe** —
+losing it means never being able to publish an update to the same listing.
 
 ## Layout
 

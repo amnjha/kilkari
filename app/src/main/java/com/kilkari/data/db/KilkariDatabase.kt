@@ -30,8 +30,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         InvestmentEntity::class,
         ContributionEntity::class,
         TaskStateEntity::class,
+        DoctorEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -53,6 +54,7 @@ abstract class KilkariDatabase : RoomDatabase() {
     abstract fun fundDao(): FundDao
     abstract fun investmentDao(): InvestmentDao
     abstract fun taskStateDao(): TaskStateDao
+    abstract fun doctorDao(): DoctorDao
 
     companion object {
         @Volatile private var instance: KilkariDatabase? = null
@@ -62,7 +64,7 @@ abstract class KilkariDatabase : RoomDatabase() {
                 context.applicationContext,
                 KilkariDatabase::class.java,
                 DB_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { instance = it }
         }
 
         /** Drops the cached handle so a restore can swap the file underneath us. */
@@ -149,6 +151,18 @@ abstract class KilkariDatabase : RoomDatabase() {
                     "UPDATE reminder SET subtitle = 'Sundays', minuteOfDay = 540 WHERE key = 'weigh'"
                 )
                 db.execSQL("DELETE FROM checklist WHERE key IN ('album', 'weigh')")
+            }
+        }
+
+        /** Adds the doctor directory. */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `doctor` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `babyId` INTEGER NOT NULL, `name` TEXT NOT NULL, `speciality` TEXT, `clinic` TEXT, `phone` TEXT)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_doctor_babyId` ON `doctor` (`babyId`)"
+                )
             }
         }
     }

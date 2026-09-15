@@ -52,6 +52,7 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
     val meds by vm.medications.collectAsStateWithLifecycle()
     val appointments by vm.appointments.collectAsStateWithLifecycle()
     val timeline by vm.timeline.collectAsStateWithLifecycle()
+    val doctors by vm.doctors.collectAsStateWithLifecycle()
 
     val doneCount = groups.sumOf { it.doneCount }
     val total = groups.sumOf { it.count }
@@ -147,6 +148,15 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
                     ?: "Nothing booked",
                 Modifier.weight(1f),
             ) { go.push(Routes.APPOINTMENTS) }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            HealthTile(
+                "medical_services", KC.ClayDeep, "Doctors",
+                if (doctors.isEmpty()) "Add the people you see"
+                else "${doctors.size} saved · ${doctors.first().name}",
+                Modifier.weight(1f),
+            ) { go.push(Routes.DOCTORS) }
+            Box(Modifier.weight(1f))
         }
 
         SectionLabel("Recent", Modifier.padding(top = 4.dp))

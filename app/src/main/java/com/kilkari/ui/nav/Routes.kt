@@ -18,6 +18,7 @@ object Routes {
     const val TEETH = "teeth"
     const val MEDS = "meds"
     const val APPOINTMENTS = "appointments"
+    const val DOCTORS = "doctors"
 
     const val TIMELINE = "timeline"
     const val DOCUMENTS = "documents"
@@ -39,7 +40,7 @@ object Routes {
     /** Which tab stays lit while a pushed screen is on top. */
     private val tabOf = mapOf(
         VACCINES to HEALTH, VACCINE_DETAIL to HEALTH, GROWTH to HEALTH,
-        TEETH to HEALTH, MEDS to HEALTH, APPOINTMENTS to HEALTH,
+        TEETH to HEALTH, MEDS to HEALTH, APPOINTMENTS to HEALTH, DOCTORS to HEALTH,
         TIMELINE to MORE, DOCUMENTS to MORE, DOCUMENT_DETAIL to MORE, PHOTOS to MORE,
         EVENTS to MORE, REMINDERS to MORE, BACKUP to MORE, SETTINGS to MORE,
     )

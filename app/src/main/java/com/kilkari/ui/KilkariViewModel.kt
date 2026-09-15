@@ -8,6 +8,7 @@ import com.kilkari.data.db.AppointmentEntity
 import com.kilkari.data.db.BabyEntity
 import com.kilkari.data.db.ChecklistEntity
 import com.kilkari.data.db.ContributionEntity
+import com.kilkari.data.db.DoctorEntity
 import com.kilkari.data.db.DocumentEntity
 import com.kilkari.data.db.EventEntity
 import com.kilkari.data.db.ExpenseEntity
@@ -242,6 +243,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     val albums: StateFlow<List<AlbumEntity>> = repo.albums().state(emptyList())
     val events: StateFlow<List<EventEntity>> = repo.events().state(emptyList())
     val reminders: StateFlow<List<ReminderEntity>> = repo.reminders().state(emptyList())
+    val doctors: StateFlow<List<DoctorEntity>> = repo.doctors().state(emptyList())
 
     private val _selectedDocument = MutableStateFlow<Long?>(null)
     val selectedDocument: StateFlow<DocumentEntity?> =
@@ -569,6 +571,17 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun setChecklistDone(row: ChecklistEntity, done: Boolean) =
         viewModelScope.launch { repo.setChecklistDone(row, done) }
+
+    fun saveDoctor(id: Long?, name: String, speciality: String?, clinic: String?, phone: String?) =
+        viewModelScope.launch {
+            repo.saveDoctor(id, name.trim(), speciality, clinic, phone)
+            toast(if (id == null) "$name added" else "Saved")
+        }
+
+    fun deleteDoctor(row: DoctorEntity) = viewModelScope.launch {
+        repo.deleteDoctor(row)
+        toast("Removed")
+    }
 
     fun setReminderEnabled(row: ReminderEntity, enabled: Boolean) =
         viewModelScope.launch { repo.setReminderEnabled(row, enabled) }
