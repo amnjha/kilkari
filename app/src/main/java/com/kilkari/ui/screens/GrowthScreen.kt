@@ -164,8 +164,9 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                 weightHint = latest?.weightKg?.let(Fmt::trimNum) ?: "3.9",
                 lengthHint = latest?.lengthCm?.let(Fmt::trimNum) ?: "52",
                 headHint = latest?.headCm?.let(Fmt::trimNum) ?: "36",
-            ) { w, l, h ->
-                vm.addGrowth(LocalDate.now(), w, l, h)
+                earliest = baby?.dob,
+            ) { date, w, l, h ->
+                vm.addGrowth(date, w, l, h)
                 sheetOpen = false
             }
         }

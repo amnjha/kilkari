@@ -133,8 +133,8 @@ fun MoneyScreen(vm: KilkariViewModel) {
 
         KSheet(sheet != null, onDismiss = { sheet = null }) {
             when (sheet) {
-                MoneySheet.EXPENSE -> ExpenseSheet(currency, fundName) { title, vendor, category, amount, fromFund ->
-                    vm.addExpense(title, vendor, category, amount, fromFund)
+                MoneySheet.EXPENSE -> ExpenseSheet(currency, fundName) { title, vendor, category, amount, date, fromFund ->
+                    vm.addExpense(title, vendor, category, amount, date, fromFund)
                     sheet = null
                 }
                 MoneySheet.FUND_TXN -> FundTxnSheet(
@@ -174,12 +174,12 @@ fun MoneyScreen(vm: KilkariViewModel) {
                     investment = open,
                     currency = currency,
                     fundName = fundName,
-                    onContribute = { amount, fromFund ->
-                        vm.addContribution(open.id, amount, LocalDate.now(), fromFund)
+                    onContribute = { amount, date, fromFund ->
+                        vm.addContribution(open.id, amount, date, fromFund)
                         openInvestment = null
                     },
-                    onUpdateValue = { value ->
-                        vm.updateInvestmentValue(open.id, value)
+                    onUpdateValue = { value, asOf ->
+                        vm.updateInvestmentValue(open.id, value, asOf)
                         openInvestment = null
                     },
                     onSetActive = { active ->

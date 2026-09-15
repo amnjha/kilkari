@@ -20,6 +20,7 @@ import com.kilkari.data.db.MedicationDoseEntity
 import com.kilkari.data.db.MedicationEntity
 import com.kilkari.data.db.ReminderEntity
 import com.kilkari.data.db.TimelineEntity
+import com.kilkari.data.db.ToothEntity
 import com.kilkari.data.prefs.AppSettings
 import com.kilkari.data.repo.KilkariRepository
 import com.kilkari.domain.BreastSide
@@ -30,6 +31,7 @@ import com.kilkari.domain.DueTask
 import com.kilkari.domain.RepeatRule
 import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.FeedType
+import com.kilkari.domain.Fmt
 import com.kilkari.domain.FundLedgerOrigin
 import com.kilkari.domain.FundLedgerRow
 import com.kilkari.domain.FundTxnKind
@@ -119,7 +121,15 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             .state(null)
 
     val growth: StateFlow<List<GrowthEntity>> = repo.growth().state(emptyList())
-    val teeth: StateFlow<Set<String>> = repo.teeth().state(emptySet())
+
+    private val toothRows: StateFlow<List<ToothEntity>> = repo.toothRows().state(emptyList())
+    val teeth: StateFlow<Set<String>> =
+        toothRows.map { rows -> rows.map { it.code }.toSet() }.state(emptySet())
+
+    /** When each recorded tooth came through, so the Teeth chart can show and edit the date. */
+    val toothDates: StateFlow<Map<String, LocalDate>> =
+        toothRows.map { rows -> rows.associate { it.code to it.eruptedOn } }.state(emptyMap())
+
     val medications: StateFlow<List<MedicationEntity>> = repo.medications().state(emptyList())
 
     val medicationDoses: StateFlow<List<MedicationDoseEntity>> =
@@ -303,9 +313,11 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
      * Records that whatever a reminder was asking for has now been supplied, against the
      * occurrence it is currently sitting on.
      */
-    private fun satisfyReminder(key: String) = viewModelScope.launch {
+    private fun satisfyReminder(key: String, on: LocalDate = LocalDate.now()) = viewModelScope.launch {
         val reminder = reminders.value.firstOrNull { it.key == key } ?: return@launch
         val occurrence = DueTaskBuilder.occurrenceOf(reminder, LocalDate.now()) ?: return@launch
+        // A back-dated entry belongs to an earlier occurrence, so it must not tick off this one.
+        if (on.isBefore(occurrence)) return@launch
         repo.setTaskDone(key, occurrence, true)
     }
 
@@ -378,29 +390,33 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun updateBaby(row: BabyEntity) = viewModelScope.launch { repo.updateBaby(row) }
 
-    fun logFeed(type: FeedType, side: BreastSide?, amount: Int) = viewModelScope.launch {
-        repo.logFeed(type, side, amount)
-        toast("Feed saved")
-    }
+    fun logFeed(type: FeedType, side: BreastSide?, amount: Int, at: LocalDateTime = LocalDateTime.now()) =
+        viewModelScope.launch {
+            repo.logFeed(type, side, amount, at)
+            toast("Feed saved" + forDay(at.toLocalDate()))
+        }
 
-    fun logSleepStart(place: String?) = viewModelScope.launch {
-        repo.logSleep(LocalDateTime.now(), null, place)
-        toast("Sleep started")
-    }
+    /** [to] is null while the baby is still asleep, set when the whole nap is entered at once. */
+    fun logSleepStart(place: String?, from: LocalDateTime = LocalDateTime.now(), to: LocalDateTime? = null) =
+        viewModelScope.launch {
+            repo.logSleep(from, to, place)
+            toast(if (to == null) "Sleep started" else ("Nap saved" + forDay(from.toLocalDate())))
+        }
 
-    fun logSleepEnd() = viewModelScope.launch {
-        repo.wakeUp()
+    fun logSleepEnd(at: LocalDateTime = LocalDateTime.now()) = viewModelScope.launch {
+        repo.wakeUp(at)
         toast("Woke up")
     }
 
-    fun logDiaper(kind: DiaperKind) = viewModelScope.launch {
-        repo.logDiaper(kind)
-        toast("Diaper logged")
+    fun logDiaper(kind: DiaperKind, at: LocalDateTime = LocalDateTime.now()) = viewModelScope.launch {
+        repo.logDiaper(kind, at)
+        toast("Diaper logged" + forDay(at.toLocalDate()))
     }
 
-    fun logMedicine(med: MedicationEntity) = viewModelScope.launch {
-        repo.logMedicine(med.id, med.name, med.dose)
-        toast("${med.name} logged for today")
+    fun logMedicine(med: MedicationEntity, at: LocalDateTime = LocalDateTime.now()) = viewModelScope.launch {
+        repo.logMedicine(med.id, med.name, med.dose, at)
+        val day = at.toLocalDate()
+        toast("${med.name} logged for " + (if (day == LocalDate.now()) "today" else Fmt.date(day)))
     }
 
     fun setDoseTaken(medId: Long, date: LocalDate, taken: Boolean) =
@@ -409,12 +425,12 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     fun addGrowth(date: LocalDate, weightKg: Double?, lengthCm: Double?, headCm: Double?) =
         viewModelScope.launch {
             repo.addGrowth(date, weightKg, lengthCm, headCm)
-            satisfyReminder("weigh")
-            toast("Measurement saved")
+            satisfyReminder("weigh", date)
+            toast("Measurement saved" + forDay(date))
         }
 
-    fun toggleTooth(code: String, erupted: Boolean) =
-        viewModelScope.launch { repo.toggleTooth(code, erupted) }
+    fun toggleTooth(code: String, erupted: Boolean, on: LocalDate = LocalDate.now()) =
+        viewModelScope.launch { repo.toggleTooth(code, erupted, on) }
 
     fun toggleDose(groupLabel: String, vaccineName: String, given: Boolean) =
         viewModelScope.launch { repo.toggleDose(groupLabel, vaccineName, given) }
@@ -432,17 +448,23 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         repo.markDosesGiven(group, doses, on, clinic, doctor, brands, costInr, addExpense)
         toast(
             if (addExpense && costInr != null && costInr > 0)
-                "Saved · ${com.kilkari.domain.Fmt.money(costInr, currency.value)} added to Medical"
-            else if (doses.size == 1) "${doses.first().name} recorded"
-            else "Saved to timeline"
+                "Saved · ${Fmt.money(costInr, currency.value)} added to Medical"
+            else if (doses.size == 1) "${doses.first().name} recorded" + forDay(on)
+            else "Saved to timeline" + forDay(on)
         )
     }
 
-    fun addMedication(name: String, dose: String, scheduleText: String, prescriber: String?, reminderMinute: Int?) =
-        viewModelScope.launch {
-            repo.addMedication(name, dose, scheduleText, prescriber, LocalDate.now(), reminderMinute)
-            toast("$name added")
-        }
+    fun addMedication(
+        name: String,
+        dose: String,
+        scheduleText: String,
+        prescriber: String?,
+        start: LocalDate,
+        reminderMinute: Int?,
+    ) = viewModelScope.launch {
+        repo.addMedication(name, dose, scheduleText, prescriber, start, reminderMinute)
+        toast("$name added")
+    }
 
     fun setMedicationActive(med: MedicationEntity, active: Boolean) =
         viewModelScope.launch { repo.setMedicationActive(med, active) }
@@ -460,23 +482,24 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         vendor: String?,
         category: ExpenseCategory,
         amountDisplay: Double,
+        date: LocalDate,
         paidFromFund: Boolean,
     ) = viewModelScope.launch {
-        repo.addExpense(title, vendor, category, toInr(amountDisplay), LocalDate.now(), paidFromFund)
-        toast("Expense saved")
+        repo.addExpense(title, vendor, category, toInr(amountDisplay), date, paidFromFund)
+        toast("Expense saved" + forDay(date))
     }
 
     fun deleteExpense(row: ExpenseEntity) = viewModelScope.launch { repo.deleteExpense(row) }
 
     fun addFundDeposit(amountDisplay: Double, date: LocalDate, note: String?) = viewModelScope.launch {
         repo.addFundTransaction(FundTxnKind.DEPOSIT, toInr(amountDisplay), date, note)
-        satisfyReminder("fund")
-        toast("Deposit recorded")
+        satisfyReminder("fund", date)
+        toast("Deposit recorded" + forDay(date))
     }
 
     fun addFundWithdrawal(amountDisplay: Double, date: LocalDate, note: String?) = viewModelScope.launch {
         repo.addFundTransaction(FundTxnKind.WITHDRAWAL, toInr(amountDisplay), date, note)
-        toast("Withdrawal recorded")
+        toast("Withdrawal recorded" + forDay(date))
     }
 
     fun deleteFundTransaction(row: FundTxnEntity) = viewModelScope.launch {
@@ -518,13 +541,14 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     fun addContribution(investmentId: Long, amountDisplay: Double, date: LocalDate, paidFromFund: Boolean) =
         viewModelScope.launch {
             repo.addContribution(investmentId, toInr(amountDisplay), date, paidFromFund)
-            toast("Contribution recorded")
+            toast("Contribution recorded" + forDay(date))
         }
 
-    fun updateInvestmentValue(investmentId: Long, valueDisplay: Double) = viewModelScope.launch {
-        repo.updateInvestmentValue(investmentId, toInr(valueDisplay), LocalDate.now())
-        toast("Value updated")
-    }
+    fun updateInvestmentValue(investmentId: Long, valueDisplay: Double, asOf: LocalDate = LocalDate.now()) =
+        viewModelScope.launch {
+            repo.updateInvestmentValue(investmentId, toInr(valueDisplay), asOf)
+            toast("Value updated" + forDay(asOf))
+        }
 
     fun setInvestmentActive(investmentId: Long, active: Boolean) = viewModelScope.launch {
         repo.setInvestmentActive(investmentId, active)
@@ -536,20 +560,29 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     }
 
     /** Display amounts are entered in the chosen currency; storage is always whole rupees. */
-    private fun toInr(amount: Double): Long = com.kilkari.domain.Fmt.toInr(amount, currency.value)
+    private fun toInr(amount: Double): Long = Fmt.toInr(amount, currency.value)
+
+    /**
+     * " · 12 Aug" for anything filed against another day, and nothing at all for today — so a
+     * back-dated entry says so, and the ordinary case stays quiet.
+     */
+    private fun forDay(date: LocalDate): String =
+        if (date == LocalDate.now()) "" else " · " + Fmt.date(date)
 
     fun addMilestone(title: String, subtitle: String, date: LocalDate, albumUrl: String?) =
         viewModelScope.launch {
             repo.addTimelineEntry(date, title, subtitle, "auto_awesome", albumUrl)
-            toast("Added to timeline")
+            toast("Added to timeline" + forDay(date))
         }
 
     fun deleteTimelineEntry(row: TimelineEntity) = viewModelScope.launch { repo.deleteTimelineEntry(row) }
 
-    fun addDocument(title: String, tags: String, pageUris: List<String>) = viewModelScope.launch {
-        repo.addDocument(title, LocalDate.now(), tags, pageUris)
-        toast("Scan filed under today")
-    }
+    fun addDocument(title: String, tags: String, pageUris: List<String>, filedOn: LocalDate = LocalDate.now()) =
+        viewModelScope.launch {
+            repo.addDocument(title, filedOn, tags, pageUris)
+            val day = if (filedOn == LocalDate.now()) "today" else Fmt.date(filedOn)
+            toast("Scan filed under $day")
+        }
 
     fun deleteDocument(row: DocumentEntity) = viewModelScope.launch { repo.deleteDocument(row) }
 

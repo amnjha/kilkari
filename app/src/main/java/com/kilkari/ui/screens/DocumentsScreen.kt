@@ -145,8 +145,8 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
         }
 
         KSheet(sheetOpen, onDismiss = { sheetOpen = false; pages.clear() }) {
-            DocumentSheet(pages.size) { title, tags ->
-                vm.addDocument(title, tags, pages.toList())
+            DocumentSheet(pages.size) { title, tags, filedOn ->
+                vm.addDocument(title, tags, pages.toList(), filedOn)
                 pages.clear()
                 sheetOpen = false
             }
