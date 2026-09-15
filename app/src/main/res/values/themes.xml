@@ -6,4 +6,15 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
     </style>
+
+    <!--
+      Shown by the system from the moment the process starts until the first frame is drawn, so
+      the launch never flashes a blank window. Its ground matches the app's, and the Compose
+      splash that follows continues the same composition while the database loads.
+    -->
+    <style name="Theme.Kilkari.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Kilkari</item>
+    </style>
 </resources>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches KC.Screen so the system splash hands over to the app seamlessly. -->
+    <color name="splash_background">#F7F6FD</color>
+</resources>

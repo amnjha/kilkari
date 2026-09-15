@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -63,6 +64,19 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     /** Recomputed on collection; the app is short-lived enough not to need a midnight ticker. */
     private val today = MutableStateFlow(LocalDate.now())
+
+    /** False until the database and settings have both answered, so launch shows the splash
+     *  rather than flashing onboarding at someone who is already set up. */
+    private val _loaded = MutableStateFlow(false)
+    val loaded: StateFlow<Boolean> = _loaded.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            repo.baby.first()
+            repo.settings.first()
+            _loaded.value = true
+        }
+    }
 
     val settings: StateFlow<AppSettings> = repo.settings.state(AppSettings())
     val baby: StateFlow<BabyEntity?> = repo.baby.state(null)
@@ -257,16 +271,23 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     fun selectVaccineGroup(index: Int) { _selectedGroup.value = index }
     fun selectDocument(id: Long) { _selectedDocument.value = id }
 
-    fun createBaby(
-        name: String, dob: LocalDate, birthTime: LocalDateTime?,
-        weightKg: Double?, lengthCm: Double?, headCm: Double?, place: String?,
-        scheduleId: String, currency: Currency,
+    fun onboard(
+        name: String,
+        dob: LocalDate,
+        birthTime: LocalDateTime?,
+        weightKg: Double?,
+        lengthCm: Double?,
+        headCm: Double?,
+        place: String?,
+        scheduleId: String,
+        currency: Currency,
+        givenGroups: Map<String, LocalDate>,
+        milestones: Map<String, LocalDate>,
     ) = viewModelScope.launch {
-        repo.createBaby(name, dob, birthTime, weightKg, lengthCm, headCm, place)
-        repo.setSchedule(scheduleId)
-        repo.setCurrency(currency)
-        repo.ensureChecklist(LocalDate.now())
-        repo.setOnboarded(true)
+        repo.onboard(
+            name, dob, birthTime, weightKg, lengthCm, headCm, place,
+            scheduleId, currency, givenGroups, milestones,
+        )
     }
 
     fun updateBaby(row: BabyEntity) = viewModelScope.launch { repo.updateBaby(row) }

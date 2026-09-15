@@ -23,6 +23,7 @@ import com.kilkari.data.db.VaccineCostEntity
 import com.kilkari.data.db.VaccineDoseEntity
 import com.kilkari.data.prefs.AppSettings
 import com.kilkari.data.prefs.SettingsStore
+import com.kilkari.data.seed.Milestones
 import com.kilkari.data.seed.VaccineSchedules
 import com.kilkari.domain.BreastSide
 import com.kilkari.domain.Currency
@@ -575,6 +576,66 @@ class KilkariRepository(
         )
         seedReminders()
         return id
+    }
+
+    /**
+     * Completes onboarding in one go: creates the baby, applies the chosen schedule and
+     * currency, then backfills whatever the parent said had already happened.
+     *
+     * Catch-up matters because people rarely start tracking on day one — [givenGroups] maps a
+     * vaccine group label to the date it was given, and [milestones] a milestone key to its date.
+     */
+    suspend fun onboard(
+        name: String,
+        dob: LocalDate,
+        birthTime: LocalDateTime?,
+        weightKg: Double?,
+        lengthCm: Double?,
+        headCm: Double?,
+        place: String?,
+        scheduleId: String,
+        currency: Currency,
+        givenGroups: Map<String, LocalDate>,
+        milestones: Map<String, LocalDate>,
+    ) {
+        settingsStore.setSchedule(scheduleId)
+        settingsStore.setCurrency(currency)
+        val babyId = createBaby(name, dob, birthTime, weightKg, lengthCm, headCm, place)
+
+        val schedule = VaccineSchedules.byId(scheduleId)
+        givenGroups.forEach { (label, on) ->
+            val group = schedule.groups.firstOrNull { it.label == label } ?: return@forEach
+            db.vaccineDao().upsertDoses(
+                group.vaccines.map {
+                    VaccineDoseEntity(babyId, scheduleId, label, it.name, on, place)
+                }
+            )
+            db.timelineDao().insert(
+                TimelineEntity(
+                    babyId = babyId,
+                    date = on,
+                    title = "$label vaccines given",
+                    subtitle = group.vaccines.joinToString(", ") { it.name },
+                    icon = "vaccines",
+                )
+            )
+        }
+
+        milestones.forEach { (key, on) ->
+            val def = Milestones.all.firstOrNull { it.key == key } ?: return@forEach
+            db.timelineDao().insert(
+                TimelineEntity(
+                    babyId = babyId,
+                    date = on,
+                    title = def.label,
+                    subtitle = "Recorded while setting up",
+                    icon = def.icon,
+                )
+            )
+        }
+
+        ensureChecklist(LocalDate.now())
+        settingsStore.setOnboarded(true)
     }
 
     suspend fun updateBaby(row: BabyEntity) = db.babyDao().update(row)

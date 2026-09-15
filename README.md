@@ -10,11 +10,19 @@ Built in Kotlin with Jetpack Compose and Room, from the Claude Design canvas in
 
 | Area | Screens |
 | --- | --- |
+| Launch | System splash hands over to a branded Compose splash that covers the database read |
+| Onboarding | A short wizard: welcome → baby → measurements → schedule → currency → **catch-up** → summary |
 | Today | Three interchangeable layouts: **Agenda** (default), **Hero**, **Checklist**. Switch in Settings. |
 | Log | Six quick-log tiles (feed, sleep, diaper, medicine, growth, teeth) over the day's entries |
 | Health | Hub → Vaccines, Vaccine group detail, Growth, Teeth, Medications, Appointments |
 | Money | Three views: **Spending** (monthly split, ledger), **Fund** (the savings account everything is paid from), **Invest** (FD, RD, SIP, PPF, Sukanya Samriddhi, gold) |
 | More | Timeline, Documents, Document detail, Photo albums, Birthdays & events, Reminders, Backup & export, Settings |
+
+**Starting late is the normal case.** Once onboarding knows the date of birth and the schedule,
+it works out which vaccine groups and which typical milestones are already behind you, and offers
+to record them — each with an editable date, defaulted to when it was due. A newborn sees only the
+birth doses; a seven-month-old sees five vaccine groups and seven milestones. Both steps are
+skippable, and the whole thing is written in one transaction at the end.
 
 **Vaccination schedules** are generated from the baby's date of birth against one of four
 published schedules — IAP (India private), UIP (India government), WHO, or CDC. Changing the
@@ -83,6 +91,13 @@ app/src/main/java/com/kilkari/
 
 ### A few decisions worth knowing
 
+- **App icon.** Built from `design/icon-source.jpg` by `tools/make_icons.py` (needs Pillow).
+  The artwork is a finished square badge, so the adaptive foreground carries it at 85% of the
+  108dp canvas — measured against the Pixel launcher's mask with a ringed calibration icon, since
+  the documented 66dp "safe zone" is far smaller than what launchers actually reveal. Below that
+  it left a visible ring; above it, the gold sound waves clipped. The themed-icon layer is a
+  hand-drawn vector silhouette, as a photographic layer cannot be tinted.
+
 - **One ViewModel.** Kilkari is a single-baby surface with heavy cross-screen coupling, so
   `KilkariViewModel` holds shared state rather than splitting per screen.
 - **Icons.** The design names Material Symbols Rounded glyphs. `KIcons` maps those names onto
@@ -117,6 +132,7 @@ Nothing leaves the device unless you export it.
 - Growth percentile curves. The design shows "55th pct" copy; the app charts raw weights
   without WHO reference data.
 - Editing existing entries — most screens support add and delete, not edit.
+- Catch-up runs at onboarding only. There is no way to bulk-backfill later from Settings.
 - The fund assumes a single account. Multiple accounts, transfers between them, and reconciling
   against a bank statement are not modelled.
 - Investment values are whatever you last entered. There is no price feed, no XIRR, and no

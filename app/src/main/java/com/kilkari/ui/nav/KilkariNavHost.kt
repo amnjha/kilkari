@@ -35,6 +35,7 @@ import com.kilkari.ui.screens.OnboardingScreen
 import com.kilkari.ui.screens.PhotosScreen
 import com.kilkari.ui.screens.RemindersScreen
 import com.kilkari.ui.screens.SettingsScreen
+import com.kilkari.ui.screens.SplashScreen
 import com.kilkari.ui.screens.TeethScreen
 import com.kilkari.ui.screens.TimelineScreen
 import com.kilkari.ui.screens.TodayScreen
@@ -42,15 +43,25 @@ import com.kilkari.ui.screens.VaccineDetailScreen
 import com.kilkari.ui.screens.VaccinesScreen
 
 @Composable
-fun KilkariNavHost(repository: KilkariRepository) {
+fun KilkariNavHost(repository: KilkariRepository, onReady: () -> Unit = {}) {
     val vm: KilkariViewModel = viewModel(factory = KilkariViewModel.Factory(repository))
     val nav = rememberNavController()
 
+    val loaded by vm.loaded.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val baby by vm.baby.collectAsStateWithLifecycle()
     val toast by vm.toast.collectAsStateWithLifecycle()
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
+
+    // Release the system splash the moment the database answers, then let the Compose splash
+    // cover whatever is left of the first composition.
+    LaunchedEffect(loaded) { if (loaded) onReady() }
+
+    if (!loaded) {
+        SplashScreen()
+        return
+    }
 
     // Onboarding is a one-way door: once a baby exists we replace it in the back stack.
     LaunchedEffect(settings.onboarded, baby) {

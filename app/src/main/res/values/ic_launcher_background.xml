@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#4F46E5</color>
+    <!-- Coral sampled from the icon artwork's field, so any sliver the launcher mask
+         reveals beyond the badge reads as part of the icon. -->
+    <color name="ic_launcher_background">#E88A6E</color>
 </resources>
