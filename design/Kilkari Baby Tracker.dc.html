@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#f3f1fb;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#1e1b4b}a{color:#4f46e5}a:hover{color:#4338ca}*{box-sizing:border-box}input,button{font-family:inherit}::-webkit-scrollbar{width:0;height:0}@keyframes kk-pop{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes kk-pulse{0%,100%{opacity:1}50%{opacity:.4}}</style></helmet>
+<div style="display:flex;flex-wrap:wrap;gap:40px;padding:40px 44px;align-items:flex-start">
+
+<div style="flex:1 1 320px;max-width:420px;display:flex;flex-direction:column;gap:22px">
+  <div>
+    <div style="font:800 34px/1.05 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">Kilkari</div>
+    <div style="font-size:14px;color:#6b7280;margin-top:6px">Everything for Avika — an offline-first Android baby tracker. Interactive prototype, 16 screens.</div>
+  </div>
+  <div style="background:#fff;border:1px solid #e0e7ff;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5">
+    <div style="font-weight:700">Assumptions</div>
+    <div>· Single parent user, no account; data lives on-device with backup/export.</div>
+    <div>· Avika, girl, born 20 Aug 2026 — mockup date 15 Sep 2026 (3 wk 5 d).</div>
+    <div>· Vaccination schedule auto-generated from DOB; parent picks IAP (India private), UIP (India govt), WHO or CDC. Marking a dose done logs a life event and can post a medical expense.</div>
+    <div>· Photos stay in Google Photos; the app only stores album links.</div>
+    <div>· Documents are camera scans filed by date; export as PDF / share.</div>
+    <div>· Currency is a setting (₹ default); change it under More → Settings.</div>
+  </div>
+  <div style="background:#fff;border:1px solid #e0e7ff;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5">
+    <div style="font-weight:700">Design reasoning</div>
+    <div>· Five-tab bar: Today · Log · Health · Money · More. Vaccines/growth/teeth/meds/appointments cluster under Health; both expense types under Money.</div>
+    <div>· Quick logging is widget tiles showing the last entry time — the glanceable "when did she last feed?" is the most frequent question.</div>
+    <div>· Timeline (More) holds milestones, events and photo albums only; routine logs and money stay in their tabs.</div>
+    <div>· Warm, playful copy; indigo → fuchsia brand ramp, Bricolage Grotesque for display, Plus Jakarta Sans for UI.</div>
+  </div>
+  <div style="background:#fff;border:1px solid #e0e7ff;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px;font-size:13px">
+    <div style="font-weight:700;margin-bottom:4px">Jump to a screen</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      <sc-for list="{{ jumpLinks }}" as="j" hint-placeholder-count="16">
+        <button onClick="{{ j.go }}" style="border:1px solid #e0e7ff;background:#f5f3ff;color:#4338ca;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer">{{ j.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid #e0e7ff;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5">
+    <div style="font-weight:700">Try it</div>
+    <div>· Health → Vaccines → 6 weeks → <b>Mark all given</b>: adds a Money entry and a Timeline event.</div>
+    <div>· Log → tap Feed to log a feed; the tile updates.</div>
+    <div>· Money → + adds an expense; Settings changes currency everywhere.</div>
+    <div style="color:#6b7280">Next: real photo/scan assets, notification designs, onboarding (DOB + schedule picker), multi-baby support.</div>
+  </div>
+</div>
+
+<div style="flex:0 0 auto;display:flex;flex-direction:column;gap:14px;align-items:center">
+  <div style="display:flex;gap:6px;background:#fff;border:1px solid #e0e7ff;border-radius:999px;padding:4px">
+    <span style="font-size:12px;color:#6b7280;padding:6px 8px 6px 12px;font-weight:600">Today variant</span>
+    <button onClick="{{ setVarA }}" style="{{ varBtnA }}">A · Agenda</button>
+    <button onClick="{{ setVarB }}" style="{{ varBtnB }}">B · Hero</button>
+    <button onClick="{{ setVarC }}" style="{{ varBtnC }}">C · Checklist</button>
+  </div>
+
+<x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" hint-size="412px,892px">
+<div style="height:100%;display:flex;flex-direction:column;position:relative;background:#f7f6fd;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#1e1b4b;overflow:hidden">
+
+<!-- ============ TODAY ============ -->
+<sc-if value="{{ s.today }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;overflow:auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:14px">
+  <sc-if value="{{ varA }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px">
+      <div>
+        <div style="font-size:13px;color:#6b7280">Good morning, Aman</div>
+        <div style="font:800 26px/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">Avika is {{ ageText }}</div>
+      </div>
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#818cf8,#e879f9);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px">A</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:20px;padding:16px;color:#fff;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:600;opacity:.85;letter-spacing:.04em;text-transform:uppercase">Next up</span>
+        <span style="font-size:12px;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:999px">in {{ nextVac.inDays }} days</span>
+      </div>
+      <div style="font:700 20px/1.2 'Bricolage Grotesque',sans-serif">{{ nextVac.label }} vaccines · {{ nextVac.count }} doses</div>
+      <div style="font-size:13px;opacity:.9">{{ nextVac.dateText }} · {{ nextVac.names }}</div>
+      <button onClick="{{ nextVac.open }}" style="align-self:flex-start;background:#fff;color:#4f46e5;border:0;border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;margin-top:2px">See schedule</button>
+    </div>
+    <div style="font-weight:700;font-size:15px;margin-top:2px">Today</div>
+    <sc-for list="{{ todayItems }}" as="t" hint-placeholder-count="3">
+      <div style="display:flex;gap:12px;align-items:center;background:#fff;border-radius:14px;padding:12px 14px;border:1px solid #ece9fb">
+        <div style="width:40px;height:40px;border-radius:12px;background:{{ t.bg }};display:flex;align-items:center;justify-content:center;color:{{ t.fg }}"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">{{ t.icon }}</span></div>
+        <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px">{{ t.title }}</div><div style="font-size:12px;color:#6b7280">{{ t.sub }}</div></div>
+        <div style="font-size:12px;font-weight:600;color:#4f46e5">{{ t.time }}</div>
+      </div>
+    </sc-for>
+    <div style="font-weight:700;font-size:15px;margin-top:2px">Last logged</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <sc-for list="{{ miniTiles }}" as="m" hint-placeholder-count="3">
+        <button onClick="{{ m.open }}" style="text-align:left;background:#fff;border:1px solid #ece9fb;border-radius:14px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:4px">
+          <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:{{ m.fg }}">{{ m.icon }}</span>
+          <span style="font-size:12px;font-weight:700">{{ m.title }}</span>
+          <span style="font-size:11px;color:#6b7280">{{ m.ago }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ varB }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:-12px -16px 0;padding:22px 20px 24px;background:linear-gradient(160deg,#4338ca 0%,#7c3aed 55%,#c026d3 100%);color:#fff;border-radius:0 0 28px 28px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;font:800 26px 'Bricolage Grotesque',sans-serif">A</div>
+        <span style="font-family:'Material Symbols Rounded';font-size:24px;opacity:.9">notifications</span>
+      </div>
+      <div>
+        <div style="font:800 30px/1.05 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">Avika</div>
+        <div style="font-size:14px;opacity:.9;margin-top:4px">{{ ageText }} old · {{ dayCount }} days of you</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;background:rgba(255,255,255,.16);border-radius:14px;padding:10px 12px"><div style="font-size:11px;opacity:.85">Weight</div><div style="font-weight:700;font-size:16px">3.9 kg</div></div>
+        <div style="flex:1;background:rgba(255,255,255,.16);border-radius:14px;padding:10px 12px"><div style="font-size:11px;opacity:.85">Next vaccine</div><div style="font-weight:700;font-size:16px">{{ nextVac.inDays }} days</div></div>
+        <div style="flex:1;background:rgba(255,255,255,.16);border-radius:14px;padding:10px 12px"><div style="font-size:11px;opacity:.85">1st birthday</div><div style="font-weight:700;font-size:16px">{{ birthdayDays }} d</div></div>
+      </div>
+    </div>
+    <div style="font-weight:700;font-size:15px">Today</div>
+    <sc-for list="{{ todayItems }}" as="t" hint-placeholder-count="3">
+      <div style="display:flex;gap:12px;align-items:center;background:#fff;border-radius:14px;padding:12px 14px;border:1px solid #ece9fb">
+        <div style="width:40px;height:40px;border-radius:12px;background:{{ t.bg }};display:flex;align-items:center;justify-content:center;color:{{ t.fg }}"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">{{ t.icon }}</span></div>
+        <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px">{{ t.title }}</div><div style="font-size:12px;color:#6b7280">{{ t.sub }}</div></div>
+        <div style="font-size:12px;font-weight:600;color:#4f46e5">{{ t.time }}</div>
+      </div>
+    </sc-for>
+    <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700;font-size:15px">Latest moment</div><button onClick="{{ to.timeline }}" style="border:0;background:none;color:#4f46e5;font-weight:600;font-size:13px;cursor:pointer">Timeline</button></div>
+    <div style="background:#fff;border:1px solid #ece9fb;border-radius:16px;overflow:hidden">
+      <div style="height:120px;background:repeating-linear-gradient(135deg,#ede9fe 0 10px,#f5f3ff 10px 20px);display:flex;align-items:center;justify-content:center;font:12px ui-monospace,monospace;color:#6d28d9">photo · naming ceremony</div>
+      <div style="padding:12px 14px"><div style="font-weight:600;font-size:14px">Naming ceremony</div><div style="font-size:12px;color:#6b7280">1 Sep · Avika means "earth" 🌏</div></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ varC }}" hint-placeholder-val="{{ false }}">
+    <div style="padding-top:6px;display:flex;justify-content:space-between;align-items:flex-end">
+      <div>
+        <div style="font-size:13px;color:#6b7280">Tue, 15 Sep · day {{ dayCount }}</div>
+        <div style="font:800 26px/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">{{ checkDoneCount }} of {{ checkTotal }} done</div>
+      </div>
+      <div style="width:52px;height:52px;border-radius:50%;background:conic-gradient(#7c3aed {{ checkPct }}%,#e0e7ff 0);display:flex;align-items:center;justify-content:center"><div style="width:40px;height:40px;border-radius:50%;background:#f7f6fd;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#4f46e5">{{ checkPct }}%</div></div>
+    </div>
+    <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden">
+      <sc-for list="{{ checklist }}" as="c" hint-placeholder-count="5">
+        <button onClick="{{ c.toggle }}" style="width:100%;display:flex;gap:12px;align-items:center;padding:13px 14px;border:0;border-bottom:1px solid #f1eefb;background:none;text-align:left;cursor:pointer">
+          <span style="width:24px;height:24px;border-radius:50%;border:2px solid {{ c.ringColor }};background:{{ c.fill }};display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Material Symbols Rounded';font-size:16px;flex:none">{{ c.check }}</span>
+          <span style="flex:1;font-size:14px;font-weight:600;color:{{ c.textColor }};text-decoration:{{ c.deco }}">{{ c.title }}</span>
+          <span style="font-size:12px;color:#6b7280">{{ c.time }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="font-weight:700;font-size:15px">Coming up</div>
+    <button onClick="{{ nextVac.open }}" style="display:flex;gap:12px;align-items:center;background:#fdf4ff;border:1px solid #f5d0fe;border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:#a21caf">vaccines</span>
+      <span style="flex:1"><span style="display:block;font-weight:600;font-size:14px">{{ nextVac.label }} vaccines</span><span style="display:block;font-size:12px;color:#6b7280">{{ nextVac.dateText }} · {{ nextVac.count }} doses</span></span>
+      <span style="font-size:12px;font-weight:700;color:#a21caf">{{ nextVac.inDays }} d</span>
+    </button>
+    <button onClick="{{ to.appointments }}" style="display:flex;gap:12px;align-items:center;background:#fff;border:1px solid #ece9fb;border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:#4f46e5">stethoscope</span>
+      <span style="flex:1"><span style="display:block;font-weight:600;font-size:14px">Dr. Meera · 6-week check</span><span style="display:block;font-size:12px;color:#6b7280">Thu 1 Oct, 10:30 · Rainbow Children's</span></span>
+      <span style="font-size:12px;font-weight:700;color:#4f46e5">16 d</span>
+    </button>
+    <button onClick="{{ to.events }}" style="display:flex;gap:12px;align-items:center;background:#fff;border:1px solid #ece9fb;border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:#f59e0b">cake</span>
+      <span style="flex:1"><span style="display:block;font-weight:600;font-size:14px">Nani's birthday</span><span style="display:block;font-size:12px;color:#6b7280">Sun 27 Sep</span></span>
+      <span style="font-size:12px;font-weight:700;color:#f59e0b">12 d</span>
+    </button>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ============ LOG ============ -->
+<sc-if value="{{ s.log }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;overflow:auto;padding:18px 16px 24px;display:flex;flex-direction:column;gap:14px">
+  <div style="font:800 26px/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">Log</div>
+  <div style="font-size:13px;color:#6b7280;margin-top:-8px">Tap a tile to add an entry.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <sc-for list="{{ tiles }}" as="m" hint-placeholder-count="6">
+      <button onClick="{{ m.open }}" style="text-align:left;background:{{ m.bg }};border:0;border-radius:20px;padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:14px;min-height:132px">
+        <span style="display:flex;justify-content:space-between;width:100%;align-items:center"><span style="font-family:'Material Symbols Rounded';font-size:26px;line-height:1;color:{{ m.fg }}">{{ m.icon }}</span><span style="font-size:11px;font-weight:700;color:{{ m.fg }};background:rgba(255,255,255,.7);padding:3px 8px;border-radius:999px">{{ m.ago }}</span></span>
+        <span><span style="display:block;font-size:16px;font-weight:700">{{ m.title }}</span><span style="display:block;font-size:12px;color:#4b5563;margin-top:2px">{{ m.last }}</span></span>
+      </button>
+    </sc-for>
+  </div>
+  <div style="font-weight:700;font-size:15px;margin-top:4px">Today's entries</div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden">
+    <sc-for list="{{ logEntries }}" as="e" hint-placeholder-count="4">
+      <div style="display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid #f1eefb">
+        <span style="font-family:'Material Symbols Rounded';font-size:20px;color:{{ e.fg }}">{{ e.icon }}</span>
+        <span style="flex:1;font-size:14px">{{ e.text }}</span>
+        <span style="font-size:12px;color:#6b7280">{{ e.time }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ HEALTH HUB ============ -->
+<sc-if value="{{ s.health }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;overflow:auto;padding:18px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="font:800 26px/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">Health</div>
+  <button onClick="{{ to.vaccines }}" style="text-align:left;background:linear-gradient(135deg,#7c3aed,#c026d3);color:#fff;border:0;border-radius:20px;padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:8px">
+    <span style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Material Symbols Rounded';font-size:26px">vaccines</span><span style="font-size:12px;background:rgba(255,255,255,.2);padding:3px 9px;border-radius:999px">{{ scheduleName }}</span></span>
+    <span style="font:700 18px 'Bricolage Grotesque',sans-serif">Vaccinations</span>
+    <span style="font-size:13px;opacity:.9">{{ vacDoneCount }} given · next {{ nextVac.label }} on {{ nextVac.dateText }}</span>
+    <span style="height:6px;border-radius:3px;background:rgba(255,255,255,.25);overflow:hidden;display:block"><span style="display:block;height:100%;width:{{ vacPct }}%;background:#fff"></span></span>
+  </button>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <button onClick="{{ to.growth }}" style="text-align:left;background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:8px">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:#10b981">monitor_weight</span>
+      <span style="font-weight:700;font-size:15px">Growth</span>
+      <span style="font-size:12px;color:#6b7280">3.9 kg · 52 cm · 36 cm</span>
+    </button>
+    <button onClick="{{ to.teeth }}" style="text-align:left;background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:8px">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:#0ea5e9">dentistry</span>
+      <span style="font-weight:700;font-size:15px">Teeth</span>
+      <span style="font-size:12px;color:#6b7280">0 of 20 · first ~6 mo</span>
+    </button>
+    <button onClick="{{ to.meds }}" style="text-align:left;background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:8px">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:#f43f5e">pill</span>
+      <span style="font-weight:700;font-size:15px">Medications</span>
+      <span style="font-size:12px;color:#6b7280">1 active · Vitamin D3</span>
+    </button>
+    <button onClick="{{ to.appointments }}" style="text-align:left;background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:8px">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:#4f46e5">stethoscope</span>
+      <span style="font-weight:700;font-size:15px">Appointments</span>
+      <span style="font-size:12px;color:#6b7280">Next: Thu 1 Oct 10:30</span>
+    </button>
+  </div>
+  <div style="font-weight:700;font-size:15px;margin-top:4px">Recent</div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden">
+    <div style="display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid #f1eefb"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:#10b981">monitor_weight</span><span style="flex:1;font-size:14px">Weight 3.9 kg (+400 g)</span><span style="font-size:12px;color:#6b7280">12 Sep</span></div>
+    <div style="display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid #f1eefb"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:#f43f5e">pill</span><span style="flex:1;font-size:14px">Vitamin D3 started, 1 drop daily</span><span style="font-size:12px;color:#6b7280">22 Aug</span></div>
+    <div style="display:flex;gap:12px;align-items:center;padding:12px 14px"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:#a21caf">vaccines</span><span style="flex:1;font-size:14px">Birth doses given · BCG, OPV-0, Hep B</span><span style="font-size:12px;color:#6b7280">20 Aug</span></div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ VACCINES ============ -->
+<sc-if value="{{ s.vaccines }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.health }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Vaccinations</div>
+  <button onClick="{{ sheet.schedule }}" style="height:36px;border:1px solid #e0e7ff;background:#fff;border-radius:999px;padding:0 12px;font-size:12px;font-weight:700;color:#4338ca;cursor:pointer;display:flex;align-items:center;gap:4px">{{ scheduleName }}<span style="font-family:'Material Symbols Rounded';font-size:18px">expand_more</span></button>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:10px">
+  <div style="font-size:12px;color:#6b7280">Generated from DOB 20 Aug 2026 · {{ vacDoneCount }} given</div>
+  <sc-for list="{{ vacGroups }}" as="g" hint-placeholder-count="6">
+    <button onClick="{{ g.open }}" style="text-align:left;background:#fff;border:1px solid {{ g.border }};border-radius:18px;padding:14px;cursor:pointer;display:flex;gap:12px;align-items:flex-start;width:100%">
+      <span style="width:40px;height:40px;border-radius:12px;background:{{ g.bg }};color:{{ g.fg }};display:flex;align-items:center;justify-content:center;flex:none;font-family:'Material Symbols Rounded';font-size:22px">{{ g.icon }}</span>
+      <span style="flex:1;min-width:0">
+        <span style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:700;font-size:15px">{{ g.label }}</span><span style="font-size:11px;font-weight:700;color:{{ g.fg }};background:{{ g.bg }};padding:3px 8px;border-radius:999px">{{ g.status }}</span></span>
+        <span style="display:block;font-size:12px;color:#6b7280;margin-top:2px">{{ g.dateText }}</span>
+        <span style="display:block;font-size:13px;margin-top:6px;line-height:1.4">{{ g.names }}</span>
+      </span>
+    </button>
+  </sc-for>
+</div>
+</sc-if>
+
+<!-- ============ VACCINE GROUP DETAIL ============ -->
+<sc-if value="{{ s.vacDetail }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.vaccines }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">{{ vg.label }} vaccines</div>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:14px;display:flex;gap:14px">
+    <div style="flex:1"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em">Due</div><div style="font-weight:700;font-size:15px">{{ vg.dateText }}</div></div>
+    <div style="flex:1"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em">Status</div><div style="font-weight:700;font-size:15px;color:{{ vg.fg }}">{{ vg.status }}</div></div>
+    <div style="flex:1"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em">Doses</div><div style="font-weight:700;font-size:15px">{{ vg.doneCount }} / {{ vg.count }}</div></div>
+  </div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden">
+    <sc-for list="{{ vg.items }}" as="v" hint-placeholder-count="4">
+      <button onClick="{{ v.toggle }}" style="width:100%;display:flex;gap:12px;align-items:center;padding:13px 14px;border:0;border-bottom:1px solid #f1eefb;background:none;text-align:left;cursor:pointer">
+        <span style="width:24px;height:24px;border-radius:8px;border:2px solid {{ v.ring }};background:{{ v.fill }};display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Material Symbols Rounded';font-size:16px;flex:none">{{ v.check }}</span>
+        <span style="flex:1"><span style="display:block;font-size:14px;font-weight:600">{{ v.name }}</span><span style="display:block;font-size:12px;color:#6b7280">{{ v.desc }}</span></span>
+      </button>
+    </sc-for>
+  </div>
+  <sc-if value="{{ vg.hasCost }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;gap:12px;align-items:center;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:14px;padding:12px 14px"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:#059669">receipt_long</span><span style="flex:1;font-size:13px">Posted to Money → Medical</span><span style="font-weight:700;font-size:14px;color:#059669">{{ vg.costText }}</span></div>
+  </sc-if>
+  <div style="font-size:12px;color:#6b7280;line-height:1.5">Marking as given adds a "Vaccination" entry to Avika's timeline. Cost is optional and lands under Medical expenses.</div>
+</div>
+<sc-if value="{{ vg.canMark }}" hint-placeholder-val="{{ true }}">
+<div style="padding:10px 16px 14px;background:linear-gradient(180deg,rgba(247,246,253,0),#f7f6fd 40%)">
+  <button onClick="{{ sheet.markVaccine }}" style="width:100%;height:50px;border:0;border-radius:999px;background:#4f46e5;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Mark all given</button>
+</div>
+</sc-if>
+</sc-if>
+
+<!-- ============ GROWTH ============ -->
+<sc-if value="{{ s.growth }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.health }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Growth</div>
+  <button onClick="{{ sheet.generic }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#4f46e5"><span style="font-family:'Material Symbols Rounded';font-size:26px">add</span></button>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="display:flex;gap:8px">
+    <div style="flex:1;background:#fff;border:1px solid #ece9fb;border-radius:16px;padding:12px"><div style="font-size:11px;color:#6b7280">Weight</div><div style="font:700 20px 'Bricolage Grotesque',sans-serif">3.9 kg</div><div style="font-size:11px;color:#059669;font-weight:600">+400 g · 55th pct</div></div>
+    <div style="flex:1;background:#fff;border:1px solid #ece9fb;border-radius:16px;padding:12px"><div style="font-size:11px;color:#6b7280">Length</div><div style="font:700 20px 'Bricolage Grotesque',sans-serif">52 cm</div><div style="font-size:11px;color:#059669;font-weight:600">+2 cm · 60th</div></div>
+    <div style="flex:1;background:#fff;border:1px solid #ece9fb;border-radius:16px;padding:12px"><div style="font-size:11px;color:#6b7280">Head</div><div style="font:700 20px 'Bricolage Grotesque',sans-serif">36 cm</div><div style="font-size:11px;color:#6b7280;font-weight:600">50th</div></div>
+  </div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:700;font-size:14px">Weight · first 4 weeks</span><span style="font-size:11px;color:#6b7280">WHO girls · kg</span></div>
+    <div style="display:flex;align-items:flex-end;gap:10px;height:120px;padding-top:8px">
+      <sc-for list="{{ weightBars }}" as="b" hint-placeholder-count="4">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
+          <span style="font-size:11px;font-weight:700;color:#4f46e5">{{ b.val }}</span>
+          <div style="width:100%;height:{{ b.h }}%;border-radius:8px 8px 4px 4px;background:linear-gradient(180deg,#818cf8,#4f46e5)"></div>
+          <span style="font-size:11px;color:#6b7280">{{ b.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="font-size:12px;color:#6b7280;line-height:1.5;padding:0 2px">Avika is tracking along the 55th percentile — right where she was at birth. 🎈</div>
+</div>
+</sc-if>
+
+<!-- ============ TEETH ============ -->
+<sc-if value="{{ s.teeth }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.health }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Teeth</div>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="font-size:13px;color:#6b7280">Tap a tooth when it appears. Typical order is shown.</div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:18px 14px;display:flex;flex-direction:column;gap:14px">
+    <div style="font-size:11px;color:#6b7280;text-align:center;text-transform:uppercase;letter-spacing:.06em">Upper</div>
+    <div style="display:flex;justify-content:center;gap:6px">
+      <sc-for list="{{ upperTeeth }}" as="t" hint-placeholder-count="10">
+        <button onClick="{{ t.toggle }}" style="width:28px;height:40px;border-radius:8px 8px 14px 14px;border:2px solid {{ t.border }};background:{{ t.fill }};cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;font-size:9px;font-weight:700;color:{{ t.fg }}">{{ t.m }}</button>
+      </sc-for>
+    </div>
+    <div style="display:flex;justify-content:center;gap:6px">
+      <sc-for list="{{ lowerTeeth }}" as="t" hint-placeholder-count="10">
+        <button onClick="{{ t.toggle }}" style="width:28px;height:40px;border-radius:14px 14px 8px 8px;border:2px solid {{ t.border }};background:{{ t.fill }};cursor:pointer;display:flex;align-items:flex-start;justify-content:center;padding-top:3px;font-size:9px;font-weight:700;color:{{ t.fg }}">{{ t.m }}</button>
+      </sc-for>
+    </div>
+    <div style="font-size:11px;color:#6b7280;text-align:center;text-transform:uppercase;letter-spacing:.06em">Lower</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <div style="flex:1;background:#fff;border:1px solid #ece9fb;border-radius:16px;padding:12px"><div style="font-size:11px;color:#6b7280">Erupted</div><div style="font:700 20px 'Bricolage Grotesque',sans-serif">{{ teethCount }} / 20</div></div>
+    <div style="flex:1;background:#fff;border:1px solid #ece9fb;border-radius:16px;padding:12px"><div style="font-size:11px;color:#6b7280">Usually first</div><div style="font:700 20px 'Bricolage Grotesque',sans-serif">Lower central · 6–10 mo</div></div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ MEDS ============ -->
+<sc-if value="{{ s.meds }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.health }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Medications</div>
+  <button onClick="{{ sheet.generic }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#4f46e5"><span style="font-family:'Material Symbols Rounded';font-size:26px">add</span></button>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="font-weight:700;font-size:15px">Active</div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;gap:12px;align-items:center"><span style="width:40px;height:40px;border-radius:12px;background:#ffe4e6;color:#e11d48;display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:22px">pill</span><span style="flex:1"><span style="display:block;font-weight:700;font-size:15px">Vitamin D3 drops</span><span style="display:block;font-size:12px;color:#6b7280">1 drop (400 IU) · daily 8:00 pm · Dr. Meera</span></span></div>
+    <div style="display:flex;gap:4px">
+      <sc-for list="{{ medWeek }}" as="d" hint-placeholder-count="7">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;height:26px;border-radius:8px;background:{{ d.bg }};display:flex;align-items:center;justify-content:center;color:{{ d.fg }};font-family:'Material Symbols Rounded';font-size:16px">{{ d.icon }}</div><span style="font-size:10px;color:#6b7280">{{ d.day }}</span></div>
+      </sc-for>
+    </div>
+    <button onClick="{{ toastMed }}" style="height:40px;border:0;border-radius:999px;background:#eef2ff;color:#4338ca;font-weight:700;font-size:13px;cursor:pointer">Mark today's dose taken</button>
+  </div>
+  <div style="font-weight:700;font-size:15px">Past</div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:12px 14px;display:flex;gap:12px;align-items:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:#6b7280">pill</span><span style="flex:1"><span style="display:block;font-size:14px;font-weight:600">Saline nasal drops</span><span style="display:block;font-size:12px;color:#6b7280">2–5 Sep · as needed</span></span></div>
+</div>
+</sc-if>
+
+<!-- ============ APPOINTMENTS ============ -->
+<sc-if value="{{ s.appointments }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.health }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Appointments</div>
+  <button onClick="{{ sheet.generic }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#4f46e5"><span style="font-family:'Material Symbols Rounded';font-size:26px">add</span></button>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="font-weight:700;font-size:15px">Upcoming</div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;gap:12px"><div style="width:48px;text-align:center;background:#eef2ff;border-radius:12px;padding:6px 0"><div style="font-size:10px;color:#4338ca;font-weight:700">OCT</div><div style="font:700 20px 'Bricolage Grotesque',sans-serif;color:#4338ca">1</div></div><div style="flex:1"><div style="font-weight:700;font-size:15px">6-week check + vaccines</div><div style="font-size:12px;color:#6b7280">Thu 10:30 · Dr. Meera Iyer, Pediatrics</div><div style="font-size:12px;color:#6b7280">Rainbow Children's, Marathahalli</div></div></div>
+    <div style="display:flex;gap:8px"><button style="flex:1;height:38px;border:1px solid #e0e7ff;border-radius:999px;background:#fff;font-weight:600;font-size:13px;color:#4338ca;cursor:pointer">Reminder · 1 day before</button><button style="height:38px;border:0;border-radius:999px;background:#eef2ff;color:#4338ca;padding:0 14px;font-weight:600;font-size:13px;cursor:pointer">Map</button></div>
+  </div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:14px;display:flex;gap:12px"><div style="width:48px;text-align:center;background:#f5f3ff;border-radius:12px;padding:6px 0"><div style="font-size:10px;color:#6d28d9;font-weight:700">OCT</div><div style="font:700 20px 'Bricolage Grotesque',sans-serif;color:#6d28d9">29</div></div><div style="flex:1"><div style="font-weight:700;font-size:15px">10-week vaccines</div><div style="font-size:12px;color:#6b7280">Thu · Dr. Meera Iyer</div></div></div>
+  <div style="font-weight:700;font-size:15px">Past</div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:14px;display:flex;gap:12px;opacity:.75"><div style="width:48px;text-align:center;background:#f1f5f9;border-radius:12px;padding:6px 0"><div style="font-size:10px;color:#64748b;font-weight:700">SEP</div><div style="font:700 20px 'Bricolage Grotesque',sans-serif;color:#64748b">3</div></div><div style="flex:1"><div style="font-weight:700;font-size:15px">2-week check</div><div style="font-size:12px;color:#6b7280">Weight 3.5 kg · all good · Dr. Meera</div></div></div>
+</div>
+</sc-if>
+
+<!-- ============ MONEY ============ -->
+<sc-if value="{{ s.money }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;overflow:auto;padding:18px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:800 26px/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">Money</div><span style="font-size:12px;color:#6b7280">September</span></div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div><div style="font-size:12px;color:#6b7280">Spent this month</div><div style="font:800 32px/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">{{ totalText }}</div></div>
+    <div style="height:10px;border-radius:5px;background:#eef2ff;overflow:hidden;display:flex"><div style="width:{{ medPct }}%;background:#7c3aed"></div><div style="flex:1;background:#38bdf8"></div></div>
+    <div style="display:flex;gap:16px;font-size:13px">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#7c3aed"></span>Medical <b>{{ medText }}</b></span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#38bdf8"></span>General <b>{{ genText }}</b></span>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button onClick="{{ setMoneyAll }}" style="{{ moneyChipAll }}">All</button>
+    <button onClick="{{ setMoneyMed }}" style="{{ moneyChipMed }}">Medical</button>
+    <button onClick="{{ setMoneyGen }}" style="{{ moneyChipGen }}">General</button>
+  </div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden">
+    <sc-for list="{{ expenseRows }}" as="x" hint-placeholder-count="5">
+      <div style="display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid #f1eefb">
+        <span style="width:36px;height:36px;border-radius:10px;background:{{ x.bg }};color:{{ x.fg }};display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:20px;flex:none">{{ x.icon }}</span>
+        <span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:600">{{ x.title }}</span><span style="display:block;font-size:12px;color:#6b7280">{{ x.sub }}</span></span>
+        <span style="font-weight:700;font-size:14px">{{ x.amtText }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+<button onClick="{{ sheet.expense }}" style="position:absolute;right:16px;bottom:88px;width:56px;height:56px;border-radius:18px;border:0;background:#4f46e5;color:#fff;box-shadow:0 8px 20px rgba(79,70,229,.35);cursor:pointer;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:28px">add</span></button>
+</sc-if>
+
+<!-- ============ MORE ============ -->
+<sc-if value="{{ s.more }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;overflow:auto;padding:18px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="font:800 26px/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">More</div>
+  <div style="display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,#eef2ff,#fdf4ff);border:1px solid #e0e7ff;border-radius:18px;padding:14px">
+    <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#818cf8,#e879f9);display:flex;align-items:center;justify-content:center;color:#fff;font:800 20px 'Bricolage Grotesque',sans-serif">A</div>
+    <div style="flex:1"><div style="font-weight:700;font-size:16px">Avika</div><div style="font-size:12px;color:#6b7280">Born 20 Aug 2026 · {{ ageText }}</div></div>
+    <span style="font-family:'Material Symbols Rounded';font-size:22px;color:#6b7280">edit</span>
+  </div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden">
+    <sc-for list="{{ moreItems }}" as="m" hint-placeholder-count="7">
+      <button onClick="{{ m.go }}" style="width:100%;display:flex;gap:12px;align-items:center;padding:13px 14px;border:0;border-bottom:1px solid #f1eefb;background:none;text-align:left;cursor:pointer">
+        <span style="width:36px;height:36px;border-radius:10px;background:{{ m.bg }};color:{{ m.fg }};display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:20px;flex:none">{{ m.icon }}</span>
+        <span style="flex:1"><span style="display:block;font-size:14px;font-weight:600;color:#1e1b4b">{{ m.title }}</span><span style="display:block;font-size:12px;color:#6b7280">{{ m.sub }}</span></span>
+        <span style="font-family:'Material Symbols Rounded';font-size:20px;color:#a5b4fc">chevron_right</span>
+      </button>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ TIMELINE ============ -->
+<sc-if value="{{ s.timeline }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.more }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Avika's timeline</div>
+  <button onClick="{{ sheet.milestone }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#4f46e5"><span style="font-family:'Material Symbols Rounded';font-size:26px">add</span></button>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px">
+  <div style="display:flex;flex-direction:column">
+    <sc-for list="{{ timeline }}" as="e" hint-placeholder-count="6">
+      <div style="display:flex;gap:12px">
+        <div style="width:36px;display:flex;flex-direction:column;align-items:center"><span style="width:32px;height:32px;border-radius:50%;background:{{ e.bg }};color:{{ e.fg }};display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:18px;flex:none">{{ e.icon }}</span><span style="flex:1;width:2px;background:#e0e7ff;margin:4px 0"></span></div>
+        <div style="flex:1;padding-bottom:16px">
+          <div style="font-size:11px;color:#6b7280;font-weight:600;margin-top:6px">{{ e.date }} · {{ e.age }}</div>
+          <div style="font-weight:700;font-size:15px;margin-top:2px">{{ e.title }}</div>
+          <div style="font-size:13px;color:#4b5563;margin-top:2px;line-height:1.4">{{ e.sub }}</div>
+          <sc-if value="{{ e.photo }}" hint-placeholder-val="{{ false }}"><div style="margin-top:8px;height:96px;border-radius:12px;background:repeating-linear-gradient(135deg,#ede9fe 0 10px,#f5f3ff 10px 20px);display:flex;align-items:center;justify-content:center;font:11px ui-monospace,monospace;color:#6d28d9">Google Photos album</div></sc-if>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ DOCUMENTS ============ -->
+<sc-if value="{{ s.documents }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.more }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Documents</div>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="font-size:13px;color:#6b7280">Scanned and stored on this phone, filed by date.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <sc-for list="{{ docs }}" as="d" hint-placeholder-count="4">
+      <button onClick="{{ d.open }}" style="text-align:left;background:#fff;border:1px solid #ece9fb;border-radius:16px;overflow:hidden;cursor:pointer;padding:0">
+        <span style="display:flex;height:110px;background:repeating-linear-gradient(135deg,{{ d.c1 }} 0 8px,{{ d.c2 }} 8px 16px);align-items:center;justify-content:center;font:10px ui-monospace,monospace;color:#4b5563;padding:8px;text-align:center">{{ d.scan }}</span>
+        <span style="display:block;padding:10px 12px"><span style="display:block;font-size:13px;font-weight:700;line-height:1.3">{{ d.title }}</span><span style="display:block;font-size:11px;color:#6b7280;margin-top:2px">{{ d.date }} · {{ d.pages }}</span></span>
+      </button>
+    </sc-for>
+  </div>
+</div>
+<button onClick="{{ toastScan }}" style="position:absolute;right:16px;bottom:88px;height:56px;padding:0 20px 0 16px;border-radius:18px;border:0;background:#4f46e5;color:#fff;box-shadow:0 8px 20px rgba(79,70,229,.35);cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px"><span style="font-family:'Material Symbols Rounded';font-size:24px">document_scanner</span>Scan</button>
+</sc-if>
+
+<!-- ============ DOCUMENT DETAIL ============ -->
+<sc-if value="{{ s.docDetail }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.documents }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 18px 'Bricolage Grotesque',sans-serif">{{ doc.title }}</div>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="height:380px;border-radius:16px;background:repeating-linear-gradient(135deg,{{ doc.c1 }} 0 10px,{{ doc.c2 }} 10px 20px);border:1px solid #ece9fb;display:flex;align-items:center;justify-content:center;font:12px ui-monospace,monospace;color:#4b5563">{{ doc.scan }} · page 1</div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:13px">
+    <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">Filed</span><b>{{ doc.date }}</b></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">Pages</span><b>{{ doc.pages }}</b></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">Tags</span><b>{{ doc.tags }}</b></div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button onClick="{{ toastExport }}" style="flex:1;height:46px;border:1px solid #e0e7ff;border-radius:999px;background:#fff;color:#4338ca;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px">picture_as_pdf</span>Export PDF</button>
+    <button onClick="{{ toastShare }}" style="flex:1;height:46px;border:0;border-radius:999px;background:#4f46e5;color:#fff;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px">share</span>Share</button>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ PHOTOS ============ -->
+<sc-if value="{{ s.photos }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.more }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Photo albums</div>
+  <button onClick="{{ sheet.generic }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#4f46e5"><span style="font-family:'Material Symbols Rounded';font-size:26px">add_link</span></button>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="font-size:13px;color:#6b7280">Albums live in Google Photos — Kilkari just keeps the links.</div>
+  <sc-for list="{{ albums }}" as="a" hint-placeholder-count="3">
+    <button onClick="{{ toastOpenAlbum }}" style="text-align:left;background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden;cursor:pointer;padding:0;display:flex">
+      <span style="width:110px;height:90px;flex:none;background:repeating-linear-gradient(135deg,{{ a.c1 }} 0 8px,{{ a.c2 }} 8px 16px);display:flex;align-items:center;justify-content:center;font:10px ui-monospace,monospace;color:#4b5563">cover</span>
+      <span style="flex:1;padding:12px 14px;display:flex;flex-direction:column;justify-content:center"><span style="font-weight:700;font-size:15px">{{ a.title }}</span><span style="font-size:12px;color:#6b7280;margin-top:2px">{{ a.sub }}</span><span style="font-size:12px;color:#4f46e5;font-weight:600;margin-top:6px;display:flex;align-items:center;gap:4px"><span style="font-family:'Material Symbols Rounded';font-size:16px">open_in_new</span>Open in Google Photos</span></span>
+    </button>
+  </sc-for>
+</div>
+</sc-if>
+
+<!-- ============ EVENTS ============ -->
+<sc-if value="{{ s.events }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.more }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Birthdays &amp; events</div>
+  <button onClick="{{ sheet.generic }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#4f46e5"><span style="font-family:'Material Symbols Rounded';font-size:26px">add</span></button>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="background:linear-gradient(135deg,#f59e0b,#fb7185);border-radius:20px;padding:18px;color:#fff;display:flex;flex-direction:column;gap:4px">
+    <span style="font-family:'Material Symbols Rounded';font-size:28px">cake</span>
+    <div style="font:800 40px/1 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em;margin-top:6px">{{ birthdayDays }} days</div>
+    <div style="font-size:14px;font-weight:600">to Avika's first birthday · 20 Aug 2027</div>
+  </div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden">
+    <sc-for list="{{ events }}" as="e" hint-placeholder-count="5">
+      <div style="display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid #f1eefb">
+        <span style="width:36px;height:36px;border-radius:10px;background:{{ e.bg }};color:{{ e.fg }};display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:20px;flex:none">{{ e.icon }}</span>
+        <span style="flex:1"><span style="display:block;font-size:14px;font-weight:600">{{ e.title }}</span><span style="display:block;font-size:12px;color:#6b7280">{{ e.sub }}</span></span>
+        <span style="font-size:12px;font-weight:700;color:{{ e.fg }}">{{ e.when }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ REMINDERS ============ -->
+<sc-if value="{{ s.reminders }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.more }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Reminders</div>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden">
+    <sc-for list="{{ reminders }}" as="r" hint-placeholder-count="5">
+      <button onClick="{{ r.toggle }}" style="width:100%;display:flex;gap:12px;align-items:center;padding:13px 14px;border:0;border-bottom:1px solid #f1eefb;background:none;text-align:left;cursor:pointer">
+        <span style="flex:1"><span style="display:block;font-size:14px;font-weight:600;color:#1e1b4b">{{ r.title }}</span><span style="display:block;font-size:12px;color:#6b7280">{{ r.sub }}</span></span>
+        <span style="width:44px;height:26px;border-radius:13px;background:{{ r.trackBg }};position:relative;flex:none;transition:background .2s"><span style="position:absolute;top:3px;left:{{ r.knobLeft }};width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s"></span></span>
+      </button>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ BACKUP ============ -->
+<sc-if value="{{ s.backup }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.more }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Backup &amp; export</div>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:18px;padding:14px;display:flex;gap:12px;align-items:center"><span style="font-family:'Material Symbols Rounded';font-size:26px;color:#059669">cloud_done</span><span style="flex:1"><span style="display:block;font-weight:700;font-size:14px">Everything is on this phone</span><span style="display:block;font-size:12px;color:#4b5563">No account needed. Last backup file: today 07:12 · 41 MB</span></span></div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden">
+    <button onClick="{{ toastBackup }}" style="width:100%;display:flex;gap:12px;align-items:center;padding:13px 14px;border:0;border-bottom:1px solid #f1eefb;background:none;text-align:left;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:#4f46e5">backup</span><span style="flex:1"><span style="display:block;font-size:14px;font-weight:600;color:#1e1b4b">Back up now</span><span style="display:block;font-size:12px;color:#6b7280">Encrypted .kilkari file → Drive or local folder</span></span></button>
+    <button onClick="{{ toastExport }}" style="width:100%;display:flex;gap:12px;align-items:center;padding:13px 14px;border:0;border-bottom:1px solid #f1eefb;background:none;text-align:left;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:#4f46e5">table_view</span><span style="flex:1"><span style="display:block;font-size:14px;font-weight:600;color:#1e1b4b">Export data as CSV</span><span style="display:block;font-size:12px;color:#6b7280">Logs, vaccines, expenses, events</span></span></button>
+    <button onClick="{{ toastExport }}" style="width:100%;display:flex;gap:12px;align-items:center;padding:13px 14px;border:0;border-bottom:1px solid #f1eefb;background:none;text-align:left;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:#4f46e5">picture_as_pdf</span><span style="flex:1"><span style="display:block;font-size:14px;font-weight:600;color:#1e1b4b">Vaccination record PDF</span><span style="display:block;font-size:12px;color:#6b7280">Share with school or clinic</span></span></button>
+    <button style="width:100%;display:flex;gap:12px;align-items:center;padding:13px 14px;border:0;background:none;text-align:left;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:#4f46e5">restore</span><span style="flex:1"><span style="display:block;font-size:14px;font-weight:600;color:#1e1b4b">Restore from backup</span></span></button>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:13px 14px"><span><span style="display:block;font-size:14px;font-weight:600">Auto-backup weekly</span><span style="display:block;font-size:12px;color:#6b7280">Sundays, on Wi-Fi</span></span><span style="width:44px;height:26px;border-radius:13px;background:#4f46e5;position:relative"><span style="position:absolute;top:3px;left:21px;width:20px;height:20px;border-radius:50%;background:#fff"></span></span></div>
+</div>
+</sc-if>
+
+<!-- ============ SETTINGS ============ -->
+<sc-if value="{{ s.settings }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:8px 8px 0">
+  <button onClick="{{ to.more }}" style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:#1e1b4b"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></button>
+  <div style="flex:1;font:700 20px 'Bricolage Grotesque',sans-serif">Settings</div>
+</div>
+<div style="flex:1;overflow:auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px">
+  <div style="font-weight:700;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Currency</div>
+  <div style="display:flex;gap:6px">
+    <button onClick="{{ setCurInr }}" style="{{ curChipInr }}">₹ INR</button>
+    <button onClick="{{ setCurUsd }}" style="{{ curChipUsd }}">$ USD</button>
+    <button onClick="{{ setCurEur }}" style="{{ curChipEur }}">€ EUR</button>
+    <button onClick="{{ setCurGbp }}" style="{{ curChipGbp }}">£ GBP</button>
+  </div>
+  <div style="font-weight:700;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-top:4px">Vaccination schedule</div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;overflow:hidden">
+    <sc-for list="{{ scheduleOptions }}" as="o" hint-placeholder-count="4">
+      <button onClick="{{ o.pick }}" style="width:100%;display:flex;gap:12px;align-items:center;padding:13px 14px;border:0;border-bottom:1px solid #f1eefb;background:none;text-align:left;cursor:pointer">
+        <span style="flex:1"><span style="display:block;font-size:14px;font-weight:600;color:#1e1b4b">{{ o.name }}</span><span style="display:block;font-size:12px;color:#6b7280">{{ o.desc }}</span></span>
+        <span style="width:22px;height:22px;border-radius:50%;border:2px solid {{ o.ring }};display:flex;align-items:center;justify-content:center"><span style="width:12px;height:12px;border-radius:50%;background:{{ o.dot }}"></span></span>
+      </button>
+    </sc-for>
+  </div>
+  <div style="font-weight:700;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-top:4px">Units</div>
+  <div style="background:#fff;border:1px solid #ece9fb;border-radius:18px;padding:13px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:600">Weight &amp; length</span><span style="font-size:13px;color:#4f46e5;font-weight:700">kg · cm</span></div>
+  <div style="font-size:12px;color:#6b7280;line-height:1.5">Kilkari works fully offline. Nothing leaves your phone unless you back up or share.</div>
+</div>
+</sc-if>
+
+<!-- ============ BOTTOM NAV ============ -->
+<sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+<div style="height:76px;background:#fff;border-top:1px solid #ece9fb;display:flex;align-items:stretch;padding:6px 4px 4px;flex:none">
+  <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
+    <button onClick="{{ n.go }}" style="flex:1;border:0;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:{{ n.color }}">
+      <span style="width:56px;height:30px;border-radius:15px;background:{{ n.pill }};display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:22px">{{ n.icon }}</span>
+      <span style="font-size:11px;font-weight:{{ n.weight }}">{{ n.label }}</span>
+    </button>
+  </sc-for>
+</div>
+</sc-if>
+
+<!-- ============ SHEETS ============ -->
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(30,27,75,.45);z-index:10"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 20px 24px;z-index:11;animation:kk-pop .25s ease-out;display:flex;flex-direction:column;gap:14px;max-height:88%;overflow:auto">
+  <div style="width:36px;height:4px;border-radius:2px;background:#cbd5e1;margin:0 auto"></div>
+
+  <sc-if value="{{ sh.feed }}" hint-placeholder-val="{{ false }}">
+    <div style="font:700 20px 'Bricolage Grotesque',sans-serif">Log a feed</div>
+    <div style="display:flex;background:#f5f3ff;border-radius:999px;padding:4px;gap:4px">
+      <button onClick="{{ setFeedBreast }}" style="{{ feedTabBreast }}">Breast</button>
+      <button onClick="{{ setFeedBottle }}" style="{{ feedTabBottle }}">Bottle</button>
+      <button onClick="{{ setFeedSolid }}" style="{{ feedTabSolid }}">Solids</button>
+    </div>
+    <sc-if value="{{ feedIsBreast }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:8px">
+        <button onClick="{{ setSideL }}" style="{{ sideBtnL }}">Left</button>
+        <button onClick="{{ setSideR }}" style="{{ sideBtnR }}">Right</button>
+      </div>
+    </sc-if>
+    <div style="display:flex;align-items:center;justify-content:space-between;background:#f7f6fd;border-radius:16px;padding:12px 14px">
+      <span style="font-size:14px;font-weight:600">{{ feedUnitLabel }}</span>
+      <span style="display:flex;align-items:center;gap:14px">
+        <button onClick="{{ feedDec }}" style="width:40px;height:40px;border-radius:50%;border:1px solid #e0e7ff;background:#fff;font-size:20px;cursor:pointer;color:#4f46e5">−</button>
+        <span style="font:700 22px 'Bricolage Grotesque',sans-serif;min-width:64px;text-align:center">{{ feedAmountText }}</span>
+        <button onClick="{{ feedInc }}" style="width:40px;height:40px;border-radius:50%;border:1px solid #e0e7ff;background:#fff;font-size:20px;cursor:pointer;color:#4f46e5">+</button>
+      </span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280;padding:0 4px"><span>Started</span><b style="color:#1e1b4b">Now · 9:30 am</b></div>
+    <button onClick="{{ saveFeed }}" style="height:50px;border:0;border-radius:999px;background:#4f46e5;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Save feed</button>
+  </sc-if>
+
+  <sc-if value="{{ sh.generic }}" hint-placeholder-val="{{ false }}">
+    <div style="font:700 20px 'Bricolage Grotesque',sans-serif">{{ genericTitle }}</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ genericFields }}" as="f" hint-placeholder-count="3">
+        <div style="background:#f7f6fd;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#6b7280">{{ f.label }}</span><span style="font-size:14px;font-weight:600">{{ f.value }}</span></div>
+      </sc-for>
+    </div>
+    <button onClick="{{ saveGeneric }}" style="height:50px;border:0;border-radius:999px;background:#4f46e5;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Save</button>
+  </sc-if>
+
+  <sc-if value="{{ sh.markVaccine }}" hint-placeholder-val="{{ false }}">
+    <div style="font:700 20px 'Bricolage Grotesque',sans-serif">{{ vg.label }} vaccines given</div>
+    <div style="font-size:13px;color:#6b7280;margin-top:-8px">{{ vg.names }}</div>
+    <div style="background:#f7f6fd;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#6b7280">Date</span><span style="font-size:14px;font-weight:600">Today, 15 Sep 2026</span></div>
+    <div style="background:#f7f6fd;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#6b7280">Clinic</span><span style="font-size:14px;font-weight:600">Rainbow Children's · Dr. Meera</span></div>
+    <div style="background:#f7f6fd;border-radius:14px;padding:6px 14px 6px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#6b7280">Cost ({{ curSym }})</span><input value="{{ vacCost }}" onChange="{{ onVacCost }}" inputMode="numeric" style="width:120px;height:36px;border:0;background:transparent;text-align:right;font-size:18px;font-weight:700;color:#1e1b4b;outline:none"></div>
+    <button onClick="{{ toggleVacExpense }}" style="display:flex;justify-content:space-between;align-items:center;background:none;border:0;padding:4px;cursor:pointer;text-align:left"><span><span style="display:block;font-size:14px;font-weight:600;color:#1e1b4b">Add to Medical expenses</span><span style="display:block;font-size:12px;color:#6b7280">Shows up under Money</span></span><span style="width:44px;height:26px;border-radius:13px;background:{{ vacExpTrack }};position:relative;flex:none"><span style="position:absolute;top:3px;left:{{ vacExpKnob }};width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s"></span></span></button>
+    <button onClick="{{ confirmVaccine }}" style="height:50px;border:0;border-radius:999px;background:#4f46e5;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Save · add to timeline</button>
+  </sc-if>
+
+  <sc-if value="{{ sh.expense }}" hint-placeholder-val="{{ false }}">
+    <div style="font:700 20px 'Bricolage Grotesque',sans-serif">Add expense</div>
+    <div style="display:flex;background:#f5f3ff;border-radius:999px;padding:4px;gap:4px">
+      <button onClick="{{ setExpMed }}" style="{{ expTabMed }}">Medical</button>
+      <button onClick="{{ setExpGen }}" style="{{ expTabGen }}">General</button>
+    </div>
+    <div style="background:#f7f6fd;border-radius:14px;padding:6px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#6b7280">Amount ({{ curSym }})</span><input value="{{ expAmt }}" onChange="{{ onExpAmt }}" inputMode="numeric" style="width:120px;height:36px;border:0;background:transparent;text-align:right;font-size:18px;font-weight:700;color:#1e1b4b;outline:none"></div>
+    <div style="background:#f7f6fd;border-radius:14px;padding:6px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:13px;color:#6b7280;flex:none">For</span><input value="{{ expTitle }}" onChange="{{ onExpTitle }}" placeholder="e.g. Diapers, size 1" style="flex:1;height:36px;border:0;background:transparent;text-align:right;font-size:14px;font-weight:600;color:#1e1b4b;outline:none"></div>
+    <div style="background:#f7f6fd;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#6b7280">Date</span><span style="font-size:14px;font-weight:600">Today, 15 Sep</span></div>
+    <button onClick="{{ saveExpense }}" style="height:50px;border:0;border-radius:999px;background:#4f46e5;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Save expense</button>
+  </sc-if>
+
+  <sc-if value="{{ sh.schedule }}" hint-placeholder-val="{{ false }}">
+    <div style="font:700 20px 'Bricolage Grotesque',sans-serif">Vaccination schedule</div>
+    <div style="font-size:13px;color:#6b7280;margin-top:-8px">Due dates regenerate from Avika's DOB. Doses already given stay marked.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ scheduleOptions }}" as="o" hint-placeholder-count="4">
+        <button onClick="{{ o.pick }}" style="display:flex;gap:12px;align-items:center;padding:13px 14px;border:1px solid {{ o.ring }};background:{{ o.bg }};border-radius:16px;text-align:left;cursor:pointer">
+          <span style="flex:1"><span style="display:block;font-size:14px;font-weight:700;color:#1e1b4b">{{ o.name }}</span><span style="display:block;font-size:12px;color:#6b7280">{{ o.desc }}</span></span>
+          <span style="width:22px;height:22px;border-radius:50%;border:2px solid {{ o.ring }};display:flex;align-items:center;justify-content:center;flex:none"><span style="width:12px;height:12px;border-radius:50%;background:{{ o.dot }}"></span></span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sh.milestone }}" hint-placeholder-val="{{ false }}">
+    <div style="font:700 20px 'Bricolage Grotesque',sans-serif">Add a moment</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      <sc-for list="{{ milestoneChips }}" as="c" hint-placeholder-count="6">
+        <button onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</button>
+      </sc-for>
+    </div>
+    <div style="background:#f7f6fd;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#6b7280">Date</span><span style="font-size:14px;font-weight:600">Today, 15 Sep</span></div>
+    <div style="background:#f7f6fd;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#6b7280">Google Photos album</span><span style="font-size:14px;font-weight:600;color:#4f46e5">Link…</span></div>
+    <button onClick="{{ saveMilestone }}" style="height:50px;border:0;border-radius:999px;background:#4f46e5;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Add to timeline</button>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ============ TOAST ============ -->
+<sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:16px;right:16px;bottom:92px;background:#1e1b4b;color:#fff;border-radius:14px;padding:12px 16px;font-size:13px;font-weight:600;z-index:20;animation:kk-pop .2s ease-out;display:flex;gap:10px;align-items:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:#a5b4fc">check_circle</span>{{ toastText }}</div>
+</sc-if>
+
+</div>
+</x-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;homeVariant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;A&quot;,&quot;options&quot;:[&quot;A&quot;,&quot;B&quot;,&quot;C&quot;],&quot;tsType&quot;:&quot;'A'|'B'|'C'&quot;,&quot;section&quot;:&quot;Today screen&quot;}}">
+const TODAY = new Date(2026, 8, 15);
+const DOB = new Date(2026, 7, 20);
+const DAY = 86400000;
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmt = d => `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear() !== 2026 ? d.getFullYear() : ''}`.trim();
+const addDays = (d, n) => new Date(d.getTime() + n * DAY);
+const SYM = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
+const RATE = { INR: 1, USD: 1 / 84, EUR: 1 / 91, GBP: 1 / 107 };
+
+const SCHEDULES = {
+  iap: { name: 'IAP · India (private)', desc: 'Indian Academy of Pediatrics 2024', groups: [
+    { label: 'Birth', days: 0, v: [['BCG', 'Tuberculosis'], ['OPV-0', 'Polio, oral'], ['Hep B-1', 'Hepatitis B']] },
+    { label: '6 weeks', days: 42, v: [['DTwP/DTaP-1', 'Diphtheria, tetanus, pertussis'], ['IPV-1', 'Polio, injectable'], ['Hep B-2', 'Hepatitis B'], ['Hib-1', 'H. influenzae b'], ['Rotavirus-1', 'Oral'], ['PCV-1', 'Pneumococcal']] },
+    { label: '10 weeks', days: 70, v: [['DTwP/DTaP-2', ''], ['IPV-2', ''], ['Hib-2', ''], ['Rotavirus-2', ''], ['PCV-2', '']] },
+    { label: '14 weeks', days: 98, v: [['DTwP/DTaP-3', ''], ['IPV-3', ''], ['Hep B-3', ''], ['Hib-3', ''], ['Rotavirus-3', ''], ['PCV-3', '']] },
+    { label: '6 months', days: 182, v: [['Influenza-1', 'Yearly after 2 doses'], ['Typhoid conjugate', '']] },
+    { label: '7 months', days: 212, v: [['Influenza-2', '']] },
+    { label: '9 months', days: 274, v: [['MMR-1', 'Measles, mumps, rubella']] },
+    { label: '12 months', days: 365, v: [['Hep A-1', ''], ['PCV booster', '']] },
+    { label: '15 months', days: 456, v: [['MMR-2', ''], ['Varicella-1', 'Chickenpox']] },
+    { label: '18 months', days: 547, v: [['DTwP booster-1', ''], ['IPV booster', ''], ['Hib booster', ''], ['Hep A-2', ''], ['Varicella-2', '']] },
+  ]},
+  uip: { name: 'UIP · India (government)', desc: 'National Immunisation Schedule', groups: [
+    { label: 'Birth', days: 0, v: [['BCG', ''], ['OPV-0', ''], ['Hep B birth dose', '']] },
+    { label: '6 weeks', days: 42, v: [['OPV-1', ''], ['Pentavalent-1', 'DPT + Hep B + Hib'], ['Rotavirus-1', ''], ['fIPV-1', ''], ['PCV-1', '']] },
+    { label: '10 weeks', days: 70, v: [['OPV-2', ''], ['Pentavalent-2', ''], ['Rotavirus-2', '']] },
+    { label: '14 weeks', days: 98, v: [['OPV-3', ''], ['Pentavalent-3', ''], ['Rotavirus-3', ''], ['fIPV-2', ''], ['PCV-2', '']] },
+    { label: '9 months', days: 274, v: [['MR-1', 'Measles, rubella'], ['JE-1', 'Japanese encephalitis'], ['PCV booster', ''], ['Vitamin A-1', '']] },
+    { label: '16–24 months', days: 487, v: [['MR-2', ''], ['JE-2', ''], ['DPT booster-1', ''], ['OPV booster', '']] },
+  ]},
+  who: { name: 'WHO · global', desc: 'WHO recommended routine schedule', groups: [
+    { label: 'Birth', days: 0, v: [['BCG', ''], ['Hep B', ''], ['OPV-0', '']] },
+    { label: '6 weeks', days: 42, v: [['DTP-1', ''], ['Hep B-2', ''], ['Hib-1', ''], ['IPV-1', ''], ['PCV-1', ''], ['Rotavirus-1', '']] },
+    { label: '10 weeks', days: 70, v: [['DTP-2', ''], ['Hib-2', ''], ['OPV-2', ''], ['PCV-2', ''], ['Rotavirus-2', '']] },
+    { label: '14 weeks', days: 98, v: [['DTP-3', ''], ['Hep B-3', ''], ['Hib-3', ''], ['IPV-2', ''], ['PCV-3', '']] },
+    { label: '9 months', days: 274, v: [['Measles-1', ''], ['Rubella', '']] },
+    { label: '15–18 months', days: 487, v: [['Measles-2', ''], ['DTP booster', '']] },
+  ]},
+  cdc: { name: 'CDC · United States', desc: 'ACIP child schedule', groups: [
+    { label: 'Birth', days: 0, v: [['Hep B-1', '']] },
+    { label: '2 months', days: 61, v: [['DTaP-1', ''], ['IPV-1', ''], ['Hib-1', ''], ['PCV-1', ''], ['Rotavirus-1', ''], ['Hep B-2', '']] },
+    { label: '4 months', days: 122, v: [['DTaP-2', ''], ['IPV-2', ''], ['Hib-2', ''], ['PCV-2', ''], ['Rotavirus-2', '']] },
+    { label: '6 months', days: 182, v: [['DTaP-3', ''], ['IPV-3', ''], ['PCV-3', ''], ['Hep B-3', ''], ['Influenza', 'Yearly']] },
+    { label: '12 months', days: 365, v: [['MMR-1', ''], ['Varicella-1', ''], ['Hep A-1', ''], ['PCV-4', ''], ['Hib booster', '']] },
+    { label: '15 months', days: 456, v: [['DTaP-4', '']] },
+  ]},
+};
+
+const chip = on => `height:34px;padding:0 14px;border-radius:999px;border:1px solid ${on ? '#4f46e5' : '#e0e7ff'};background:${on ? '#4f46e5' : '#fff'};color:${on ? '#fff' : '#4338ca'};font-size:13px;font-weight:600;cursor:pointer`;
+const tab = on => `flex:1;height:38px;border:0;border-radius:999px;background:${on ? '#4f46e5' : 'transparent'};color:${on ? '#fff' : '#4338ca'};font-weight:700;font-size:13px;cursor:pointer`;
+const varBtn = on => `height:30px;padding:0 12px;border-radius:999px;border:0;background:${on ? '#1e1b4b' : 'transparent'};color:${on ? '#fff' : '#4338ca'};font-size:12px;font-weight:700;cursor:pointer`;
+
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const initDone = {};
+    SCHEDULES.iap.groups[0].v.forEach(([n]) => { initDone['iap:Birth:' + n] = 1; });
+    this.state = {
+      screen: 'today', sheet: null, variant: null, schedule: 'iap', currency: 'INR',
+      done: initDone, vgIdx: 1, vacCost: '2400', vacExp: true,
+      feedType: 'breast', side: 'L', feedAmt: 15, lastFeed: '1 h 20 m ago', lastFeedDesc: 'Left · 15 min',
+      expenses: [
+        { title: 'Pampers Newborn, 72 pk', sub: '14 Sep · Amazon', cat: 'gen', amt: 1349, icon: 'shopping_bag' },
+        { title: '2-week check consult', sub: '3 Sep · Rainbow Children\'s', cat: 'med', amt: 800, icon: 'stethoscope' },
+        { title: 'Vitamin D3 drops', sub: '22 Aug · Apollo Pharmacy', cat: 'med', amt: 240, icon: 'pill' },
+        { title: 'Muslin swaddles ×3', sub: '25 Aug · FirstCry', cat: 'gen', amt: 1099, icon: 'checkroom' },
+        { title: 'Birth vaccines (BCG, OPV, Hep B)', sub: '20 Aug · Hospital', cat: 'med', amt: 1200, icon: 'vaccines' },
+      ],
+      moneyFilter: 'all', expCat: 'med', expAmt: '', expTitle: '',
+      timeline: [
+        { date: '1 Sep', age: '12 days', icon: 'celebration', bg: '#fdf4ff', fg: '#a21caf', title: 'Naming ceremony', sub: 'Avika — "earth". Whole family came. Nani cried.', photo: true },
+        { date: '28 Aug', age: '8 days', icon: 'child_care', bg: '#ecfeff', fg: '#0e7490', title: 'First real smile', sub: 'At Papa, mid-burp. Counted anyway.', photo: false },
+        { date: '22 Aug', age: '2 days', icon: 'home', bg: '#fff7ed', fg: '#c2410c', title: 'Came home', sub: 'Hospital discharge · 3.2 kg', photo: true },
+        { date: '20 Aug', age: 'day 0', icon: 'vaccines', bg: '#f5f3ff', fg: '#6d28d9', title: 'Birth vaccines given', sub: 'BCG, OPV-0, Hep B-1 · Rainbow Children\'s', photo: false },
+        { date: '20 Aug', age: 'day 0', icon: 'favorite', bg: '#fff1f2', fg: '#e11d48', title: 'Avika arrived', sub: '4:12 am · 3.1 kg · 50 cm · Rainbow Children\'s, Bengaluru', photo: true },
+      ],
+      checks: { vitd: false, tummy: true, weigh: false, album: false, bath: true },
+      teeth: {}, reminders: { vitd: true, vac: true, appt: true, weigh: false, album: true },
+      docIdx: 0, milestone: 'First smile', toast: null, genericTitle: 'New entry', genericFields: [],
+    };
+    const screens = ['today','log','health','money','more','vaccines','vacDetail','growth','teeth','meds','appointments','timeline','documents','docDetail','photos','events','reminders','backup','settings'];
+    this.to = {}; screens.forEach(k => { this.to[k] = () => this.setState({ screen: k, sheet: null }); });
+    const gen = (title, fields) => () => this.setState({ sheet: 'generic', genericTitle: title, genericFields: fields });
+    this.sheet = {
+      feed: () => this.setState({ sheet: 'feed' }),
+      generic: gen('New entry', [{ label: 'Date', value: 'Today, 15 Sep' }, { label: 'Note', value: 'Tap to type…' }]),
+      sleep: gen('Log sleep', [{ label: 'Fell asleep', value: '8:50 am' }, { label: 'Woke up', value: 'Still sleeping' }, { label: 'Where', value: 'Bassinet' }]),
+      diaper: gen('Log diaper', [{ label: 'Type', value: 'Wet · Dirty · Both' }, { label: 'Time', value: 'Now, 9:30 am' }]),
+      meds: gen('Log medicine', [{ label: 'Medicine', value: 'Vitamin D3 drops' }, { label: 'Dose', value: '1 drop' }, { label: 'Time', value: 'Now' }]),
+      growth: gen('Add measurement', [{ label: 'Weight', value: '3.9 kg' }, { label: 'Length', value: '52 cm' }, { label: 'Head', value: '36 cm' }]),
+      teeth: () => this.setState({ screen: 'teeth', sheet: null }),
+      markVaccine: () => this.setState({ sheet: 'markVaccine' }),
+      expense: () => this.setState({ sheet: 'expense', expAmt: '', expTitle: '' }),
+      schedule: () => this.setState({ sheet: 'schedule' }),
+      milestone: () => this.setState({ sheet: 'milestone' }),
+    };
+  }
+  toast(t) { this.setState({ toast: t, sheet: null }); clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: null }), 2200); }
+  money(n) { const c = this.state.currency; const v = n * RATE[c]; return SYM[c] + (c === 'INR' ? Math.round(v).toLocaleString('en-IN') : v.toFixed(v < 100 ? 2 : 0)); }
+  renderVals() {
+    const st = this.state;
+    const variant = st.variant || this.props.homeVariant || 'A';
+    const sched = SCHEDULES[st.schedule];
+    const s = {}; s[st.screen] = true;
+    const tabOf = { vaccines: 'health', vacDetail: 'health', growth: 'health', teeth: 'health', meds: 'health', appointments: 'health', timeline: 'more', documents: 'more', docDetail: 'more', photos: 'more', events: 'more', reminders: 'more', backup: 'more', settings: 'more' };
+    const activeTab = tabOf[st.screen] || st.screen;
+
+    // vaccines
+    const groups = sched.groups.map((g, i) => {
+      const due = addDays(DOB, g.days);
+      const inDays = Math.round((due - TODAY) / DAY);
+      const items = g.v.map(([name, desc]) => ({ name, desc: desc || 'Routine dose', on: !!st.done[`${st.schedule}:${g.label}:${name}`] }));
+      const doneCount = items.filter(x => x.on).length;
+      const all = doneCount === items.length;
+      let status, fg, bg, border, icon;
+      if (all) { status = 'Given'; fg = '#059669'; bg = '#ecfdf5'; border = '#a7f3d0'; icon = 'check'; }
+      else if (inDays < 0) { status = `Overdue ${-inDays} d`; fg = '#e11d48'; bg = '#fff1f2'; border = '#fecdd3'; icon = 'priority_high'; }
+      else if (inDays <= 21) { status = `Due in ${inDays} d`; fg = '#a21caf'; bg = '#fdf4ff'; border = '#f5d0fe'; icon = 'event_upcoming'; }
+      else { status = 'Upcoming'; fg = '#4338ca'; bg = '#eef2ff'; border = '#ece9fb'; icon = 'schedule'; }
+      return { i, label: g.label, due, inDays, dateText: fmt(due), names: items.map(x => x.name).join(', '), count: items.length, doneCount, all, status, fg, bg, border, icon, items, cost: st.done[`cost:${st.schedule}:${g.label}`] };
+    });
+    const nextG = groups.find(g => !g.all) || groups[groups.length - 1];
+    const vacDoneCount = groups.reduce((a, g) => a + g.doneCount, 0);
+    const vacTotal = groups.reduce((a, g) => a + g.count, 0);
+    const gi = Math.min(st.vgIdx, groups.length - 1);
+    const g0 = groups[gi];
+    const vg = {
+      ...g0,
+      hasCost: !!g0.cost, costText: g0.cost ? this.money(g0.cost) : '', canMark: !g0.all,
+      items: g0.items.map(it => ({ ...it, check: it.on ? 'check' : '', ring: it.on ? '#4f46e5' : '#c7d2fe', fill: it.on ? '#4f46e5' : '#fff',
+        toggle: () => this.setState(p => { const d = { ...p.done }; const k = `${p.schedule}:${g0.label}:${it.name}`; d[k] ? delete d[k] : d[k] = 1; return { done: d }; }) })),
+    };
+    const vacGroups = groups.map(g => ({ ...g, open: () => this.setState({ screen: 'vacDetail', vgIdx: g.i, vacCost: g.label === 'Birth' ? '1200' : '2400' }) }));
+    const nextVac = { ...nextG, open: this.to.vaccines, inDays: Math.max(nextG.inDays, 0) };
+
+    // age
+    const ageDays = Math.round((TODAY - DOB) / DAY);
+    const ageText = `${Math.floor(ageDays / 7)} weeks ${ageDays % 7} days`;
+    const birthdayDays = Math.round((new Date(2027, 7, 20) - TODAY) / DAY);
+
+    // money
+    const med = st.expenses.filter(x => x.cat === 'med').reduce((a, x) => a + x.amt, 0);
+    const gen = st.expenses.filter(x => x.cat === 'gen').reduce((a, x) => a + x.amt, 0);
+    const expenseRows = st.expenses.filter(x => st.moneyFilter === 'all' || x.cat === st.moneyFilter).map(x => ({ ...x, amtText: this.money(x.amt), bg: x.cat === 'med' ? '#f5f3ff' : '#e0f2fe', fg: x.cat === 'med' ? '#7c3aed' : '#0284c7' }));
+
+    // checklist
+    const checkDefs = [['vitd', 'Vitamin D3 drop', '8:00 pm'], ['tummy', 'Tummy time · 5 min', 'done 8:10'], ['weigh', 'Weekly weigh-in', 'anytime'], ['bath', 'Bath', 'done 7:30'], ['album', 'Add week-3 photos to album', 'anytime']];
+    const checklist = checkDefs.map(([k, title, time]) => { const on = st.checks[k]; return { title, time, check: on ? 'check' : '', ringColor: on ? '#4f46e5' : '#c7d2fe', fill: on ? '#4f46e5' : '#fff', textColor: on ? '#9ca3af' : '#1e1b4b', deco: on ? 'line-through' : 'none', toggle: () => this.setState(p => ({ checks: { ...p.checks, [k]: !p.checks[k] } })) }; });
+    const checkDoneCount = checklist.filter(c => c.check).length;
+
+    // teeth
+    const upperOrder = [24, 18, 12, 9, 10, 10, 9, 12, 18, 24]; const lowerOrder = [22, 15, 12, 10, 7, 7, 10, 12, 15, 22];
+    const toothRow = (arr, pre) => arr.map((m, i) => { const k = pre + i; const on = !!st.teeth[k]; return { m: `${m}m`, border: on ? '#0ea5e9' : '#e0e7ff', fill: on ? '#e0f2fe' : '#fff', fg: on ? '#0369a1' : '#9ca3af', toggle: () => this.setState(p => ({ teeth: { ...p.teeth, [k]: !p.teeth[k] } })) }; });
+
+    const tileData = [
+      { key: 'feed', icon: 'water_drop', title: 'Feed', ago: st.lastFeed, last: st.lastFeedDesc, bg: '#fdf4ff', fg: '#a21caf', open: this.sheet.feed },
+      { key: 'sleep', icon: 'bedtime', title: 'Sleep', ago: 'asleep 40 m', last: 'Since 8:50 am · bassinet', bg: '#eef2ff', fg: '#4338ca', open: this.sheet.sleep },
+      { key: 'diaper', icon: 'baby_changing_station', title: 'Diaper', ago: '2 h ago', last: 'Wet · 6 today', bg: '#e0f2fe', fg: '#0369a1', open: this.sheet.diaper },
+      { key: 'meds', icon: 'pill', title: 'Medicine', ago: 'due 8 pm', last: 'Vitamin D3 · 1 drop', bg: '#ffe4e6', fg: '#be123c', open: this.sheet.meds },
+      { key: 'growth', icon: 'monitor_weight', title: 'Growth', ago: '3 d ago', last: '3.9 kg · 52 cm', bg: '#ecfdf5', fg: '#047857', open: this.sheet.growth },
+      { key: 'teeth', icon: 'dentistry', title: 'Teeth', ago: '—', last: `${Object.values(st.teeth).filter(Boolean).length} erupted`, bg: '#fff7ed', fg: '#c2410c', open: this.sheet.teeth },
+    ];
+
+    const navDefs = [['today', 'Today', 'sunny'], ['log', 'Log', 'edit_note'], ['health', 'Health', 'favorite'], ['money', 'Money', 'payments'], ['more', 'More', 'grid_view']];
+    const navItems = navDefs.map(([k, label, icon]) => { const on = activeTab === k; return { label, icon, go: this.to[k], color: on ? '#1e1b4b' : '#6b7280', pill: on ? '#e0e7ff' : 'transparent', fill: on ? 1 : 0, weight: on ? 700 : 500 }; });
+
+    const scheduleOptions = Object.keys(SCHEDULES).map(k => { const on = st.schedule === k; return { name: SCHEDULES[k].name, desc: SCHEDULES[k].desc, ring: on ? '#4f46e5' : '#c7d2fe', dot: on ? '#4f46e5' : 'transparent', bg: on ? '#eef2ff' : '#fff', pick: () => { this.setState({ schedule: k }); this.toast(`Schedule set to ${SCHEDULES[k].name}`); } }; });
+
+    const docsData = [
+      { title: 'Birth certificate', date: '28 Aug', pages: '1 page', tags: 'Legal, ID', scan: 'scan · birth certificate', c1: '#fef3c7', c2: '#fffbeb' },
+      { title: 'Hospital discharge summary', date: '22 Aug', pages: '3 pages', tags: 'Hospital', scan: 'scan · discharge summary', c1: '#e0f2fe', c2: '#f0f9ff' },
+      { title: 'Vaccination card', date: '20 Aug', pages: '2 pages', tags: 'Vaccines', scan: 'scan · immunisation card', c1: '#ede9fe', c2: '#f5f3ff' },
+      { title: 'Prescription · Dr. Meera', date: '3 Sep', pages: '1 page', tags: 'Medical', scan: 'scan · prescription', c1: '#ffe4e6', c2: '#fff1f2' },
+    ];
+    const docs = docsData.map((d, i) => ({ ...d, open: () => this.setState({ screen: 'docDetail', docIdx: i }) }));
+
+    const moreDefs = [
+      ['timeline', 'timeline', 'Timeline', 'Milestones, events, photo moments', '#fdf4ff', '#a21caf'],
+      ['documents', 'folder_open', 'Documents', '4 scans · birth certificate, prescriptions…', '#fef3c7', '#b45309'],
+      ['photos', 'photo_library', 'Photo albums', '3 Google Photos albums linked', '#e0f2fe', '#0369a1'],
+      ['events', 'cake', 'Birthdays & events', `First birthday in ${birthdayDays} days`, '#fff1f2', '#e11d48'],
+      ['reminders', 'notifications_active', 'Reminders', '4 on', '#eef2ff', '#4338ca'],
+      ['backup', 'backup', 'Backup & export', 'Last backup today 07:12', '#ecfdf5', '#047857'],
+      ['settings', 'settings', 'Settings', `${SYM[st.currency]} ${st.currency} · ${sched.name.split(' ·')[0]} schedule`, '#f1f5f9', '#475569'],
+    ];
+    const moreItems = moreDefs.map(([k, icon, title, sub, bg, fg]) => ({ icon, title, sub, bg, fg, go: this.to[k] }));
+
+    const remDefs = [['vitd', 'Vitamin D3', 'Daily · 8:00 pm'], ['vac', 'Vaccines due', '7 days and 1 day before'], ['appt', 'Appointments', '1 day before, 1 hour before'], ['weigh', 'Weekly weigh-in', 'Sundays 9:00 am'], ['album', 'Photo nudge', 'Weekly: add photos to album']];
+    const reminders = remDefs.map(([k, title, sub]) => { const on = st.reminders[k]; return { title, sub, trackBg: on ? '#4f46e5' : '#cbd5e1', knobLeft: on ? '21px' : '3px', toggle: () => this.setState(p => ({ reminders: { ...p.reminders, [k]: !p.reminders[k] } })) }; });
+
+    const msChips = ['First smile', 'First laugh', 'Rolled over', 'First outing', 'Festival', 'Family visit', 'Other'];
+    const jumpDefs = [['today', 'Today'], ['log', 'Log'], ['health', 'Health'], ['vaccines', 'Vaccines'], ['vacDetail', 'Vaccine group'], ['growth', 'Growth'], ['teeth', 'Teeth'], ['meds', 'Medications'], ['appointments', 'Appointments'], ['money', 'Money'], ['more', 'More'], ['timeline', 'Timeline'], ['documents', 'Documents'], ['docDetail', 'Document'], ['photos', 'Photos'], ['events', 'Events'], ['reminders', 'Reminders'], ['backup', 'Backup'], ['settings', 'Settings']];
+
+    const feedUnit = st.feedType === 'breast' ? 'Duration' : st.feedType === 'bottle' ? 'Amount' : 'Amount';
+    const feedAmountText = st.feedType === 'breast' ? `${st.feedAmt} min` : st.feedType === 'bottle' ? `${st.feedAmt * 4} ml` : `${st.feedAmt} g`;
+
+    return {
+      s, showNav: true, navItems, ageText, dayCount: ageDays, birthdayDays,
+      varA: variant === 'A', varB: variant === 'B', varC: variant === 'C',
+      varBtnA: varBtn(variant === 'A'), varBtnB: varBtn(variant === 'B'), varBtnC: varBtn(variant === 'C'),
+      setVarA: () => this.setState({ variant: 'A', screen: 'today' }), setVarB: () => this.setState({ variant: 'B', screen: 'today' }), setVarC: () => this.setState({ variant: 'C', screen: 'today' }),
+      to: this.to, sheet: this.sheet, jumpLinks: jumpDefs.map(([k, label]) => ({ label, go: this.to[k] })),
+      nextVac, vacGroups, vg, vacDoneCount, vacPct: Math.round(vacDoneCount / vacTotal * 100), scheduleName: sched.name.split(' ·')[0], scheduleOptions,
+      todayItems: [
+        { icon: 'pill', bg: '#ffe4e6', fg: '#be123c', title: 'Vitamin D3 drop', sub: '1 drop · daily', time: '8:00 pm' },
+        { icon: 'bedtime', bg: '#eef2ff', fg: '#4338ca', title: 'Napping now', sub: 'Since 8:50 am · bassinet', time: '40 m' },
+        { icon: 'photo_camera', bg: '#e0f2fe', fg: '#0369a1', title: 'Week 3 photos', sub: 'Add to "First month" album', time: 'anytime' },
+      ],
+      miniTiles: tileData.slice(0, 3), tiles: tileData,
+      logEntries: [
+        { icon: 'bedtime', fg: '#4338ca', text: 'Fell asleep · bassinet', time: '8:50 am' },
+        { icon: 'water_drop', fg: '#a21caf', text: `Breast feed · ${st.lastFeedDesc}`, time: '8:10 am' },
+        { icon: 'baby_changing_station', fg: '#0369a1', text: 'Diaper · wet', time: '7:30 am' },
+        { icon: 'water_drop', fg: '#a21caf', text: 'Breast feed · Right · 12 min', time: '5:40 am' },
+      ],
+      checklist, checkDoneCount, checkTotal: checklist.length, checkPct: Math.round(checkDoneCount / checklist.length * 100),
+      weightBars: [{ label: 'Birth', val: '3.1', h: 62 }, { label: 'Wk 1', val: '3.0', h: 58 }, { label: 'Wk 2', val: '3.5', h: 76 }, { label: 'Wk 3', val: '3.9', h: 90 }],
+      upperTeeth: toothRow(upperOrder, 'u'), lowerTeeth: toothRow(lowerOrder, 'l'), teethCount: Object.values(st.teeth).filter(Boolean).length,
+      medWeek: ['W', 'T', 'F', 'S', 'S', 'M', 'T'].map((day, i) => ({ day, bg: i < 6 ? '#ecfdf5' : '#f1f5f9', fg: i < 6 ? '#059669' : '#94a3b8', icon: i < 6 ? 'check' : 'schedule' })),
+      toastMed: () => this.toast('Vitamin D3 logged for today'),
+      totalText: this.money(med + gen), medText: this.money(med), genText: this.money(gen), medPct: Math.round(med / (med + gen) * 100), expenseRows,
+      moneyChipAll: chip(st.moneyFilter === 'all'), moneyChipMed: chip(st.moneyFilter === 'med'), moneyChipGen: chip(st.moneyFilter === 'gen'),
+      setMoneyAll: () => this.setState({ moneyFilter: 'all' }), setMoneyMed: () => this.setState({ moneyFilter: 'med' }), setMoneyGen: () => this.setState({ moneyFilter: 'gen' }),
+      moreItems, timeline: st.timeline, docs, doc: docsData[st.docIdx],
+      albums: [
+        { title: 'Avika · first month', sub: '184 photos · shared with family', c1: '#fdf4ff', c2: '#fae8ff' },
+        { title: 'Hospital days', sub: '46 photos · 20–22 Aug', c1: '#e0f2fe', c2: '#f0f9ff' },
+        { title: 'Naming ceremony', sub: '212 photos · 1 Sep', c1: '#fef3c7', c2: '#fffbeb' },
+      ],
+      events: [
+        { icon: 'cake', bg: '#fff1f2', fg: '#e11d48', title: "Nani's birthday", sub: 'Sun 27 Sep', when: '12 d' },
+        { icon: 'event', bg: '#fef3c7', fg: '#b45309', title: 'Diwali · first festival', sub: 'Sun 8 Nov', when: '54 d' },
+        { icon: 'restaurant', bg: '#ecfdf5', fg: '#047857', title: 'Annaprashan (first solids)', sub: 'Around 20 Feb 2027 · 6 months', when: '158 d' },
+        { icon: 'celebration', bg: '#fdf4ff', fg: '#a21caf', title: 'Naming ceremony', sub: '1 Sep · done', when: '✓' },
+      ],
+      reminders,
+      toastScan: () => this.toast('Camera opens · scan filed under today'), toastExport: () => this.toast('PDF saved to Downloads'), toastShare: () => this.toast('Share sheet opened'), toastBackup: () => this.toast('Backup saved · 41 MB'), toastOpenAlbum: () => this.toast('Opening Google Photos…'),
+      curSym: SYM[st.currency],
+      curChipInr: chip(st.currency === 'INR'), curChipUsd: chip(st.currency === 'USD'), curChipEur: chip(st.currency === 'EUR'), curChipGbp: chip(st.currency === 'GBP'),
+      setCurInr: () => this.setState({ currency: 'INR' }), setCurUsd: () => this.setState({ currency: 'USD' }), setCurEur: () => this.setState({ currency: 'EUR' }), setCurGbp: () => this.setState({ currency: 'GBP' }),
+      // sheets
+      sheetOpen: !!st.sheet, sh: st.sheet ? { [st.sheet]: true } : {}, closeSheet: () => this.setState({ sheet: null }),
+      feedIsBreast: st.feedType === 'breast', feedTabBreast: tab(st.feedType === 'breast'), feedTabBottle: tab(st.feedType === 'bottle'), feedTabSolid: tab(st.feedType === 'solid'),
+      setFeedBreast: () => this.setState({ feedType: 'breast', feedAmt: 15 }), setFeedBottle: () => this.setState({ feedType: 'bottle', feedAmt: 15 }), setFeedSolid: () => this.setState({ feedType: 'solid', feedAmt: 15 }),
+      sideBtnL: chip(st.side === 'L') + ';flex:1', sideBtnR: chip(st.side === 'R') + ';flex:1', setSideL: () => this.setState({ side: 'L' }), setSideR: () => this.setState({ side: 'R' }),
+      feedUnitLabel: feedUnit, feedAmountText, feedDec: () => this.setState(p => ({ feedAmt: Math.max(1, p.feedAmt - 1) })), feedInc: () => this.setState(p => ({ feedAmt: p.feedAmt + 1 })),
+      saveFeed: () => { const desc = st.feedType === 'breast' ? `${st.side === 'L' ? 'Left' : 'Right'} · ${st.feedAmt} min` : st.feedType === 'bottle' ? `Bottle · ${st.feedAmt * 4} ml` : `Solids · ${st.feedAmt} g`; this.setState({ lastFeed: 'just now', lastFeedDesc: desc }); this.toast('Feed saved'); },
+      genericTitle: st.genericTitle, genericFields: st.genericFields, saveGeneric: () => this.toast('Saved'),
+      vacCost: st.vacCost, onVacCost: e => this.setState({ vacCost: e.target.value.replace(/[^\d]/g, '') }),
+      vacExpTrack: st.vacExp ? '#4f46e5' : '#cbd5e1', vacExpKnob: st.vacExp ? '21px' : '3px', toggleVacExpense: () => this.setState(p => ({ vacExp: !p.vacExp })),
+      confirmVaccine: () => {
+        const cost = parseInt(st.vacCost || '0', 10);
+        this.setState(p => {
+          const d = { ...p.done }; g0.items.forEach(it => { d[`${p.schedule}:${g0.label}:${it.name}`] = 1; });
+          if (p.vacExp && cost > 0) d[`cost:${p.schedule}:${g0.label}`] = cost;
+          const expenses = p.vacExp && cost > 0 ? [{ title: `${g0.label} vaccines`, sub: '15 Sep · Rainbow Children\'s', cat: 'med', amt: cost, icon: 'vaccines' }, ...p.expenses] : p.expenses;
+          const timeline = [{ date: '15 Sep', age: `${ageDays} days`, icon: 'vaccines', bg: '#f5f3ff', fg: '#6d28d9', title: `${g0.label} vaccines given`, sub: `${g0.names} · Dr. Meera`, photo: false }, ...p.timeline];
+          return { done: d, expenses, timeline };
+        });
+        this.toast(cost > 0 && st.vacExp ? `Saved · ${this.money(cost)} added to Medical` : 'Saved to timeline');
+      },
+      expTabMed: tab(st.expCat === 'med'), expTabGen: tab(st.expCat === 'gen'), setExpMed: () => this.setState({ expCat: 'med' }), setExpGen: () => this.setState({ expCat: 'gen' }),
+      expAmt: st.expAmt, onExpAmt: e => this.setState({ expAmt: e.target.value.replace(/[^\d]/g, '') }), expTitle: st.expTitle, onExpTitle: e => this.setState({ expTitle: e.target.value }),
+      saveExpense: () => { const amt = parseInt(st.expAmt || '0', 10); if (!amt) { this.toast('Enter an amount'); return; } const inr = Math.round(amt / RATE[st.currency]); this.setState(p => ({ expenses: [{ title: p.expTitle || (p.expCat === 'med' ? 'Medical expense' : 'General expense'), sub: '15 Sep', cat: p.expCat, amt: inr, icon: p.expCat === 'med' ? 'medical_services' : 'shopping_bag' }, ...p.expenses] })); this.toast('Expense saved'); },
+      milestoneChips: msChips.map(l => ({ label: l, style: chip(st.milestone === l), pick: () => this.setState({ milestone: l }) })),
+      saveMilestone: () => { this.setState(p => ({ timeline: [{ date: '15 Sep', age: `${ageDays} days`, icon: 'auto_awesome', bg: '#fdf4ff', fg: '#a21caf', title: p.milestone, sub: 'Added today', photo: false }, ...p.timeline] })); this.toast('Added to timeline'); },
+      toastOn: !!st.toast, toastText: st.toast || '',
+    };
+  }
+}
+</script>
+</body>
+</html>

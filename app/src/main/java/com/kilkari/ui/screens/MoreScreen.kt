@@ -1,0 +1,136 @@
+package com.kilkari.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kilkari.data.seed.VaccineSchedules
+import com.kilkari.domain.Fmt
+import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.KCard
+import com.kilkari.ui.components.KIcons
+import com.kilkari.ui.components.KRow
+import com.kilkari.ui.components.Monogram
+import com.kilkari.ui.nav.NavActions
+import com.kilkari.ui.nav.Routes
+import com.kilkari.ui.theme.KC
+import com.kilkari.ui.theme.Sans
+import com.kilkari.ui.theme.ScreenTitle
+
+/** Baby card plus the seven destinations that do not live in a tab. */
+@Composable
+fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
+    val baby by vm.baby.collectAsStateWithLifecycle()
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    val documents by vm.documents.collectAsStateWithLifecycle()
+    val albums by vm.albums.collectAsStateWithLifecycle()
+    val reminders by vm.reminders.collectAsStateWithLifecycle()
+    val b = baby ?: return
+
+    val birthdayDays = Fmt.daysUntil(Fmt.nextBirthday(b.dob))
+    val remindersOn = reminders.count { it.enabled }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+            .padding(top = 18.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text("More", style = ScreenTitle, color = KC.Ink)
+
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(Brush.linearGradient(listOf(KC.IndigoBg, KC.FuchsiaBg)))
+                .border(1.dp, KC.BorderStrong, RoundedCornerShape(18.dp))
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Monogram(b.name.take(1).uppercase(), size = 48, fontSize = 20)
+            Column(Modifier.weight(1f)) {
+                Text(b.name, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = KC.Ink)
+                Text(
+                    "Born ${Fmt.dateFull(b.dob)} · ${Fmt.age(b.dob)}",
+                    fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                )
+            }
+            Icon(KIcons["edit"], null, tint = KC.Muted, modifier = Modifier.size(22.dp))
+        }
+
+        KCard {
+            val items = listOf(
+                MoreItem(Routes.TIMELINE, "timeline", "Timeline", "Milestones, events, photo moments", KC.FuchsiaDeep, KC.FuchsiaBg),
+                MoreItem(
+                    Routes.DOCUMENTS, "folder_open", "Documents",
+                    if (documents.isEmpty()) "Scan certificates and prescriptions"
+                    else "${documents.size} ${Fmt.plural(documents.size.toLong(), "scan")} filed",
+                    KC.AmberDeep, KC.AmberBg,
+                ),
+                MoreItem(
+                    Routes.PHOTOS, "photo_library", "Photo albums",
+                    if (albums.isEmpty()) "Link a Google Photos album"
+                    else "${albums.size} ${Fmt.plural(albums.size.toLong(), "album")} linked",
+                    KC.SkyDeep, KC.SkyBg,
+                ),
+                MoreItem(
+                    Routes.EVENTS, "cake", "Birthdays & events",
+                    "First birthday in $birthdayDays days", KC.Rose, KC.RoseBg,
+                ),
+                MoreItem(Routes.REMINDERS, "notifications_active", "Reminders", "$remindersOn on", KC.IndigoDeep, KC.IndigoBg),
+                MoreItem(Routes.BACKUP, "backup", "Backup & export", "Everything stays on this phone", KC.GreenDeep, KC.GreenBg),
+                MoreItem(
+                    Routes.SETTINGS, "settings", "Settings",
+                    "${settings.currency.symbol} ${settings.currency.code} · " +
+                        "${VaccineSchedules.byId(settings.scheduleId).shortName} schedule",
+                    KC.Slate, KC.SlateBg,
+                ),
+            )
+            items.forEachIndexed { i, item ->
+                KRow(
+                    title = item.title,
+                    subtitle = item.subtitle,
+                    icon = item.icon,
+                    iconTint = item.tint,
+                    iconBg = item.background,
+                    divider = i != items.lastIndex,
+                    onClick = { go.push(item.route) },
+                ) {
+                    Icon(KIcons["chevron_right"], null, tint = KC.IndigoPaler, modifier = Modifier.size(20.dp))
+                }
+            }
+        }
+    }
+}
+
+private data class MoreItem(
+    val route: String,
+    val icon: String,
+    val title: String,
+    val subtitle: String,
+    val tint: androidx.compose.ui.graphics.Color,
+    val background: androidx.compose.ui.graphics.Color,
+)
