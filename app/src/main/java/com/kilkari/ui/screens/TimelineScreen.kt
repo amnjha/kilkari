@@ -42,7 +42,6 @@ import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.MilestoneSheet
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
-import java.time.LocalDate
 
 /** Milestones, births, vaccinations and photo moments on one spine. */
 @Composable
@@ -171,8 +170,8 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
         }
 
         KSheet(sheetOpen, onDismiss = { sheetOpen = false }) {
-            MilestoneSheet { title, note, album ->
-                vm.addMilestone(title, note, LocalDate.now(), album)
+            MilestoneSheet(earliest = baby?.dob) { title, note, date, album ->
+                vm.addMilestone(title, note, date, album)
                 sheetOpen = false
             }
         }

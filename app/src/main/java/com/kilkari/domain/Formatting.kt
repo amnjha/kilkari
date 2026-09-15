@@ -31,6 +31,17 @@ object Fmt {
         return if (d.year == today.year) base else "$base ${d.year}"
     }
 
+    /**
+     * "Today, 20 Aug" / "Yesterday, 19 Aug" / "Tue 12 Aug" — how a chosen entry date reads back
+     * in a sheet, so a back-dated entry is obvious at a glance.
+     */
+    fun relativeDate(d: LocalDate, today: LocalDate = LocalDate.now()): String = when (d) {
+        today -> "Today, " + date(d, today)
+        today.minusDays(1) -> "Yesterday, " + date(d, today)
+        today.plusDays(1) -> "Tomorrow, " + date(d, today)
+        else -> dayAndDate(d, today)
+    }
+
     fun monthShort(d: LocalDate): String = MONTHS[d.monthValue - 1].uppercase(Locale.US)
 
     /** 12-hour clock, lowercase meridiem: "9:30 am". */

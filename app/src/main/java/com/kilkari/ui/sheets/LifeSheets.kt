@@ -34,19 +34,19 @@ import com.kilkari.ui.components.KSegmented
 import com.kilkari.ui.components.KDateField
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.SheetField
-import com.kilkari.ui.components.SheetStatic
 import java.time.LocalDate
 
 @Composable
 fun ColumnScope.ExpenseSheet(
     currency: Currency,
     fundName: String,
-    onSave: (String, String?, ExpenseCategory, Double, Boolean) -> Unit,
+    onSave: (String, String?, ExpenseCategory, Double, LocalDate, Boolean) -> Unit,
 ) {
     var categoryIndex by remember { mutableIntStateOf(0) }
     var amount by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
     var vendor by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(LocalDate.now()) }
     var paidFromFund by remember { mutableStateOf(true) }
 
     SheetTitle("Add expense")
@@ -57,7 +57,7 @@ fun ColumnScope.ExpenseSheet(
     ) { amount = it }
     SheetField("For", title, "e.g. Diapers, size 1") { title = it }
     SheetField("Where", vendor, "Shop or clinic") { vendor = it }
-    SheetStatic("Date", "Today, ${Fmt.date(LocalDate.now())}")
+    EntryDateField("Date", date) { date = it }
 
     Row(
         Modifier
@@ -85,6 +85,7 @@ fun ColumnScope.ExpenseSheet(
             vendor.trim().ifBlank { null },
             category,
             value!!,
+            date,
             paidFromFund,
         )
     }
@@ -97,11 +98,15 @@ private val MILESTONE_CHIPS = listOf(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ColumnScope.MilestoneSheet(onSave: (String, String, String?) -> Unit) {
+fun ColumnScope.MilestoneSheet(
+    earliest: LocalDate? = null,
+    onSave: (String, String, LocalDate, String?) -> Unit,
+) {
     var chip by remember { mutableStateOf(MILESTONE_CHIPS.first()) }
     var custom by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var album by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(LocalDate.now()) }
 
     SheetTitle("Add a moment")
     FlowRow(
@@ -115,12 +120,12 @@ fun ColumnScope.MilestoneSheet(onSave: (String, String, String?) -> Unit) {
         SheetField("Title", custom, "What happened?") { custom = it }
     }
     SheetField("Note", note, "A line to remember it by") { note = it }
-    SheetStatic("Date", "Today, ${Fmt.date(LocalDate.now())}")
+    EntryDateField("Date", date, earliest) { date = it }
     SheetField("Google Photos album", album, "Paste a link") { album = it }
 
     val title = if (chip == "Other") custom.trim() else chip
     PrimaryButton("Add to timeline", enabled = title.isNotBlank()) {
-        onSave(title, note.trim(), album.trim().ifBlank { null })
+        onSave(title, note.trim(), date, album.trim().ifBlank { null })
     }
 }
 
@@ -150,7 +155,7 @@ fun ColumnScope.EventSheet(onSave: (String, String, LocalDate, Boolean) -> Unit)
 
     SheetTitle("Add an event")
     SheetField("What", title, "e.g. Diwali") { title = it }
-    KDateField("Date", date) { date = it }
+    KDateField("Date", date, format = { Fmt.relativeDate(it) }) { date = it }
     SheetField("Note", note, "Optional detail") { note = it }
     KSegmented(listOf("One-off", "Every year"), if (annual) 1 else 0) { annual = it == 1 }
 
@@ -160,9 +165,10 @@ fun ColumnScope.EventSheet(onSave: (String, String, LocalDate, Boolean) -> Unit)
 }
 
 @Composable
-fun ColumnScope.DocumentSheet(pageCount: Int, onSave: (String, String) -> Unit) {
+fun ColumnScope.DocumentSheet(pageCount: Int, onSave: (String, String, LocalDate) -> Unit) {
     var title by remember { mutableStateOf("") }
     var tags by remember { mutableStateOf("") }
+    var filed by remember { mutableStateOf(LocalDate.now()) }
 
     SheetTitle("File this scan")
     SheetHint(
@@ -171,9 +177,26 @@ fun ColumnScope.DocumentSheet(pageCount: Int, onSave: (String, String) -> Unit) 
     )
     SheetField("Title", title, "e.g. Birth certificate") { title = it }
     SheetField("Tags", tags, "Legal, ID") { tags = it }
-    SheetStatic("Filed", "Today, ${Fmt.date(LocalDate.now())}")
+    EntryDateField("Filed", filed) { filed = it }
 
     PrimaryButton("Save document", enabled = title.isNotBlank() && pageCount > 0) {
-        onSave(title.trim(), tags.trim())
+        onSave(title.trim(), tags.trim(), filed)
     }
+}
+
+/**
+ * Date row shared by the "what happened" sheets. Defaults to today and never runs ahead of it,
+ * so an expense or a moment can be filed against the day it belongs to.
+ */
+@Composable
+private fun EntryDateField(
+    label: String,
+    value: LocalDate,
+    earliest: LocalDate? = null,
+    onPick: (LocalDate) -> Unit,
+) {
+    KDateField(
+        label, value, selectableFrom = earliest, selectableTo = LocalDate.now(),
+        format = { Fmt.relativeDate(it) }, onPick = onPick,
+    )
 }

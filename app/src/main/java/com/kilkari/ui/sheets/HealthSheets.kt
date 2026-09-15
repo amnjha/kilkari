@@ -38,7 +38,6 @@ import com.kilkari.ui.components.KTimeField
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.RadioDot
 import com.kilkari.ui.components.SheetField
-import com.kilkari.ui.components.SheetStatic
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
@@ -53,10 +52,12 @@ fun ColumnScope.MarkVaccineSheet(
     group: VaccineGroupState,
     doses: List<VaccineItemState>,
     currency: Currency,
+    dob: LocalDate?,
     defaultClinic: String,
     defaultDoctor: String,
     onPickDoctor: (current: String?, apply: (DoctorEntity?) -> Unit) -> Unit,
     onConfirm: (
+        on: LocalDate,
         clinic: String?,
         doctor: String?,
         brands: Map<String, String?>,
@@ -64,6 +65,7 @@ fun ColumnScope.MarkVaccineSheet(
         addExpense: Boolean,
     ) -> Unit,
 ) {
+    var given by remember { mutableStateOf(LocalDate.now()) }
     var clinic by remember { mutableStateOf(defaultClinic) }
     var doctor by remember { mutableStateOf(defaultDoctor) }
     var cost by remember { mutableStateOf("") }
@@ -86,7 +88,10 @@ fun ColumnScope.MarkVaccineSheet(
     )
     SheetHint(if (single != null) single.desc else doses.joinToString(", ") { it.name })
 
-    SheetStatic("Date", "Today, " + Fmt.dateFull(LocalDate.now()))
+    KDateField(
+        "Date", given, selectableFrom = dob, selectableTo = LocalDate.now(),
+        format = { Fmt.relativeDate(it) },
+    ) { given = it }
     SheetField("Clinic", clinic, "Where it was given") { clinic = it }
     DoctorPickerField("Doctor", doctor) {
         onPickDoctor(doctor) { picked ->
@@ -136,6 +141,7 @@ fun ColumnScope.MarkVaccineSheet(
     PrimaryButton("Save · add to timeline") {
         val amount = cost.toDoubleOrNull()?.let { Fmt.toInr(it, currency) }
         onConfirm(
+            given,
             clinic.ifBlank { null },
             doctor.ifBlank { null },
             brands.toMap(),
@@ -174,13 +180,15 @@ fun ColumnScope.ScheduleSheet(currentId: String, onPick: (String) -> Unit) {
 
 @Composable
 fun ColumnScope.MedicationSheet(
+    dob: LocalDate? = null,
     onPickDoctor: (current: String?, apply: (DoctorEntity?) -> Unit) -> Unit,
-    onSave: (String, String, String, String?, Int?) -> Unit,
+    onSave: (String, String, String, String?, LocalDate, Int?) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     var dose by remember { mutableStateOf("") }
     var schedule by remember { mutableStateOf("Daily · 8:00 pm") }
     var prescriber by remember { mutableStateOf("") }
+    var start by remember { mutableStateOf(LocalDate.now()) }
     var reminderMinute by remember { mutableStateOf<Int?>(20 * 60) }
 
     SheetTitle("Add a medicine")
@@ -190,10 +198,17 @@ fun ColumnScope.MedicationSheet(
     DoctorPickerField("Prescribed by", prescriber) {
         onPickDoctor(prescriber) { picked -> prescriber = picked?.name.orEmpty() }
     }
+    KDateField(
+        "Started", start, selectableFrom = dob, selectableTo = LocalDate.now(),
+        format = { Fmt.relativeDate(it) },
+    ) { start = it }
     KTimeField("Remind at", reminderMinute) { reminderMinute = it }
 
     PrimaryButton("Save medicine", enabled = name.isNotBlank() && dose.isNotBlank()) {
-        onSave(name.trim(), dose.trim(), schedule.trim(), prescriber.trim().ifBlank { null }, reminderMinute)
+        onSave(
+            name.trim(), dose.trim(), schedule.trim(),
+            prescriber.trim().ifBlank { null }, start, reminderMinute,
+        )
     }
 }
 
@@ -210,7 +225,10 @@ fun ColumnScope.AppointmentSheet(
 
     SheetTitle("Add an appointment")
     SheetField("What", title, "e.g. 6-week check") { title = it }
-    KDateField("Date", date, selectableFrom = LocalDate.now().minusYears(2)) { date = it }
+    KDateField(
+        "Date", date, selectableFrom = LocalDate.now().minusYears(2),
+        format = { Fmt.relativeDate(it) },
+    ) { date = it }
     KTimeField("Time", minute) { minute = it }
     DoctorPickerField("Doctor", doctor) {
         onPickDoctor(doctor) { picked ->

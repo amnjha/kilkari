@@ -53,6 +53,7 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
     val doctors by vm.doctors.collectAsStateWithLifecycle()
     val picker = rememberDoctorPickerState()
     val doses by vm.medicationDoses.collectAsStateWithLifecycle()
+    val baby by vm.baby.collectAsStateWithLifecycle()
     var sheetOpen by remember { mutableStateOf(false) }
 
     val active = meds.filter { it.active }
@@ -130,8 +131,11 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
         }
 
         KSheet(sheetOpen, onDismiss = { sheetOpen = false }) {
-            MedicationSheet(onPickDoctor = picker::open) { name, dose, schedule, prescriber, minute ->
-                vm.addMedication(name, dose, schedule, prescriber, minute)
+            MedicationSheet(
+                dob = baby?.dob,
+                onPickDoctor = picker::open,
+            ) { name, dose, schedule, prescriber, start, minute ->
+                vm.addMedication(name, dose, schedule, prescriber, start, minute)
                 sheetOpen = false
             }
         }

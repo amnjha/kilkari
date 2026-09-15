@@ -44,7 +44,6 @@ import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.MarkVaccineSheet
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
-import java.time.LocalDate
 
 /**
  * One age group: a CTA per dose, the cost posted to Money if any, and a "Mark all given"
@@ -57,6 +56,7 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
     val picker = rememberDoctorPickerState()
     val currency by vm.currency.collectAsStateWithLifecycle()
     val appointments by vm.appointments.collectAsStateWithLifecycle()
+    val baby by vm.baby.collectAsStateWithLifecycle()
 
     /** Doses the open sheet is recording; empty means no sheet. */
     var sheetDoses by remember { mutableStateOf<List<VaccineItemState>>(emptyList()) }
@@ -153,11 +153,12 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
                     group = g,
                     doses = doses,
                     currency = currency,
+                    dob = baby?.dob,
                     defaultClinic = lastClinic,
                     defaultDoctor = lastDoctor,
                     onPickDoctor = picker::open,
-                ) { clinic, doctor, brands, cost, addExpense ->
-                    vm.markDosesGiven(g, doses, LocalDate.now(), clinic, doctor, brands, cost, addExpense)
+                ) { on, clinic, doctor, brands, cost, addExpense ->
+                    vm.markDosesGiven(g, doses, on, clinic, doctor, brands, cost, addExpense)
                     sheetDoses = emptyList()
                 }
             }

@@ -147,7 +147,8 @@ class KilkariRepository(
 
     // ── Teeth ───────────────────────────────────────────────────────────────
 
-    fun teeth(): Flow<Set<String>> = forBaby { db.toothDao().observeAll(it) }.map { rows -> rows.map { it.code }.toSet() }
+    /** Rows rather than codes: the eruption date is editable, so the UI needs to read it back. */
+    fun toothRows(): Flow<List<ToothEntity>> = forBaby { db.toothDao().observeAll(it) }
 
     suspend fun toggleTooth(code: String, erupted: Boolean, on: LocalDate = LocalDate.now()) {
         val id = babyId() ?: return

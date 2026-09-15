@@ -24,6 +24,19 @@ to record them — each with an editable date, defaulted to when it was due. A n
 birth doses; a seven-month-old sees five vaccine groups and seven milestones. Both steps are
 skippable, and the whole thing is written in one transaction at the end.
 
+**Nothing is stuck on today.** Every action carries its own date — a feed, a nap, a diaper, a
+dose of medicine, a measurement, a tooth, a vaccine, an expense, a fund deposit or withdrawal,
+an investment contribution or restated value, a moment, a filed scan. Each one defaults to now,
+which is still the common case, and each one can be moved back, so what you enter at bedtime is
+filed against the afternoon it happened. Times go back too, not just days. Dates read back as
+"Today, 20 Aug" or "Yesterday, 19 Aug", and a back-dated entry says which day it landed on when
+it saves. Nothing can be dated into the future except an appointment or an event, which are
+meant to be. A whole nap can be entered after the fact rather than started and ended live, and a
+tooth is recorded through a sheet that asks when it came through — teeth are usually noticed
+days late, so the chart was otherwise a record of when someone looked. A back-dated entry does
+not tick off a reminder whose occurrence it predates: last week's weigh-in does not clear this
+week's prompt.
+
 **Vaccination schedules** are generated from the baby's date of birth against one of four
 published schedules — IAP (India private), UIP (India government), WHO, or CDC. Changing the
 schedule regenerates due dates; doses already recorded stay marked.
@@ -163,7 +176,8 @@ Nothing leaves the device unless you export it.
   without WHO reference data.
 - Editing existing entries — the child's details and custom reminders can be edited; most other
   screens support add and delete only.
-- Catch-up runs at onboarding only. There is no way to bulk-backfill later from Settings.
+- Catch-up runs at onboarding only. Individual entries can be back-dated from their own sheets,
+  but there is no way to bulk-backfill a whole schedule later from Settings.
 - The fund assumes a single account. Multiple accounts, transfers between them, and reconciling
   against a bank statement are not modelled.
 - Investment values are whatever you last entered. There is no price feed, no XIRR, and no

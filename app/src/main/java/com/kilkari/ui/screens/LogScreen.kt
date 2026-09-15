@@ -50,6 +50,7 @@ import com.kilkari.ui.sheets.SleepSheet
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
+import java.time.LocalDateTime
 
 /** Six quick-log tiles over the day's entries. Tapping a tile opens its sheet. */
 @Composable
@@ -61,6 +62,7 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
     val teeth by vm.teeth.collectAsStateWithLifecycle()
     val growth by vm.growth.collectAsStateWithLifecycle()
     val medications by vm.medications.collectAsStateWithLifecycle()
+    val baby by vm.baby.collectAsStateWithLifecycle()
 
     var sheet by remember { mutableStateOf<LogKind?>(null) }
 
@@ -153,26 +155,29 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
 
         KSheet(sheet != null, onDismiss = { sheet = null }) {
             when (sheet) {
-                LogKind.FEED -> FeedSheet { type: FeedType, side: BreastSide?, amount: Int ->
-                    vm.logFeed(type, side, amount); sheet = null
+                LogKind.FEED -> FeedSheet { type: FeedType, side: BreastSide?, amount: Int, at: LocalDateTime ->
+                    vm.logFeed(type, side, amount, at); sheet = null
                 }
                 LogKind.SLEEP -> SleepSheet(
                     asleepSince = openSleep?.startAt,
-                    onStart = { place -> vm.logSleepStart(place); sheet = null },
-                    onEnd = { vm.logSleepEnd(); sheet = null },
+                    onStart = { place, from, to -> vm.logSleepStart(place, from, to); sheet = null },
+                    onEnd = { at -> vm.logSleepEnd(at); sheet = null },
                 )
-                LogKind.DIAPER -> DiaperSheet { kind: DiaperKind -> vm.logDiaper(kind); sheet = null }
+                LogKind.DIAPER -> DiaperSheet { kind: DiaperKind, at: LocalDateTime ->
+                    vm.logDiaper(kind, at); sheet = null
+                }
                 LogKind.MEDICINE -> MedicineSheet(
                     medications = medications.filter { it.active },
-                    onLog = { med -> vm.logMedicine(med); sheet = null },
+                    onLog = { med, at -> vm.logMedicine(med, at); sheet = null },
                     onManage = { sheet = null; go.push(Routes.MEDS) },
                 )
                 LogKind.GROWTH -> GrowthSheet(
                     weightHint = latestGrowth?.weightKg?.let(Fmt::trimNum) ?: "3.9",
                     lengthHint = latestGrowth?.lengthCm?.let(Fmt::trimNum) ?: "52",
                     headHint = latestGrowth?.headCm?.let(Fmt::trimNum) ?: "36",
-                ) { w, l, h ->
-                    vm.addGrowth(java.time.LocalDate.now(), w, l, h); sheet = null
+                    earliest = baby?.dob,
+                ) { date, w, l, h ->
+                    vm.addGrowth(date, w, l, h); sheet = null
                 }
                 else -> Unit
             }

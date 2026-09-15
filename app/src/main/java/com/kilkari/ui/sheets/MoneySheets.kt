@@ -79,6 +79,7 @@ fun ColumnScope.FundTxnSheet(
         mutableStateOf(if (suggestedDeposit > 0) Fmt.plain(suggestedDeposit, currency) else "")
     }
     var note by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(LocalDate.now()) }
 
     val deposit = kindIndex == 0
 
@@ -86,14 +87,14 @@ fun ColumnScope.FundTxnSheet(
     KSegmented(listOf("Deposit", "Withdrawal"), kindIndex) { kindIndex = it }
     SheetField("Amount (${currency.symbol})", amount, "0", decimal, big = true) { amount = it }
     SheetField("Note", note, if (deposit) "Monthly top-up" else "What it was for") { note = it }
-    SheetStatic("Date", "Today, ${Fmt.date(LocalDate.now())}")
+    MovementDateField("Date", date) { date = it }
 
     val value = amount.toDoubleOrNull()
     PrimaryButton(
         if (deposit) "Record deposit" else "Record withdrawal",
         enabled = value != null && value > 0,
     ) {
-        onSave(deposit, value!!, LocalDate.now(), note.trim().ifBlank { null })
+        onSave(deposit, value!!, date, note.trim().ifBlank { null })
     }
 }
 
@@ -175,7 +176,10 @@ fun ColumnScope.InvestmentSheet(
         amount, "0", decimal, big = true,
     ) { amount = it }
     SheetField("Interest rate (% p.a.)", rate, "Optional", decimal) { rate = it }
-    KDateField("Started", start, selectableTo = LocalDate.now()) { start = it }
+    KDateField(
+        "Started", start, selectableTo = LocalDate.now(),
+        format = { Fmt.relativeDate(it) },
+    ) { start = it }
     KDateField("Matures", maturity, placeholder = "Optional") { maturity = it }
     if (!kind.recurring) {
         SheetField(
@@ -206,8 +210,8 @@ fun ColumnScope.InvestmentDetailSheet(
     investment: InvestmentSummary,
     currency: Currency,
     fundName: String,
-    onContribute: (amount: Double, paidFromFund: Boolean) -> Unit,
-    onUpdateValue: (value: Double) -> Unit,
+    onContribute: (amount: Double, date: LocalDate, paidFromFund: Boolean) -> Unit,
+    onUpdateValue: (value: Double, asOf: LocalDate) -> Unit,
     onSetActive: (Boolean) -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -216,6 +220,8 @@ fun ColumnScope.InvestmentDetailSheet(
     }
     var newValue by remember { mutableStateOf("") }
     var paidFromFund by remember { mutableStateOf(true) }
+    var contributedOn by remember { mutableStateOf(LocalDate.now()) }
+    var valuedOn by remember { mutableStateOf(LocalDate.now()) }
 
     SheetTitle(investment.name)
     SheetHint(
@@ -232,16 +238,18 @@ fun ColumnScope.InvestmentDetailSheet(
     investment.maturityDate?.let { SheetStatic("Matures", Fmt.dateFull(it)) }
 
     SheetField("Add contribution (${currency.symbol})", amount, "0", decimal, big = true) { amount = it }
+    MovementDateField("Paid on", contributedOn, earliest = investment.startDate) { contributedOn = it }
     FromFundToggle(fundName, paidFromFund) { paidFromFund = !paidFromFund }
     val contribution = amount.toDoubleOrNull()
     PrimaryButton("Record contribution", enabled = contribution != null && contribution > 0) {
-        onContribute(contribution!!, paidFromFund)
+        onContribute(contribution!!, contributedOn, paidFromFund)
     }
 
     SheetField("Update value to (${currency.symbol})", newValue, "0", decimal) { newValue = it }
+    MovementDateField("Value as of", valuedOn, earliest = investment.startDate) { valuedOn = it }
     val updated = newValue.toDoubleOrNull()
     PrimaryButton("Save new value", enabled = updated != null && updated >= 0) {
-        onUpdateValue(updated!!)
+        onUpdateValue(updated!!, valuedOn)
     }
 
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -261,6 +269,20 @@ fun ColumnScope.InvestmentDetailSheet(
             fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = KC.Danger,
         )
     }
+}
+
+/** Money moved on a day that may not be today: dates default to now and stop there. */
+@Composable
+private fun MovementDateField(
+    label: String,
+    value: LocalDate,
+    earliest: LocalDate? = null,
+    onPick: (LocalDate) -> Unit,
+) {
+    KDateField(
+        label, value, selectableFrom = earliest, selectableTo = LocalDate.now(),
+        format = { Fmt.relativeDate(it) }, onPick = onPick,
+    )
 }
 
 private fun kindPlaceholder(kind: InvestmentKind) = when (kind) {

@@ -21,7 +21,9 @@ import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -37,6 +39,7 @@ import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 /**
@@ -55,13 +58,14 @@ fun KDateField(
     divider: Boolean = true,
     selectableFrom: LocalDate? = null,
     selectableTo: LocalDate? = null,
+    format: (LocalDate) -> String = Fmt::dateFull,
     onPick: (LocalDate) -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
 
     PickerRow(
         label = label,
-        text = value?.let { Fmt.dateFull(it) } ?: placeholder,
+        text = value?.let(format) ?: placeholder,
         placeholder = value == null,
         sheetStyle = sheetStyle,
         divider = divider,
@@ -106,6 +110,45 @@ fun KTimeField(
             open = false
         }
     }
+}
+
+/**
+ * The moment an entry is filed against. Every action defaults to now — still the common case —
+ * but the date and time are both open, so something remembered at bedtime can be recorded
+ * against the afternoon it actually happened.
+ */
+@Stable
+class MomentState(initial: LocalDateTime) {
+    var date: LocalDate by mutableStateOf(initial.toLocalDate())
+    var minuteOfDay: Int by mutableIntStateOf(initial.hour * 60 + initial.minute)
+
+    val value: LocalDateTime get() = date.atTime(minuteOfDay / 60, minuteOfDay % 60)
+}
+
+@Composable
+fun rememberMoment(initial: LocalDateTime = LocalDateTime.now()): MomentState =
+    remember { MomentState(initial) }
+
+/**
+ * The date/time pair every logging sheet carries. Dates read back as "Today, 20 Aug" so a
+ * back-dated entry is unmistakable, and future dates are closed off by default.
+ */
+@Composable
+fun MomentFields(
+    state: MomentState,
+    dateLabel: String = "Date",
+    timeLabel: String = "Time",
+    earliest: LocalDate? = null,
+    latest: LocalDate? = LocalDate.now(),
+) {
+    KDateField(
+        label = dateLabel,
+        value = state.date,
+        selectableFrom = earliest,
+        selectableTo = latest,
+        format = { Fmt.relativeDate(it) },
+    ) { state.date = it }
+    KTimeField(timeLabel, state.minuteOfDay) { state.minuteOfDay = it }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
