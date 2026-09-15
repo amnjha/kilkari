@@ -13,3 +13,7 @@ captures/
 keystore.properties
 *.jks
 *.keystore
+
+# Release artifacts are built, not committed; release/README.md is kept.
+release/*
+!release/README.md
