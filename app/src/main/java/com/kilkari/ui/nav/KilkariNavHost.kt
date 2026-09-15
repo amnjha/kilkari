@@ -128,10 +128,18 @@ fun KilkariNavHost(repository: KilkariRepository, onReady: () -> Unit = {}) {
 /** Thin wrapper so screens navigate by intent rather than by juggling NavOptions. */
 class NavActions(private val nav: NavHostController) {
 
+    /**
+     * Switches to a tab's own screen, clearing anything pushed on top of it.
+     *
+     * The tabs share one flat graph, so the usual saveState/restoreState pair — which belongs
+     * to per-tab nested graphs — saved the pushed stack under the tab's destination and handed
+     * it straight back. Tapping Health from a vaccine detail screen returned you to that detail
+     * screen, and the only way back to the hub was repeated Back presses. Tabs are entry points,
+     * so popping to the start destination and landing on the tab root is the behaviour wanted.
+     */
     fun tab(route: String) = nav.navigate(route) {
-        popUpTo(Routes.TODAY) { saveState = true }
+        popUpTo(Routes.TODAY) { inclusive = false }
         launchSingleTop = true
-        restoreState = true
     }
 
     fun push(route: String) = nav.navigate(route) { launchSingleTop = true }
