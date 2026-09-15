@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -86,7 +87,10 @@ fun KBottomNav(tabs: List<NavTab>, active: String, onSelect: (String) -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(KC.Surface),
+            // Paint to the very bottom, then inset only the content, so the gesture bar sits
+            // on the app's surface rather than a strip of system colour.
+            .background(KC.Surface)
+            .navigationBarsPadding(),
     ) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Border))
         Row(
@@ -113,7 +117,7 @@ fun KBottomNav(tabs: List<NavTab>, active: String, onSelect: (String) -> Unit) {
                             .width(56.dp)
                             .height(30.dp)
                             .clip(RoundedCornerShape(15.dp))
-                            .background(if (on) KC.IndigoBg else Color.Transparent),
+                            .background(if (on) KC.CoralBg else Color.Transparent),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
@@ -201,7 +205,7 @@ fun BoxScope.KToast(message: String?, bottomInset: Dp = 16.dp) {
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(KIcons["check_circle"], null, tint = KC.IndigoPaler, modifier = Modifier.size(20.dp))
+            Icon(KIcons["check_circle"], null, tint = KC.CoralPaler, modifier = Modifier.size(20.dp))
             Text(
                 shown,
                 color = Color.White, fontFamily = Sans,
@@ -220,7 +224,7 @@ fun BoxScope.KFab(icon: String, label: String? = null, onClick: () -> Unit) {
             .padding(end = 16.dp, bottom = 16.dp)
             .height(56.dp)
             .clip(RoundedCornerShape(18.dp))
-            .background(KC.Indigo)
+            .background(KC.Coral)
             .clickable(onClick = onClick)
             .padding(horizontal = if (label == null) 16.dp else 20.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),

@@ -225,6 +225,11 @@ data class DueTask(
     val done: Boolean,
     /** Whether ticking it off makes sense here, as opposed to opening the screen that owns it. */
     val completable: Boolean,
+    /**
+     * True when finishing this means entering data — a vaccine's brand and date, a photo album,
+     * a deposit amount. Tapping opens the screen that collects it instead of silently ticking.
+     */
+    val requiresEntry: Boolean = false,
     val dismissible: Boolean,
     /** The occurrence this instance belongs to; the same task on a later week is a new one. */
     val occurrence: LocalDate,

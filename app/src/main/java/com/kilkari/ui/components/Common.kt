@@ -124,7 +124,7 @@ fun Monogram(letter: String, size: Int = 44, fontSize: Int = 18) {
         Modifier
             .size(size.dp)
             .clip(RoundedCornerShape(percent = 50))
-            .background(Brush.linearGradient(listOf(KC.IndigoLight, KC.FuchsiaLight))),
+            .background(Brush.linearGradient(listOf(KC.CoralLight, KC.GoldLight))),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -146,13 +146,13 @@ fun KChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onCli
             .clip(RoundedCornerShape(999.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(999.dp),
-        color = if (selected) KC.Indigo else KC.Surface,
-        border = BorderStroke(1.dp, if (selected) KC.Indigo else KC.BorderStrong),
+        color = if (selected) KC.Coral else KC.Surface,
+        border = BorderStroke(1.dp, if (selected) KC.Coral else KC.BorderStrong),
     ) {
         Box(Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
             Text(
                 label,
-                color = if (selected) Color.White else KC.IndigoDeep,
+                color = if (selected) Color.White else KC.CoralDeep,
                 fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
             )
         }
@@ -166,7 +166,7 @@ fun KSegmented(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Uni
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(999.dp))
-            .background(KC.VioletBg)
+            .background(KC.ClayBg)
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -177,13 +177,13 @@ fun KSegmented(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Uni
                     .weight(1f)
                     .height(38.dp)
                     .clip(RoundedCornerShape(999.dp))
-                    .background(if (on) KC.Indigo else Color.Transparent)
+                    .background(if (on) KC.Coral else Color.Transparent)
                     .clickable { onSelect(i) },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     label,
-                    color = if (on) Color.White else KC.IndigoDeep,
+                    color = if (on) Color.White else KC.CoralDeep,
                     fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp,
                 )
             }
@@ -204,7 +204,7 @@ fun PrimaryButton(
             .fillMaxWidth()
             .height(50.dp)
             .clip(RoundedCornerShape(999.dp))
-            .background(if (enabled) KC.Indigo else KC.IndigoPale)
+            .background(if (enabled) KC.Coral else KC.CoralPale)
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -234,8 +234,8 @@ fun SecondaryButton(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (icon != null) Icon(KIcons[icon], null, tint = KC.IndigoDeep, modifier = Modifier.size(20.dp))
-            Text(label, color = KC.IndigoDeep, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            if (icon != null) Icon(KIcons[icon], null, tint = KC.CoralDeep, modifier = Modifier.size(20.dp))
+            Text(label, color = KC.CoralDeep, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         }
     }
 }
@@ -248,7 +248,7 @@ fun KSwitch(checked: Boolean, onToggle: (() -> Unit)? = null) {
             .width(44.dp)
             .height(26.dp)
             .clip(RoundedCornerShape(13.dp))
-            .background(if (checked) KC.Indigo else KC.Track)
+            .background(if (checked) KC.Coral else KC.Track)
             .let { if (onToggle != null) it.clickable(onClick = onToggle) else it },
     ) {
         Box(
@@ -294,8 +294,8 @@ fun KRow(
     title: String,
     subtitle: String? = null,
     icon: String? = null,
-    iconTint: Color = KC.Indigo,
-    iconBg: Color = KC.IndigoBg,
+    iconTint: Color = KC.Coral,
+    iconBg: Color = KC.CoralBg,
     divider: Boolean = true,
     onClick: (() -> Unit)? = null,
     trailing: @Composable (RowScope.() -> Unit)? = null,
@@ -336,9 +336,9 @@ fun CheckRing(checked: Boolean, rounded: Boolean = false, size: Int = 24) {
     Box(
         Modifier
             .size(size.dp)
-            .border(2.dp, if (checked) KC.Indigo else KC.IndigoPale, shape)
+            .border(2.dp, if (checked) KC.Coral else KC.CoralPale, shape)
             .clip(shape)
-            .background(if (checked) KC.Indigo else KC.Surface),
+            .background(if (checked) KC.Coral else KC.Surface),
         contentAlignment = Alignment.Center,
     ) {
         if (checked) {

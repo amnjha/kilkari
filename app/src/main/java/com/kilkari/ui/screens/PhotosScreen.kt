@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,10 +48,18 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
     val context = LocalContext.current
     var sheetOpen by remember { mutableStateOf(false) }
 
+    val pendingEntry by vm.pendingEntry.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingEntry) {
+        if (pendingEntry == "album") {
+            sheetOpen = true
+            vm.consumeEntry()
+        }
+    }
+
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Photo albums", go::back) {
-                IconButton44("add_link", KC.Indigo, { sheetOpen = true }, iconSize = 26)
+                IconButton44("add_link", KC.Coral, { sheetOpen = true }, iconSize = 26)
             }
 
             Column(
@@ -83,12 +92,12 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
                                 Modifier
                                     .width(110.dp)
                                     .height(90.dp)
-                                    .background(KC.VioletBg),
+                                    .background(KC.ClayBg),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     KIcons["photo_library"], null,
-                                    tint = KC.VioletDeep, modifier = Modifier.size(26.dp),
+                                    tint = KC.ClayDeep, modifier = Modifier.size(26.dp),
                                 )
                             }
                             Column(
@@ -116,12 +125,12 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
                                 ) {
                                     Icon(
                                         KIcons["open_in_new"], null,
-                                        tint = KC.Indigo, modifier = Modifier.size(16.dp),
+                                        tint = KC.Coral, modifier = Modifier.size(16.dp),
                                     )
                                     Text(
                                         "Open in Google Photos",
                                         fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                                        fontSize = 12.sp, color = KC.Indigo,
+                                        fontSize = 12.sp, color = KC.Coral,
                                     )
                                 }
                             }

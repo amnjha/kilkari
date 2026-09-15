@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -96,13 +97,13 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
                 }
 
                 g.costMinor?.let { cost ->
-                    KCard(corner = 14, background = KC.GreenBg, border = KC.GreenRing) {
+                    KCard(corner = 14, background = KC.TealBg, border = KC.TealRing) {
                         Row(
                             Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(KIcons["receipt_long"], null, tint = KC.Green, modifier = Modifier.size(20.dp))
+                            Icon(KIcons["receipt_long"], null, tint = KC.Teal, modifier = Modifier.size(20.dp))
                             Text(
                                 "Posted to Money → Medical",
                                 modifier = Modifier.weight(1f),
@@ -110,7 +111,7 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
                             )
                             Text(
                                 Fmt.money(cost, currency), fontFamily = Sans,
-                                fontWeight = FontWeight.Bold, fontSize = 14.sp, color = KC.Green,
+                                fontWeight = FontWeight.Bold, fontSize = 14.sp, color = KC.Teal,
                             )
                         }
                     }
@@ -124,7 +125,13 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
             }
 
             if (pending.isNotEmpty()) {
-                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 14.dp)) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 14.dp),
+                ) {
                     PrimaryButton(
                         if (pending.size == g.count) "Mark all given" else "Mark remaining ${pending.size} given"
                     ) {
@@ -170,10 +177,10 @@ private fun DoseRow(
                 Modifier
                     .size(24.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(KC.GreenBg),
+                    .background(KC.TealBg),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(KIcons["check"], null, tint = KC.Green, modifier = Modifier.size(16.dp))
+                Icon(KIcons["check"], null, tint = KC.Teal, modifier = Modifier.size(16.dp))
             }
         }
         Column(Modifier.weight(1f)) {
@@ -190,7 +197,7 @@ private fun DoseRow(
                     item.desc
                 },
                 fontFamily = Sans, fontSize = 12.sp,
-                color = if (item.given) KC.Green else KC.Muted,
+                color = if (item.given) KC.Teal else KC.Muted,
             )
         }
         if (item.given) {
@@ -207,11 +214,11 @@ private fun DoseRow(
                 "Mark given",
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
-                    .background(KC.IndigoBg)
+                    .background(KC.CoralBg)
                     .clickable(onClick = onMark)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 fontFamily = Sans, fontWeight = FontWeight.Bold,
-                fontSize = 12.sp, color = KC.IndigoDeep,
+                fontSize = 12.sp, color = KC.CoralDeep,
             )
         }
     }

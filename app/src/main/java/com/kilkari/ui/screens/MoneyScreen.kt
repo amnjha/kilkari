@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +75,15 @@ fun MoneyScreen(vm: KilkariViewModel) {
     var tab by remember { mutableIntStateOf(0) }
     var sheet by remember { mutableStateOf<MoneySheet?>(null) }
     var openInvestment by remember { mutableStateOf<InvestmentSummary?>(null) }
+
+    val pendingEntry by vm.pendingEntry.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingEntry) {
+        if (pendingEntry == "fund") {
+            tab = 1
+            sheet = MoneySheet.FUND_TXN
+            vm.consumeEntry()
+        }
+    }
 
     val fundName = settings.fundAccountName
 
@@ -216,16 +226,16 @@ private fun ColumnScope.SpendingView(vm: KilkariViewModel, currency: Currency, f
                     .fillMaxWidth()
                     .height(10.dp)
                     .clip(RoundedCornerShape(5.dp))
-                    .background(KC.IndigoBg),
+                    .background(KC.CoralBg),
             ) {
                 if (total > 0) {
-                    Box(Modifier.fillMaxWidth(medFraction).height(10.dp).background(KC.Violet))
-                    Box(Modifier.weight(1f).height(10.dp).background(KC.SkyBright))
+                    Box(Modifier.fillMaxWidth(medFraction).height(10.dp).background(KC.Clay))
+                    Box(Modifier.weight(1f).height(10.dp).background(KC.SeaLight))
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Legend("Medical", Fmt.money(medical, currency), KC.Violet)
-                Legend("General", Fmt.money(general, currency), KC.SkyBright)
+                Legend("Medical", Fmt.money(medical, currency), KC.Clay)
+                Legend("General", Fmt.money(general, currency), KC.SeaLight)
             }
         }
     }
@@ -249,8 +259,8 @@ private fun ColumnScope.SpendingView(vm: KilkariViewModel, currency: Currency, f
             ) {
                 IconBadge(
                     expense.icon,
-                    if (isMedical) KC.Violet else KC.SkyMid,
-                    if (isMedical) KC.VioletBg else KC.SkyBg,
+                    if (isMedical) KC.Clay else KC.SeaMid,
+                    if (isMedical) KC.ClayBg else KC.SeaBg,
                     size = 36, corner = 10, iconSize = 20,
                 )
                 Column(Modifier.weight(1f)) {
@@ -299,7 +309,7 @@ private fun ColumnScope.FundView(
         it.origin == FundLedgerOrigin.DEPOSIT && YearMonth.from(it.date) == month
     }
 
-    GradientCard(listOf(KC.IndigoDeep, KC.Violet)) {
+    GradientCard(listOf(KC.CoralDeep, KC.Clay)) {
         Text(
             fundName.uppercase(),
             fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp,
@@ -328,7 +338,7 @@ private fun ColumnScope.FundView(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconBadge("calendar_month", KC.IndigoDeep, KC.IndigoBg)
+            IconBadge("calendar_month", KC.CoralDeep, KC.CoralBg)
             Column(Modifier.weight(1f)) {
                 Text(
                     if (settings.fundMonthlyInr > 0) {
@@ -347,7 +357,7 @@ private fun ColumnScope.FundView(
                     fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
                 )
             }
-            Icon(KIcons["chevron_right"], null, tint = KC.IndigoPaler, modifier = Modifier.size(20.dp))
+            Icon(KIcons["chevron_right"], null, tint = KC.CoralPaler, modifier = Modifier.size(20.dp))
         }
     }
 
@@ -388,16 +398,16 @@ private fun FundStat(caption: String, value: String, modifier: Modifier = Modifi
 @Composable
 private fun LedgerRow(row: FundLedgerRow, currency: Currency) {
     val tint = when (row.origin) {
-        FundLedgerOrigin.DEPOSIT -> KC.Green
-        FundLedgerOrigin.WITHDRAWAL -> KC.Rose
-        FundLedgerOrigin.EXPENSE -> KC.SkyMid
-        FundLedgerOrigin.INVESTMENT -> KC.Violet
+        FundLedgerOrigin.DEPOSIT -> KC.Teal
+        FundLedgerOrigin.WITHDRAWAL -> KC.Danger
+        FundLedgerOrigin.EXPENSE -> KC.SeaMid
+        FundLedgerOrigin.INVESTMENT -> KC.Clay
     }
     val background = when (row.origin) {
-        FundLedgerOrigin.DEPOSIT -> KC.GreenBg
-        FundLedgerOrigin.WITHDRAWAL -> KC.RoseBg
-        FundLedgerOrigin.EXPENSE -> KC.SkyBg
-        FundLedgerOrigin.INVESTMENT -> KC.VioletBg
+        FundLedgerOrigin.DEPOSIT -> KC.TealBg
+        FundLedgerOrigin.WITHDRAWAL -> KC.DangerBg
+        FundLedgerOrigin.EXPENSE -> KC.SeaBg
+        FundLedgerOrigin.INVESTMENT -> KC.ClayBg
     }
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
@@ -419,7 +429,7 @@ private fun LedgerRow(row: FundLedgerRow, currency: Currency) {
         Text(
             (if (row.incoming) "+" else "−") + Fmt.money(row.amountInr, currency),
             fontFamily = Sans, fontWeight = FontWeight.Bold,
-            fontSize = 14.sp, color = if (row.incoming) KC.Green else KC.Ink,
+            fontSize = 14.sp, color = if (row.incoming) KC.Teal else KC.Ink,
         )
     }
 }
@@ -470,12 +480,12 @@ private fun ColumnScope.InvestView(
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Legend("Put in", Fmt.money(invested, currency), KC.Indigo)
+                Legend("Put in", Fmt.money(invested, currency), KC.Coral)
                 if (gain != 0L) {
                     Legend(
                         if (gain > 0) "Gain" else "Down",
                         Fmt.money(kotlin.math.abs(gain), currency),
-                        if (gain > 0) KC.Green else KC.Rose,
+                        if (gain > 0) KC.Teal else KC.Danger,
                     )
                 }
             }
@@ -547,7 +557,7 @@ private fun InvestmentCard(item: InvestmentSummary, currency: Currency, onClick:
                         Text(
                             (if (gain > 0) "+" else "−") + Fmt.money(kotlin.math.abs(gain), currency),
                             fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 11.sp,
-                            color = if (gain > 0) KC.Green else KC.Rose,
+                            color = if (gain > 0) KC.Teal else KC.Danger,
                         )
                     }
                 }
@@ -567,7 +577,7 @@ private fun InvestmentCard(item: InvestmentSummary, currency: Currency, onClick:
                     Text(
                         if (item.contributedThisMonth) "Paid this month" else "Due this month",
                         fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp,
-                        color = if (item.contributedThisMonth) KC.Green else KC.Amber,
+                        color = if (item.contributedThisMonth) KC.Teal else KC.Gold,
                     )
                 }
             }
@@ -576,12 +586,12 @@ private fun InvestmentCard(item: InvestmentSummary, currency: Currency, onClick:
 }
 
 private fun kindTint(kind: InvestmentKind): Pair<Color, Color> = when (kind) {
-    InvestmentKind.FD, InvestmentKind.RD -> KC.IndigoDeep to KC.IndigoBg
-    InvestmentKind.SIP -> KC.Violet to KC.VioletBg
-    InvestmentKind.PPF -> KC.GreenDeep to KC.GreenBg
-    InvestmentKind.SSY -> KC.FuchsiaDeep to KC.FuchsiaBg
-    InvestmentKind.GOLD -> KC.AmberDeep to KC.AmberBg
-    InvestmentKind.OTHER -> KC.Slate to KC.SlateBg
+    InvestmentKind.FD, InvestmentKind.RD -> KC.CoralDeep to KC.CoralBg
+    InvestmentKind.SIP -> KC.Clay to KC.ClayBg
+    InvestmentKind.PPF -> KC.TealDeep to KC.TealBg
+    InvestmentKind.SSY -> KC.GoldDeep to KC.GoldBg
+    InvestmentKind.GOLD -> KC.GoldDeep to KC.GoldBg
+    InvestmentKind.OTHER -> KC.Stone to KC.StoneBg
 }
 
 // ── Shared ──────────────────────────────────────────────────────────────────

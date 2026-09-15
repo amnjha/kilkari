@@ -117,8 +117,8 @@ private fun ToothRow(
                     .width(28.dp)
                     .height(40.dp)
                     .clip(shape)
-                    .background(if (on) KC.SkyBg else KC.Surface)
-                    .border(2.dp, if (on) KC.Sky else KC.BorderStrong, shape)
+                    .background(if (on) KC.SeaBg else KC.Surface)
+                    .border(2.dp, if (on) KC.Sea else KC.BorderStrong, shape)
                     .clickable { onToggle(code, !on) }
                     .padding(bottom = if (upper) 3.dp else 0.dp, top = if (upper) 0.dp else 3.dp),
                 contentAlignment = if (upper) Alignment.BottomCenter else Alignment.TopCenter,
@@ -126,7 +126,7 @@ private fun ToothRow(
                 Text(
                     "${month}m",
                     fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 9.sp,
-                    color = if (on) KC.SkyDeep else KC.Faint,
+                    color = if (on) KC.SeaDeep else KC.Faint,
                 )
             }
         }

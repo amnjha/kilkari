@@ -155,11 +155,11 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(999.dp))
-                    .background(KC.IndigoBg)
+                    .background(KC.CoralBg)
                     .clickable { sheetOpen = false; scanPage() }
                     .padding(vertical = 12.dp),
                 fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp,
-                color = KC.IndigoDeep,
+                color = KC.CoralDeep,
                 textAlign = TextAlign.Center,
             )
         }
@@ -176,7 +176,7 @@ internal fun PagePreview(uri: String, height: Int) {
         Modifier
             .fillMaxWidth()
             .height(height.dp)
-            .background(KC.VioletBg),
+            .background(KC.ClayBg),
         contentAlignment = Alignment.Center,
     ) {
         if (bitmap != null) {
@@ -189,7 +189,7 @@ internal fun PagePreview(uri: String, height: Int) {
         } else {
             Icon(
                 KIcons["document_scanner"], null,
-                tint = KC.VioletDeep, modifier = Modifier.size(28.dp),
+                tint = KC.ClayDeep, modifier = Modifier.size(28.dp),
             )
         }
     }

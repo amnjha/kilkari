@@ -70,7 +70,7 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
     ) {
         Text("Health", style = ScreenTitle, color = KC.Ink)
 
-        GradientCard(listOf(KC.Violet, KC.Fuchsia), onClick = { go.push(Routes.VACCINES) }) {
+        GradientCard(listOf(KC.Clay, KC.Gold), onClick = { go.push(Routes.VACCINES) }) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -118,7 +118,7 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             HealthTile(
-                "monitor_weight", KC.GreenBright, "Growth",
+                "monitor_weight", KC.TealLight, "Growth",
                 latestGrowth?.let {
                     listOfNotNull(
                         it.weightKg?.let(Fmt::weight),
@@ -129,20 +129,20 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
                 Modifier.weight(1f),
             ) { go.push(Routes.GROWTH) }
             HealthTile(
-                "dentistry", KC.Sky, "Teeth",
+                "dentistry", KC.Sea, "Teeth",
                 "${teeth.size} of 20 · first ~6 mo",
                 Modifier.weight(1f),
             ) { go.push(Routes.TEETH) }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             HealthTile(
-                "pill", KC.RoseBright, "Medications",
+                "pill", KC.DangerLight, "Medications",
                 if (activeMeds.isEmpty()) "None active"
                 else "${activeMeds.size} active · ${activeMeds.first().name}",
                 Modifier.weight(1f),
             ) { go.push(Routes.MEDS) }
             HealthTile(
-                "stethoscope", KC.Indigo, "Appointments",
+                "stethoscope", KC.Coral, "Appointments",
                 nextAppt?.let { "Next: ${Fmt.dayAndDate(it.startAt.toLocalDate())} ${Fmt.time(it.startAt)}" }
                     ?: "Nothing booked",
                 Modifier.weight(1f),
@@ -155,13 +155,13 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
                 growth.takeLast(2).reversed().forEach { g ->
                     val prev = growth.getOrNull(growth.indexOf(g) - 1)?.weightKg
                     val delta = if (prev != null && g.weightKg != null) " (${Fmt.grams(g.weightKg - prev)})" else ""
-                    add(Triple("monitor_weight" to KC.GreenBright, "Weight ${Fmt.weight(g.weightKg)}$delta", g.date))
+                    add(Triple("monitor_weight" to KC.TealLight, "Weight ${Fmt.weight(g.weightKg)}$delta", g.date))
                 }
                 meds.take(2).forEach { m ->
-                    add(Triple("pill" to KC.RoseBright, "${m.name} started, ${m.dose}", m.startDate))
+                    add(Triple("pill" to KC.DangerLight, "${m.name} started, ${m.dose}", m.startDate))
                 }
                 timeline.filter { it.icon == "vaccines" }.take(2).forEach { t ->
-                    add(Triple("vaccines" to KC.FuchsiaDeep, t.title, t.date))
+                    add(Triple("vaccines" to KC.GoldDeep, t.title, t.date))
                 }
             }.sortedByDescending { it.third }.take(4)
 

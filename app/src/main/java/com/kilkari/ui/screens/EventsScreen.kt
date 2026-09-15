@@ -59,7 +59,7 @@ fun EventsScreen(vm: KilkariViewModel, go: NavActions) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Birthdays & events", go::back) {
-                IconButton44("add", KC.Indigo, { sheetOpen = true }, iconSize = 26)
+                IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)
             }
 
             Column(
@@ -78,7 +78,7 @@ fun EventsScreen(vm: KilkariViewModel, go: NavActions) {
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(20.dp))
-                            .background(Brush.linearGradient(listOf(KC.Amber, KC.RoseBright)))
+                            .background(Brush.linearGradient(listOf(KC.Gold, KC.DangerLight)))
                             .padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
@@ -172,10 +172,10 @@ private fun ordinalLabel(n: Int): String = when {
 }
 
 private fun eventTint(icon: String): Pair<Color, Color> = when (icon) {
-    "cake" -> KC.Rose to KC.RoseBg
-    "restaurant" -> KC.GreenDeep to KC.GreenBg
-    "celebration" -> KC.FuchsiaDeep to KC.FuchsiaBg
-    else -> KC.AmberDeep to KC.AmberBg
+    "cake" -> KC.Danger to KC.DangerBg
+    "restaurant" -> KC.TealDeep to KC.TealBg
+    "celebration" -> KC.GoldDeep to KC.GoldBg
+    else -> KC.GoldDeep to KC.GoldBg
 }
 
 /** Picks a fitting glyph from the event title so rows are not all identical. */

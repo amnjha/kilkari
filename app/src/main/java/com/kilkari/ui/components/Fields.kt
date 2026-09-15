@@ -63,7 +63,7 @@ fun ValueField(
                     onValueChange = onChange,
                     singleLine = true,
                     keyboardOptions = keyboard,
-                    cursorBrush = SolidColor(KC.Indigo),
+                    cursorBrush = SolidColor(KC.Coral),
                     textStyle = LocalTextStyle.current.merge(
                         TextStyle(
                             fontFamily = Sans, fontWeight = FontWeight.SemiBold,
@@ -93,7 +93,7 @@ fun ReadOnlyField(label: String, value: String, divider: Boolean = true, onClick
             Text(label, fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
             Text(
                 value, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp, color = if (onClick != null) KC.Indigo else KC.Ink,
+                fontSize = 14.sp, color = if (onClick != null) KC.Coral else KC.Ink,
             )
         }
         if (divider) Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Divider))
@@ -133,7 +133,7 @@ fun SheetField(
                 onValueChange = onChange,
                 singleLine = true,
                 keyboardOptions = keyboard,
-                cursorBrush = SolidColor(KC.Indigo),
+                cursorBrush = SolidColor(KC.Coral),
                 textStyle = TextStyle(
                     fontFamily = Sans, fontWeight = FontWeight.Bold,
                     fontSize = if (big) 18.sp else 14.sp,
@@ -200,14 +200,14 @@ fun RadioDot(selected: Boolean) {
     Box(
         Modifier
             .size(22.dp)
-            .border(2.dp, if (selected) KC.Indigo else KC.IndigoPale, RoundedCornerShape(percent = 50)),
+            .border(2.dp, if (selected) KC.Coral else KC.CoralPale, RoundedCornerShape(percent = 50)),
         contentAlignment = Alignment.Center,
     ) {
         Box(
             Modifier
                 .size(12.dp)
                 .clip(RoundedCornerShape(percent = 50))
-                .background(if (selected) KC.Indigo else Color.Transparent),
+                .background(if (selected) KC.Coral else Color.Transparent),
         )
     }
 }
@@ -274,6 +274,6 @@ private fun StepperButton(glyph: String, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(glyph, fontFamily = Sans, fontSize = 20.sp, color = KC.Indigo)
+        Text(glyph, fontFamily = Sans, fontSize = 20.sp, color = KC.Coral)
     }
 }

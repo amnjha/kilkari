@@ -55,7 +55,7 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar(baby?.let { "${it.name}'s timeline" } ?: "Timeline", go::back) {
-                IconButton44("add", KC.Indigo, { sheetOpen = true }, iconSize = 26)
+                IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)
             }
 
             Column(
@@ -140,7 +140,7 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
                                     Modifier
                                         .padding(top = 8.dp)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(KC.VioletBg)
+                                        .background(KC.ClayBg)
                                         .clickable { openLink(context, url) }
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -148,12 +148,12 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
                                 ) {
                                     Icon(
                                         KIcons["open_in_new"], null,
-                                        tint = KC.VioletDeep, modifier = Modifier.size(16.dp),
+                                        tint = KC.ClayDeep, modifier = Modifier.size(16.dp),
                                     )
                                     Text(
                                         "Open photo album",
                                         fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                                        fontSize = 12.sp, color = KC.VioletDeep,
+                                        fontSize = 12.sp, color = KC.ClayDeep,
                                     )
                                 }
                             }
@@ -182,13 +182,13 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
 /** Icon colour pairing per timeline entry kind. */
 internal fun timelineSkin(icon: String): Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color> =
     when (icon) {
-        "favorite" -> KC.Rose to KC.RoseBg
-        "vaccines" -> KC.VioletDeep to KC.VioletBg
-        "celebration" -> KC.FuchsiaDeep to KC.FuchsiaBg
-        "child_care" -> KC.Cyan to KC.CyanBg
-        "home" -> KC.Orange to KC.OrangeBg
-        "cake" -> KC.Rose to KC.RoseBg
-        else -> KC.FuchsiaDeep to KC.FuchsiaBg
+        "favorite" -> KC.Danger to KC.DangerBg
+        "vaccines" -> KC.ClayDeep to KC.ClayBg
+        "celebration" -> KC.GoldDeep to KC.GoldBg
+        "child_care" -> KC.Sea to KC.SeaBg
+        "home" -> KC.Clay to KC.ClayBg
+        "cake" -> KC.Danger to KC.DangerBg
+        else -> KC.GoldDeep to KC.GoldBg
     }
 
 internal fun openLink(context: android.content.Context, url: String) {

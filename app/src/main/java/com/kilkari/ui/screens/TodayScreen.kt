@@ -126,7 +126,7 @@ private fun TodayAgenda(
     }
 
     nextVac?.let { g ->
-        GradientCard(listOf(KC.Indigo, KC.Violet), onClick = { go.push(Routes.VACCINES) }) {
+        GradientCard(listOf(KC.Coral, KC.Clay), onClick = { go.push(Routes.VACCINES) }) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -200,7 +200,7 @@ private fun TodayHero(
             .fillMaxWidth()
             .bleedHorizontal(16.dp)
             .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
-            .background(Brush.linearGradient(listOf(KC.IndigoDeep, KC.Violet, KC.Fuchsia)))
+            .background(Brush.linearGradient(listOf(KC.CoralDeep, KC.Clay, KC.Gold)))
             .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -266,7 +266,7 @@ private fun TodayHero(
         SectionLabel("Latest moment")
         Text(
             "Timeline",
-            fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = KC.Indigo,
+            fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = KC.Coral,
             modifier = Modifier.clickable { go.push(Routes.TIMELINE) },
         )
     }
@@ -352,8 +352,8 @@ private fun TodayChecklist(vm: KilkariViewModel, go: NavActions, dob: LocalDate)
 
     nextVac?.takeIf { it.inDays > 0 }?.let { g ->
         UpcomingRow(
-            icon = "vaccines", tint = KC.FuchsiaDeep, background = KC.FuchsiaBg,
-            border = KC.FuchsiaRing,
+            icon = "vaccines", tint = KC.GoldDeep, background = KC.GoldBg,
+            border = KC.GoldRing,
             title = "${g.label} vaccines",
             subtitle = "${Fmt.date(g.dueDate)} · ${g.count} ${Fmt.plural(g.count.toLong(), "dose")}",
             trailing = Fmt.dueBadge(g.inDays),
@@ -362,7 +362,7 @@ private fun TodayChecklist(vm: KilkariViewModel, go: NavActions, dob: LocalDate)
 
     appointments.firstOrNull { it.startAt.toLocalDate().isAfter(today) }?.let { appt ->
         UpcomingRow(
-            icon = "stethoscope", tint = KC.Indigo, background = KC.Surface, border = KC.Border,
+            icon = "stethoscope", tint = KC.Coral, background = KC.Surface, border = KC.Border,
             title = appt.title,
             subtitle = listOfNotNull(
                 Fmt.dayAndDate(appt.startAt.toLocalDate()),
@@ -375,7 +375,7 @@ private fun TodayChecklist(vm: KilkariViewModel, go: NavActions, dob: LocalDate)
 
     events.firstOrNull { it.date.isAfter(today) }?.let { ev ->
         UpcomingRow(
-            icon = ev.icon, tint = KC.Amber, background = KC.Surface, border = KC.Border,
+            icon = ev.icon, tint = KC.Gold, background = KC.Surface, border = KC.Border,
             title = ev.title,
             subtitle = Fmt.dayAndDate(ev.date),
             trailing = Fmt.dueBadge(Fmt.daysUntil(ev.date)),
@@ -392,7 +392,7 @@ private fun ProgressRing(percent: Int) {
                 useCenter = true, size = Size(size.width, size.height),
             )
             drawArc(
-                color = KC.Violet, startAngle = -90f, sweepAngle = 360f * percent / 100f,
+                color = KC.Clay, startAngle = -90f, sweepAngle = 360f * percent / 100f,
                 useCenter = true, size = Size(size.width, size.height),
             )
         }
@@ -405,7 +405,7 @@ private fun ProgressRing(percent: Int) {
         ) {
             Text(
                 "$percent%", fontFamily = Sans, fontWeight = FontWeight.Bold,
-                fontSize = 12.sp, color = KC.Indigo,
+                fontSize = 12.sp, color = KC.Coral,
             )
         }
     }
@@ -477,8 +477,14 @@ private fun DueTaskRow(task: DueTask, vm: KilkariViewModel, go: NavActions) {
                 .fillMaxWidth()
                 .clickable {
                     when {
+                        // Anything that needs data takes you to where that data is entered,
+                        // and completes itself once the entry lands.
+                        task.requiresEntry && task.route != null -> {
+                            vm.requestEntry(task.id.removePrefix("rem:"))
+                            go.open(task.route)
+                        }
                         task.completable -> vm.setTaskDone(task, !task.done)
-                        task.route != null -> go.push(task.route)
+                        task.route != null -> go.open(task.route)
                     }
                 }
                 .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -522,7 +528,7 @@ private fun DueTaskRow(task: DueTask, vm: KilkariViewModel, go: NavActions) {
                 // Only genuine lateness is red; the per-kind tint made every medicine look overdue.
                 color = when {
                     task.done -> KC.Faint
-                    task.overdue -> KC.Rose
+                    task.overdue -> KC.Danger
                     else -> KC.Muted
                 },
             )
@@ -531,12 +537,12 @@ private fun DueTaskRow(task: DueTask, vm: KilkariViewModel, go: NavActions) {
 }
 
 private fun taskSkin(task: DueTask): Pair<Color, Color> = when (task.kind) {
-    DueTaskKind.MEDICATION -> KC.RoseDeep to KC.RoseBg2
-    DueTaskKind.APPOINTMENT -> KC.Indigo to KC.IndigoBg
-    DueTaskKind.VACCINE -> KC.FuchsiaDeep to KC.FuchsiaBg
-    DueTaskKind.SLEEP -> KC.IndigoDeep to KC.IndigoBg
-    DueTaskKind.CHECKLIST -> KC.Indigo to KC.IndigoBg
-    DueTaskKind.REMINDER -> KC.SkyDeep to KC.SkyBg
+    DueTaskKind.MEDICATION -> KC.DangerDeep to KC.DangerBg2
+    DueTaskKind.APPOINTMENT -> KC.Coral to KC.CoralBg
+    DueTaskKind.VACCINE -> KC.GoldDeep to KC.GoldBg
+    DueTaskKind.SLEEP -> KC.CoralDeep to KC.CoralBg
+    DueTaskKind.CHECKLIST -> KC.Coral to KC.CoralBg
+    DueTaskKind.REMINDER -> KC.SeaDeep to KC.SeaBg
 }
 
 @Composable
@@ -560,7 +566,7 @@ private fun WhiteButton(label: String, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp),
     ) {
-        Text(label, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = KC.Indigo)
+        Text(label, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = KC.Coral)
     }
 }
 
@@ -576,10 +582,10 @@ private fun greeting(): String {
 internal data class TileSpec(val icon: String, val title: String, val fg: Color, val bg: Color)
 
 internal fun tileSpec(kind: LogKind): TileSpec = when (kind) {
-    LogKind.FEED -> TileSpec("water_drop", "Feed", KC.FuchsiaDeep, KC.FuchsiaBg)
-    LogKind.SLEEP -> TileSpec("bedtime", "Sleep", KC.IndigoDeep, KC.IndigoBg)
-    LogKind.DIAPER -> TileSpec("baby_changing_station", "Diaper", KC.SkyDeep, KC.SkyBg)
-    LogKind.MEDICINE -> TileSpec("pill", "Medicine", KC.RoseDeep, KC.RoseBg2)
-    LogKind.GROWTH -> TileSpec("monitor_weight", "Growth", KC.GreenDeep, KC.GreenBg)
-    LogKind.TOOTH -> TileSpec("dentistry", "Teeth", KC.Orange, KC.OrangeBg)
+    LogKind.FEED -> TileSpec("water_drop", "Feed", KC.GoldDeep, KC.GoldBg)
+    LogKind.SLEEP -> TileSpec("bedtime", "Sleep", KC.CoralDeep, KC.CoralBg)
+    LogKind.DIAPER -> TileSpec("baby_changing_station", "Diaper", KC.SeaDeep, KC.SeaBg)
+    LogKind.MEDICINE -> TileSpec("pill", "Medicine", KC.DangerDeep, KC.DangerBg2)
+    LogKind.GROWTH -> TileSpec("monitor_weight", "Growth", KC.TealDeep, KC.TealBg)
+    LogKind.TOOTH -> TileSpec("dentistry", "Teeth", KC.Clay, KC.ClayBg)
 }

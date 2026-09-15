@@ -85,7 +85,7 @@ fun SettingsScreen(vm: KilkariViewModel, go: NavActions) {
                 ) {
                     Text(
                         if (settings.metricUnits) "kg · cm" else "lb · in",
-                        fontFamily = Sans, fontSize = 13.sp, color = KC.Indigo,
+                        fontFamily = Sans, fontSize = 13.sp, color = KC.Coral,
                     )
                 }
             }

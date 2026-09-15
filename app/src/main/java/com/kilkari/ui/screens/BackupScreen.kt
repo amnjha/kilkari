@@ -110,13 +110,13 @@ fun BackupScreen(vm: KilkariViewModel, go: NavActions) {
                 .padding(top = 10.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            KCard(background = KC.GreenBg, border = KC.GreenRing) {
+            KCard(background = KC.TealBg, border = KC.TealRing) {
                 Row(
                     Modifier.fillMaxWidth().padding(14.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(KIcons["cloud_done"], null, tint = KC.Green, modifier = Modifier.size(26.dp))
+                    Icon(KIcons["cloud_done"], null, tint = KC.Teal, modifier = Modifier.size(26.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
                             "Everything is on this phone",

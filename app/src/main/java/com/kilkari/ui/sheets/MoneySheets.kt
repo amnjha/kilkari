@@ -30,6 +30,7 @@ import com.kilkari.domain.InvestmentSummary
 import com.kilkari.ui.components.KChip
 import com.kilkari.ui.components.KSegmented
 import com.kilkari.ui.components.KSwitch
+import com.kilkari.ui.components.KDateField
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.SheetField
 import com.kilkari.ui.components.SheetStatic
@@ -151,13 +152,11 @@ fun ColumnScope.InvestmentSheet(
     var institution by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var rate by remember { mutableStateOf("") }
-    var startText by remember { mutableStateOf("") }
-    var maturityText by remember { mutableStateOf("") }
+    var start by remember { mutableStateOf(LocalDate.now()) }
+    var maturity by remember { mutableStateOf<LocalDate?>(null) }
     var maturityValue by remember { mutableStateOf("") }
     var paidFromFund by remember { mutableStateOf(true) }
 
-    val start = remember(startText) { parseDayMonthYear(startText) } ?: LocalDate.now()
-    val maturity = remember(maturityText) { parseDayMonthYear(maturityText) }
     val value = amount.toDoubleOrNull()
 
     SheetTitle("Add an investment")
@@ -176,8 +175,8 @@ fun ColumnScope.InvestmentSheet(
         amount, "0", decimal, big = true,
     ) { amount = it }
     SheetField("Interest rate (% p.a.)", rate, "Optional", decimal) { rate = it }
-    SheetField("Started", startText, "DD-MM-YYYY · today if blank", number) { startText = it }
-    SheetField("Matures", maturityText, "DD-MM-YYYY · optional", number) { maturityText = it }
+    KDateField("Started", start, selectableTo = LocalDate.now()) { start = it }
+    KDateField("Matures", maturity, placeholder = "Optional") { maturity = it }
     if (!kind.recurring) {
         SheetField(
             "Value at maturity (${currency.symbol})", maturityValue, "Optional", decimal,
@@ -259,7 +258,7 @@ fun ColumnScope.InvestmentDetailSheet(
             modifier = Modifier
                 .clickable(onClick = onDelete)
                 .padding(vertical = 8.dp),
-            fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = KC.Rose,
+            fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = KC.Danger,
         )
     }
 }

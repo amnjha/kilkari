@@ -31,6 +31,8 @@ import com.kilkari.domain.Fmt
 import com.kilkari.domain.VaccineGroupState
 import com.kilkari.domain.VaccineItemState
 import com.kilkari.ui.components.KSwitch
+import com.kilkari.ui.components.KDateField
+import com.kilkari.ui.components.KTimeField
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.RadioDot
 import com.kilkari.ui.components.SheetField
@@ -146,8 +148,8 @@ fun ColumnScope.ScheduleSheet(currentId: String, onPick: (String) -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(if (on) KC.IndigoBg else KC.Surface)
-                .border(1.dp, if (on) KC.Indigo else KC.IndigoPale, RoundedCornerShape(16.dp))
+                .background(if (on) KC.CoralBg else KC.Surface)
+                .border(1.dp, if (on) KC.Coral else KC.CoralPale, RoundedCornerShape(16.dp))
                 .clickable { onPick(s.id) }
                 .padding(horizontal = 14.dp, vertical = 13.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -168,44 +170,32 @@ fun ColumnScope.MedicationSheet(onSave: (String, String, String, String?, Int?) 
     var dose by remember { mutableStateOf("") }
     var schedule by remember { mutableStateOf("Daily · 8:00 pm") }
     var prescriber by remember { mutableStateOf("") }
-    var reminderTime by remember { mutableStateOf("20:00") }
+    var reminderMinute by remember { mutableStateOf<Int?>(20 * 60) }
 
     SheetTitle("Add a medicine")
     SheetField("Medicine", name, "e.g. Vitamin D3 drops") { name = it }
     SheetField("Dose", dose, "e.g. 1 drop (400 IU)") { dose = it }
     SheetField("Schedule", schedule, "Daily · 8:00 pm") { schedule = it }
     SheetField("Prescribed by", prescriber, "Doctor") { prescriber = it }
-    SheetField(
-        "Remind at (HH:MM)", reminderTime, "20:00",
-        keyboard = KeyboardOptions(keyboardType = KeyboardType.Number),
-    ) { reminderTime = it }
+    KTimeField("Remind at", reminderMinute) { reminderMinute = it }
 
     PrimaryButton("Save medicine", enabled = name.isNotBlank() && dose.isNotBlank()) {
-        onSave(name.trim(), dose.trim(), schedule.trim(), prescriber.trim().ifBlank { null }, parseMinute(reminderTime))
+        onSave(name.trim(), dose.trim(), schedule.trim(), prescriber.trim().ifBlank { null }, reminderMinute)
     }
 }
 
 @Composable
 fun ColumnScope.AppointmentSheet(onSave: (String, LocalDate, Int, String?, String?) -> Unit) {
     var title by remember { mutableStateOf("") }
-    var dateText by remember { mutableStateOf("") }
-    var timeText by remember { mutableStateOf("10:30") }
+    var date by remember { mutableStateOf<LocalDate?>(null) }
+    var minute by remember { mutableStateOf<Int?>(10 * 60 + 30) }
     var doctor by remember { mutableStateOf("") }
     var place by remember { mutableStateOf("") }
 
-    val date = remember(dateText) { parseDayMonthYear(dateText) }
-    val minute = remember(timeText) { parseMinute(timeText) }
-
     SheetTitle("Add an appointment")
     SheetField("What", title, "e.g. 6-week check") { title = it }
-    SheetField(
-        "Date", dateText, "DD-MM-YYYY",
-        keyboard = KeyboardOptions(keyboardType = KeyboardType.Number),
-    ) { dateText = it }
-    SheetField(
-        "Time", timeText, "10:30",
-        keyboard = KeyboardOptions(keyboardType = KeyboardType.Number),
-    ) { timeText = it }
+    KDateField("Date", date, selectableFrom = LocalDate.now().minusYears(2)) { date = it }
+    KTimeField("Time", minute) { minute = it }
     SheetField("Doctor", doctor, "Dr. …") { doctor = it }
     SheetField("Where", place, "Clinic or hospital") { place = it }
 

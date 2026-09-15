@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -58,6 +59,7 @@ import com.kilkari.ui.components.CheckRing
 import com.kilkari.ui.components.Hint
 import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.KCard
+import com.kilkari.ui.components.KDateField
 import com.kilkari.ui.components.KChip
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.RadioRow
@@ -73,7 +75,7 @@ import java.time.temporal.ChronoUnit
 /** Everything the wizard collects, held in one place so steps stay declarative. */
 private class OnboardingState {
     var name by mutableStateOf("")
-    var dobText by mutableStateOf("")
+    var dob by mutableStateOf<LocalDate?>(null)
     var place by mutableStateOf("")
     var weight by mutableStateOf("")
     var length by mutableStateOf("")
@@ -82,12 +84,10 @@ private class OnboardingState {
     var currency by mutableStateOf(Currency.INR)
 
     /** Vaccine group label → the date the parent says it was given. */
-    val givenGroups = mutableStateMapOf<String, String>()
+    val givenGroups = mutableStateMapOf<String, LocalDate>()
 
     /** Milestone key → the date it happened. */
-    val reachedMilestones = mutableStateMapOf<String, String>()
-
-    val dob: LocalDate? get() = parseDate(dobText)
+    val reachedMilestones = mutableStateMapOf<String, LocalDate>()
 }
 
 /**
@@ -170,6 +170,7 @@ fun OnboardingScreen(vm: KilkariViewModel) {
         Column(
             Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -197,12 +198,8 @@ fun OnboardingScreen(vm: KilkariViewModel) {
                         place = state.place.trim().ifBlank { null },
                         scheduleId = state.scheduleId,
                         currency = state.currency,
-                        givenGroups = state.givenGroups.mapNotNull { (k, v) ->
-                            parseDate(v)?.let { k to it }
-                        }.toMap(),
-                        milestones = state.reachedMilestones.mapNotNull { (k, v) ->
-                            parseDate(v)?.let { k to it }
-                        }.toMap(),
+                        givenGroups = state.givenGroups.toMap(),
+                        milestones = state.reachedMilestones.toMap(),
                     )
                 } else {
                     step++
@@ -265,7 +262,7 @@ private fun StepHeader(index: Int, total: Int, onBack: () -> Unit) {
                         .weight(1f)
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(if (i < index) KC.Indigo else KC.BorderStrong),
+                        .background(if (i < index) KC.Coral else KC.BorderStrong),
                 )
             }
         }
@@ -298,7 +295,7 @@ private fun ColumnScope.WelcomeStep() {
         color = KC.Muted, textAlign = TextAlign.Center,
     )
     Spacer(Modifier.height(4.dp))
-    KCard(background = KC.IndigoBg, border = KC.BorderStrong) {
+    KCard(background = KC.CoralBg, border = KC.BorderStrong) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 "Already a few weeks in?",
@@ -319,21 +316,13 @@ private fun ColumnScope.BabyStep(state: OnboardingState) {
     Hint("Just a name and a birthday to begin with.")
     KCard {
         ValueField("Name", state.name, "e.g. Avika") { state.name = it }
-        ValueField(
-            "Date of birth", state.dobText, "DD-MM-YYYY",
-            keyboard = KeyboardOptions(keyboardType = KeyboardType.Number),
-        ) { state.dobText = it }
+        KDateField(
+            "Date of birth", state.dob, "Pick a date",
+            sheetStyle = false, selectableTo = LocalDate.now(),
+        ) { state.dob = it }
         ValueField("Born at", state.place, "Hospital or city", divider = false) { state.place = it }
     }
-    val dob = state.dob
-    when {
-        dob != null && dob.isAfter(LocalDate.now()) ->
-            Warning("That date is in the future.")
-        dob != null ->
-            Hint("${state.name.ifBlank { "Baby" }} is ${Fmt.age(dob)} today.")
-        state.dobText.isNotBlank() ->
-            Warning("Use DD-MM-YYYY, e.g. 20-08-2026")
-    }
+    state.dob?.let { Hint("${state.name.ifBlank { "Baby" }} is ${Fmt.age(it)} today.") }
 }
 
 @Composable
@@ -395,7 +384,7 @@ private fun ColumnScope.VaccineCatchUpStep(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         KChip("Mark all given", false) {
-            overdue.forEach { (g, due) -> state.givenGroups[g.label] = fmtInput(due) }
+            overdue.forEach { (g, due) -> state.givenGroups[g.label] = due }
         }
         KChip("Clear", false) { state.givenGroups.clear() }
     }
@@ -408,7 +397,7 @@ private fun ColumnScope.VaccineCatchUpStep(
                         .fillMaxWidth()
                         .clickable {
                             if (checked) state.givenGroups.remove(group.label)
-                            else state.givenGroups[group.label] = fmtInput(due)
+                            else state.givenGroups[group.label] = due
                         }
                         .padding(horizontal = 14.dp, vertical = 13.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -428,12 +417,9 @@ private fun ColumnScope.VaccineCatchUpStep(
                     }
                 }
                 if (checked) {
-                    ValueField(
-                        "Given on",
-                        state.givenGroups[group.label].orEmpty(),
-                        "DD-MM-YYYY",
-                        divider = false,
-                        keyboard = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    KDateField(
+                        "Given on", state.givenGroups[group.label], sheetStyle = false,
+                        divider = false, selectableTo = LocalDate.now(),
                     ) { state.givenGroups[group.label] = it }
                 }
                 if (i != overdue.lastIndex) {
@@ -462,7 +448,7 @@ private fun ColumnScope.MilestoneCatchUpStep(
                         .fillMaxWidth()
                         .clickable {
                             if (checked) state.reachedMilestones.remove(def.key)
-                            else state.reachedMilestones[def.key] = fmtInput(typical)
+                            else state.reachedMilestones[def.key] = typical
                         }
                         .padding(horizontal = 14.dp, vertical = 13.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -480,15 +466,12 @@ private fun ColumnScope.MilestoneCatchUpStep(
                             fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
                         )
                     }
-                    IconBadge(def.icon, KC.FuchsiaDeep, KC.FuchsiaBg, size = 32, corner = 10, iconSize = 18)
+                    IconBadge(def.icon, KC.GoldDeep, KC.GoldBg, size = 32, corner = 10, iconSize = 18)
                 }
                 if (checked) {
-                    ValueField(
-                        "Happened on",
-                        state.reachedMilestones[def.key].orEmpty(),
-                        "DD-MM-YYYY",
-                        divider = false,
-                        keyboard = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    KDateField(
+                        "Happened on", state.reachedMilestones[def.key], sheetStyle = false,
+                        divider = false, selectableTo = LocalDate.now(),
                     ) { state.reachedMilestones[def.key] = it }
                 }
                 if (i != passed.lastIndex) {
@@ -507,7 +490,7 @@ private fun ColumnScope.DoneStep(state: OnboardingState, overdue: Int, passed: I
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(Brush.linearGradient(listOf(KC.IndigoDeep, KC.Violet, KC.Fuchsia)))
+            .background(Brush.linearGradient(listOf(KC.CoralDeep, KC.Clay, KC.Gold)))
             .padding(22.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -560,7 +543,7 @@ private fun StepTitle(text: String) {
 
 @Composable
 private fun Warning(text: String) {
-    Text(text, fontFamily = Sans, fontSize = 13.sp, color = KC.Rose)
+    Text(text, fontFamily = Sans, fontSize = 13.sp, color = KC.Danger)
 }
 
 @Composable
@@ -571,7 +554,7 @@ private fun SummaryRow(icon: String, title: String, subtitle: String, divider: B
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconBadge(icon, KC.Indigo, KC.IndigoBg, size = 34, corner = 10, iconSize = 18)
+            IconBadge(icon, KC.Coral, KC.CoralBg, size = 34, corner = 10, iconSize = 18)
             Column(Modifier.weight(1f)) {
                 Text(
                     title, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
@@ -589,9 +572,6 @@ private fun monthsLabel(months: Double): String = when {
     months < 2.0 -> "6 weeks"
     else -> "${months.toInt()} months"
 }
-
-private fun fmtInput(d: LocalDate): String =
-    "%02d-%02d-%04d".format(d.dayOfMonth, d.monthValue, d.year)
 
 /** Accepts DD-MM-YYYY with `-`, `/` or `.` separators. */
 internal fun parseDate(text: String): LocalDate? {

@@ -136,7 +136,8 @@ object DueTaskBuilder {
                     trailing = Fmt.dueBadge(Fmt.daysUntil(fundDepositDue, today)),
                     icon = "savings",
                     done = false,
-                    completable = true,
+                    completable = false,
+                    requiresEntry = true,
                     dismissible = true,
                     occurrence = fundDepositDue,
                     overdue = fundDepositDue.isBefore(today),
@@ -181,7 +182,9 @@ object DueTaskBuilder {
                 trailing = if (days == 0) "today" else Fmt.dueBadge(days),
                 icon = iconFor(r.key),
                 done = acted?.done == true,
-                completable = true,
+                // Weekly prompts that exist to capture something open that screen instead.
+                completable = r.key !in NEEDS_ENTRY,
+                requiresEntry = r.key in NEEDS_ENTRY,
                 dismissible = true,
                 occurrence = occurrence,
                 overdue = occurrence.isBefore(today),
@@ -199,13 +202,16 @@ object DueTaskBuilder {
     /** Built-in reminders that are a task in their own right rather than a switch. */
     private val SELF_STANDING = setOf("weigh", "album")
 
+    /** Reminders that are only really done once something has been entered. */
+    val NEEDS_ENTRY = setOf("weigh", "album", "fund")
+
     /**
      * The occurrence a reminder is currently sitting on.
      *
      * Daily reminders only ever mean today, so they clear themselves overnight. Anything less
      * frequent points at its most recent occurrence and stays there until acted on.
      */
-    private fun occurrenceOf(r: ReminderEntity, today: LocalDate): LocalDate? =
+    fun occurrenceOf(r: ReminderEntity, today: LocalDate): LocalDate? =
         when (RepeatRule.of(r.repeatRule)) {
             RepeatRule.DAILY -> today
             RepeatRule.WEEKLY -> {

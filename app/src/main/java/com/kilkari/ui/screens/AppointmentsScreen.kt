@@ -58,7 +58,7 @@ fun AppointmentsScreen(vm: KilkariViewModel, go: NavActions) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Appointments", go::back) {
-                IconButton44("add", KC.Indigo, { sheetOpen = true }, iconSize = 26)
+                IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)
             }
 
             Column(
@@ -117,14 +117,14 @@ private fun AppointmentCard(
     onDelete: () -> Unit,
 ) {
     val tint = when {
-        past -> KC.SlateMid
-        emphasis -> KC.IndigoDeep
-        else -> KC.VioletDeep
+        past -> KC.StoneMid
+        emphasis -> KC.CoralDeep
+        else -> KC.ClayDeep
     }
     val chipBg = when {
-        past -> KC.SlateBg
-        emphasis -> KC.IndigoBg
-        else -> KC.VioletBg
+        past -> KC.StoneBg
+        emphasis -> KC.CoralBg
+        else -> KC.ClayBg
     }
 
     KCard(Modifier.alpha(if (past) 0.75f else 1f)) {
@@ -175,13 +175,13 @@ private fun AppointmentCard(
                         modifier = Modifier.weight(1f),
                         background = KC.Surface,
                         border = KC.BorderStrong,
-                        color = KC.IndigoDeep,
+                        color = KC.CoralDeep,
                     )
                     Pillbox(
                         text = "Remove",
-                        background = KC.IndigoBg,
+                        background = KC.CoralBg,
                         border = null,
-                        color = KC.IndigoDeep,
+                        color = KC.CoralDeep,
                         onClick = onDelete,
                     )
                 }

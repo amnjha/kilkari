@@ -134,6 +134,9 @@ class NavActions(private val nav: NavHostController) {
 
     fun push(route: String) = nav.navigate(route) { launchSingleTop = true }
 
+    /** Go to a destination without needing to know whether it owns a tab. */
+    fun open(route: String) = if (Routes.tabs.any { it.route == route }) tab(route) else push(route)
+
     fun back() {
         if (!nav.popBackStack()) nav.navigate(Routes.TODAY) { popUpTo(0) }
     }

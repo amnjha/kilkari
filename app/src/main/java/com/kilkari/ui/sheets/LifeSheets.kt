@@ -31,6 +31,7 @@ import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.components.KChip
 import com.kilkari.ui.components.KSegmented
+import com.kilkari.ui.components.KDateField
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.SheetField
 import com.kilkari.ui.components.SheetStatic
@@ -144,17 +145,12 @@ fun ColumnScope.AlbumSheet(onSave: (String, String, String) -> Unit) {
 fun ColumnScope.EventSheet(onSave: (String, String, LocalDate, Boolean) -> Unit) {
     var title by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
-    var dateText by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf<LocalDate?>(null) }
     var annual by remember { mutableStateOf(false) }
-
-    val date = remember(dateText) { parseDayMonthYear(dateText) }
 
     SheetTitle("Add an event")
     SheetField("What", title, "e.g. Diwali") { title = it }
-    SheetField(
-        "Date", dateText, "DD-MM-YYYY",
-        keyboard = KeyboardOptions(keyboardType = KeyboardType.Number),
-    ) { dateText = it }
+    KDateField("Date", date) { date = it }
     SheetField("Note", note, "Optional detail") { note = it }
     KSegmented(listOf("One-off", "Every year"), if (annual) 1 else 0) { annual = it == 1 }
 

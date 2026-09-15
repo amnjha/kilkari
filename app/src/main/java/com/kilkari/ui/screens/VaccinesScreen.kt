@@ -71,9 +71,9 @@ fun VaccinesScreen(vm: KilkariViewModel, go: NavActions) {
                     Text(
                         VaccineSchedules.byId(settings.scheduleId).shortName,
                         fontFamily = Sans, fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp, color = KC.IndigoDeep,
+                        fontSize = 12.sp, color = KC.CoralDeep,
                     )
-                    Icon(KIcons["expand_more"], null, tint = KC.IndigoDeep, modifier = Modifier.size(18.dp))
+                    Icon(KIcons["expand_more"], null, tint = KC.CoralDeep, modifier = Modifier.size(18.dp))
                 }
             }
 
@@ -170,8 +170,8 @@ internal data class StatusSkin(
 )
 
 internal fun statusSkin(status: VaccineStatus): StatusSkin = when (status) {
-    VaccineStatus.GIVEN -> StatusSkin(KC.Green, KC.GreenBg, KC.GreenRing, "check")
-    VaccineStatus.OVERDUE -> StatusSkin(KC.Rose, KC.RoseBg, KC.RoseRing, "priority_high")
-    VaccineStatus.DUE_SOON -> StatusSkin(KC.FuchsiaDeep, KC.FuchsiaBg, KC.FuchsiaRing, "event_upcoming")
-    VaccineStatus.UPCOMING -> StatusSkin(KC.IndigoDeep, KC.IndigoBg, KC.Border, "schedule")
+    VaccineStatus.GIVEN -> StatusSkin(KC.Teal, KC.TealBg, KC.TealRing, "check")
+    VaccineStatus.OVERDUE -> StatusSkin(KC.Danger, KC.DangerBg, KC.DangerRing, "priority_high")
+    VaccineStatus.DUE_SOON -> StatusSkin(KC.GoldDeep, KC.GoldBg, KC.GoldRing, "event_upcoming")
+    VaccineStatus.UPCOMING -> StatusSkin(KC.CoralDeep, KC.CoralBg, KC.Border, "schedule")
 }

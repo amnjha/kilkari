@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,15 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
     val growth by vm.growth.collectAsStateWithLifecycle()
     var sheetOpen by remember { mutableStateOf(false) }
 
+    // Arriving from the Today prompt should land straight on the entry sheet.
+    val pendingEntry by vm.pendingEntry.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingEntry) {
+        if (pendingEntry == "weigh") {
+            sheetOpen = true
+            vm.consumeEntry()
+        }
+    }
+
     val latest = growth.lastOrNull()
     val previous = growth.dropLast(1).lastOrNull { it.weightKg != null }
     val weightDelta = latest?.weightKg?.let { w -> previous?.weightKg?.let { w - it } }
@@ -58,7 +68,7 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Growth", go::back) {
-                IconButton44("add", KC.Indigo, { sheetOpen = true }, iconSize = 26)
+                IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)
             }
 
             Column(
@@ -73,13 +83,13 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                     StatCell(
                         "Weight", Fmt.weight(latest?.weightKg),
                         weightDelta?.let { Fmt.grams(it) },
-                        if ((weightDelta ?: 0.0) >= 0) KC.Green else KC.Rose,
+                        if ((weightDelta ?: 0.0) >= 0) KC.Teal else KC.Danger,
                         Modifier.weight(1f),
                     )
                     StatCell(
                         "Length", Fmt.length(latest?.lengthCm),
                         lengthDelta?.let { "${if (it >= 0) "+" else ""}${Fmt.trimNum(it)} cm" },
-                        KC.Green, Modifier.weight(1f),
+                        KC.Teal, Modifier.weight(1f),
                     )
                     StatCell(
                         "Head", latest?.headCm?.let { "${Fmt.trimNum(it)} cm" } ?: "—",
@@ -121,7 +131,7 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                                     ) {
                                         Text(
                                             Fmt.trimNum(bar.value), fontFamily = Sans,
-                                            fontWeight = FontWeight.Bold, fontSize = 11.sp, color = KC.Indigo,
+                                            fontWeight = FontWeight.Bold, fontSize = 11.sp, color = KC.Coral,
                                         )
                                         Box(
                                             Modifier
@@ -129,7 +139,7 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                                                 .fillMaxWidth()
                                                 .fillMaxHeight((bar.value / max).toFloat().coerceIn(0.08f, 1f))
                                                 .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 4.dp, bottomEnd = 4.dp))
-                                                .background(Brush.verticalGradient(listOf(KC.IndigoLight, KC.Indigo))),
+                                                .background(Brush.verticalGradient(listOf(KC.CoralLight, KC.Coral))),
                                         )
                                         Text(bar.label, fontFamily = Sans, fontSize = 11.sp, color = KC.Muted)
                                     }

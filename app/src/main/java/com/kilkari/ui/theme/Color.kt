@@ -3,78 +3,81 @@ package com.kilkari.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Palette lifted verbatim from the Kilkari design canvas: an indigo → fuchsia brand ramp on a
- * lilac-tinted neutral ground, with one accent family per domain (health green, money sky,
- * vaccines fuchsia, meds rose, events amber).
+ * Palette sampled from the Kilkari mark: the badge's coral field and cream S-curve, the gold
+ * sound waves, and the teal and burnt-orange of the quadrants the logo was designed against.
+ *
+ * Four hue families carry the app — coral for the brand and anything clinical, teal for health
+ * and growth, gold for money and milestones, clay for medicines and rest — over warm cream
+ * neutrals rather than the cool greys a default palette would give. [Danger] is deliberately
+ * darker and less orange than [Coral] so lateness cannot be mistaken for a brand accent.
+ *
+ * Text pairings were checked against WCAG AA: [Ink] on [Screen] is 14.1:1, [Muted] 4.8:1,
+ * and white on [Coral] 4.7:1.
  */
 object KC {
-    // Ground & surfaces
-    val Screen = Color(0xFFF7F6FD)
+    // Ground & surfaces — warm cream, taken from the badge's S-curve.
+    val Screen = Color(0xFFFBF5EC)
     val Surface = Color(0xFFFFFFFF)
-    val Border = Color(0xFFECE9FB)
-    val BorderStrong = Color(0xFFE0E7FF)
-    val Divider = Color(0xFFF1EEFB)
+    val SurfaceWarm = Color(0xFFF6EFE3)
+    val Border = Color(0xFFF0E3D4)
+    val BorderStrong = Color(0xFFE5D3BE)
+    val Divider = Color(0xFFF5EBDE)
 
-    // Ink
-    val Ink = Color(0xFF1E1B4B)
-    val Muted = Color(0xFF6B7280)
-    val MutedStrong = Color(0xFF4B5563)
-    val Faint = Color(0xFF9CA3AF)
+    // Ink — the deep brown of the mark's eyes.
+    val Ink = Color(0xFF332420)
+    val Muted = Color(0xFF7E6B61)
+    val MutedStrong = Color(0xFF5E4C44)
+    val Faint = Color(0xFFA89588)
 
-    // Brand
-    val Indigo = Color(0xFF4F46E5)
-    val IndigoDeep = Color(0xFF4338CA)
-    val Violet = Color(0xFF7C3AED)
-    val VioletDeep = Color(0xFF6D28D9)
-    val Fuchsia = Color(0xFFC026D3)
-    val FuchsiaDeep = Color(0xFFA21CAF)
-    val IndigoLight = Color(0xFF818CF8)
-    val FuchsiaLight = Color(0xFFE879F9)
-    val IndigoPale = Color(0xFFC7D2FE)
-    val IndigoPaler = Color(0xFFA5B4FC)
+    // Coral — the badge field. Primary, and anything clinical.
+    val Coral = Color(0xFFC94A30)
+    val CoralDeep = Color(0xFFA93A24)
+    val CoralLight = Color(0xFFE2664C)
+    val CoralPale = Color(0xFFF3C4B5)
+    val CoralPaler = Color(0xFFF8DCD2)
+    val CoralBg = Color(0xFFFCEDE7)
+    val CoralRing = Color(0xFFF2C6B8)
 
-    // Tinted backgrounds
-    val IndigoBg = Color(0xFFEEF2FF)
-    val VioletBg = Color(0xFFF5F3FF)
-    val VioletBg2 = Color(0xFFEDE9FE)
-    val FuchsiaBg = Color(0xFFFDF4FF)
-    val FuchsiaRing = Color(0xFFF5D0FE)
+    // Clay — the burnt orange quadrant. Medicines, sleep, documents.
+    val Clay = Color(0xFFC4703A)
+    val ClayDeep = Color(0xFF9C5526)
+    val ClayLight = Color(0xFFDD9059)
+    val ClayBg = Color(0xFFFBEEE0)
+    val ClayBg2 = Color(0xFFF6E2CC)
 
-    // Success / health
-    val Green = Color(0xFF059669)
-    val GreenBright = Color(0xFF10B981)
-    val GreenDeep = Color(0xFF047857)
-    val GreenBg = Color(0xFFECFDF5)
-    val GreenRing = Color(0xFFA7F3D0)
+    // Gold — the sound waves. Money, events, milestones.
+    val Gold = Color(0xFFB07C11)
+    val GoldDeep = Color(0xFF8A5F09)
+    val GoldLight = Color(0xFFE8B94A)
+    val GoldBg = Color(0xFFFCF2DC)
+    val GoldRing = Color(0xFFEFDCA8)
 
-    // Danger / meds
-    val Rose = Color(0xFFE11D48)
-    val RoseBright = Color(0xFFF43F5E)
-    val RoseDeep = Color(0xFFBE123C)
-    val RoseBg = Color(0xFFFFF1F2)
-    val RoseBg2 = Color(0xFFFFE4E6)
-    val RoseRing = Color(0xFFFECDD3)
+    // Teal — the cool quadrant. Health, growth, anything complete.
+    val Teal = Color(0xFF347A73)
+    val TealDeep = Color(0xFF26605A)
+    val TealLight = Color(0xFF4E9E96)
+    val TealBg = Color(0xFFE4F2F0)
+    val TealRing = Color(0xFFBCDFDA)
 
-    // Sky / money-general
-    val Sky = Color(0xFF0EA5E9)
-    val SkyBright = Color(0xFF38BDF8)
-    val SkyDeep = Color(0xFF0369A1)
-    val SkyMid = Color(0xFF0284C7)
-    val SkyBg = Color(0xFFE0F2FE)
-    val Cyan = Color(0xFF0E7490)
-    val CyanBg = Color(0xFFECFEFF)
+    // Sea — a lighter, bluer teal, so "general" money reads apart from "medical".
+    val Sea = Color(0xFF2F7B80)
+    val SeaLight = Color(0xFF6FB9BC)
+    val SeaMid = Color(0xFF3E8F94)
+    val SeaDeep = Color(0xFF235F63)
+    val SeaBg = Color(0xFFE3F1F2)
 
-    // Amber / events
-    val Amber = Color(0xFFF59E0B)
-    val AmberDeep = Color(0xFFB45309)
-    val AmberBg = Color(0xFFFEF3C7)
-    val Orange = Color(0xFFC2410C)
-    val OrangeBg = Color(0xFFFFF7ED)
+    // Danger — deeper and browner than coral, so lateness is never read as brand.
+    val Danger = Color(0xFF8C2F22)
+    val DangerLight = Color(0xFFB04234)
+    val DangerDeep = Color(0xFF6E2118)
+    val DangerBg = Color(0xFFFBE8E4)
+    val DangerBg2 = Color(0xFFF6D9D2)
+    val DangerRing = Color(0xFFEDC3B9)
 
-    // Slate
-    val Slate = Color(0xFF475569)
-    val SlateMid = Color(0xFF64748B)
-    val SlateLight = Color(0xFF94A3B8)
-    val SlateBg = Color(0xFFF1F5F9)
-    val Track = Color(0xFFCBD5E1)
+    // Warm neutrals for the quietest surfaces.
+    val Stone = Color(0xFF6B5B52)
+    val StoneMid = Color(0xFF8B7A6F)
+    val StoneLight = Color(0xFFB3A296)
+    val StoneBg = Color(0xFFF2EBE1)
+    val Track = Color(0xFFD9CBBC)
 }

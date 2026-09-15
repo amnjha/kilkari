@@ -286,6 +286,27 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         )
     }.state(emptyList())
 
+    /**
+     * Set when a task that needs data sends the user to another screen, so that screen can open
+     * its entry sheet on arrival. Consumed once read.
+     */
+    private val _pendingEntry = MutableStateFlow<String?>(null)
+    val pendingEntry: StateFlow<String?> = _pendingEntry.asStateFlow()
+
+    fun requestEntry(key: String) { _pendingEntry.value = key }
+
+    fun consumeEntry() { _pendingEntry.value = null }
+
+    /**
+     * Records that whatever a reminder was asking for has now been supplied, against the
+     * occurrence it is currently sitting on.
+     */
+    private fun satisfyReminder(key: String) = viewModelScope.launch {
+        val reminder = reminders.value.firstOrNull { it.key == key } ?: return@launch
+        val occurrence = DueTaskBuilder.occurrenceOf(reminder, LocalDate.now()) ?: return@launch
+        repo.setTaskDone(key, occurrence, true)
+    }
+
     /** Ticking a task writes wherever that task actually lives. */
     fun setTaskDone(task: DueTask, done: Boolean) = viewModelScope.launch {
         val id = task.id
@@ -386,6 +407,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     fun addGrowth(date: LocalDate, weightKg: Double?, lengthCm: Double?, headCm: Double?) =
         viewModelScope.launch {
             repo.addGrowth(date, weightKg, lengthCm, headCm)
+            satisfyReminder("weigh")
             toast("Measurement saved")
         }
 
@@ -446,6 +468,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun addFundDeposit(amountDisplay: Double, date: LocalDate, note: String?) = viewModelScope.launch {
         repo.addFundTransaction(FundTxnKind.DEPOSIT, toInr(amountDisplay), date, note)
+        satisfyReminder("fund")
         toast("Deposit recorded")
     }
 
@@ -530,6 +553,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun addAlbum(title: String, subtitle: String, url: String) = viewModelScope.launch {
         repo.addAlbum(title, subtitle, url)
+        satisfyReminder("album")
         toast("Album linked")
     }
 

@@ -59,7 +59,7 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Medications", go::back) {
-                IconButton44("add", KC.Indigo, { sheetOpen = true }, iconSize = 26)
+                IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)
             }
 
             Column(
@@ -116,7 +116,7 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
                                     "Restart",
                                     modifier = Modifier.clickable { vm.setMedicationActive(med, true) },
                                     fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.sp, color = KC.Indigo,
+                                    fontSize = 13.sp, color = KC.Coral,
                                 )
                             }
                         }
@@ -153,7 +153,7 @@ private fun ActiveMedCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconBadge("pill", KC.Rose, KC.RoseBg2)
+                IconBadge("pill", KC.Danger, KC.DangerBg2)
                 Column(Modifier.weight(1f)) {
                     Text(
                         med.name, fontFamily = Sans, fontWeight = FontWeight.Bold,
@@ -185,13 +185,13 @@ private fun ActiveMedCard(
                                 .fillMaxWidth()
                                 .height(26.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(if (on) KC.GreenBg else KC.SlateBg)
+                                .background(if (on) KC.TealBg else KC.StoneBg)
                                 .clickable(enabled = !future) { onToggleDay(day) },
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 KIcons[if (on) "check" else "schedule"], null,
-                                tint = if (on) KC.Green else KC.SlateLight,
+                                tint = if (on) KC.Teal else KC.StoneLight,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -208,14 +208,14 @@ private fun ActiveMedCard(
                     .fillMaxWidth()
                     .height(40.dp)
                     .clip(RoundedCornerShape(999.dp))
-                    .background(if (takenToday) KC.GreenBg else KC.IndigoBg)
+                    .background(if (takenToday) KC.TealBg else KC.CoralBg)
                     .clickable(enabled = !takenToday, onClick = onLogToday),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     if (takenToday) "Today's dose taken ✓" else "Mark today's dose taken",
                     fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp,
-                    color = if (takenToday) KC.Green else KC.IndigoDeep,
+                    color = if (takenToday) KC.Teal else KC.CoralDeep,
                 )
             }
         }

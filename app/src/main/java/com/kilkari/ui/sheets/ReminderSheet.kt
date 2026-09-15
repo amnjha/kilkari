@@ -24,6 +24,8 @@ import com.kilkari.data.db.ReminderEntity
 import com.kilkari.domain.RepeatRule
 import com.kilkari.ui.components.KChip
 import com.kilkari.ui.components.KSegmented
+import com.kilkari.ui.components.KDateField
+import com.kilkari.ui.components.KTimeField
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.SheetField
 import com.kilkari.ui.theme.KC
@@ -54,24 +56,18 @@ fun ColumnScope.ReminderSheet(
 ) {
     var title by remember(existing) { mutableStateOf(existing?.title.orEmpty()) }
     var note by remember(existing) { mutableStateOf(existing?.subtitle.orEmpty()) }
-    var time by remember(existing) {
-        mutableStateOf(existing?.minuteOfDay?.let { "%02d:%02d".format(it / 60, it % 60) } ?: "09:00")
-    }
+    var minute by remember(existing) { mutableStateOf(existing?.minuteOfDay ?: 9 * 60) }
     var repeat by remember(existing) { mutableStateOf(RepeatRule.of(existing?.repeatRule)) }
     var weekday by remember(existing) { mutableStateOf(existing?.weekday ?: 7) }
     var dayOfMonth by remember(existing) { mutableStateOf((existing?.dayOfMonth ?: 1).toString()) }
-    var dateText by remember(existing) {
-        mutableStateOf(existing?.startDate?.let { "%02d-%02d-%04d".format(it.dayOfMonth, it.monthValue, it.year) }.orEmpty())
-    }
+    var date by remember(existing) { mutableStateOf(existing?.startDate) }
 
-    val minute = remember(time) { parseMinute(time) }
-    val date = remember(dateText) { parseDayMonthYear(dateText) }
     val number = KeyboardOptions(keyboardType = KeyboardType.Number)
 
     SheetTitle(if (existing == null) "New reminder" else "Edit reminder")
     SheetField("Remind me to", title, "e.g. Book the 9-month check") { title = it }
     SheetField("Note", note, "Optional detail") { note = it }
-    SheetField("Time", time, "09:00", number) { time = it }
+    KTimeField("Time", minute) { minute = it }
 
     Text(
         "HOW OFTEN",
@@ -83,7 +79,7 @@ fun ColumnScope.ReminderSheet(
     }
 
     when (repeat) {
-        RepeatRule.NONE -> SheetField("On", dateText, "DD-MM-YYYY", number) { dateText = it }
+        RepeatRule.NONE -> KDateField("On", date) { date = it }
         RepeatRule.WEEKLY -> FlowRow(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -130,7 +126,7 @@ fun ColumnScope.ReminderSheet(
         ) {
             Text(
                 "Delete reminder",
-                fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = KC.Rose,
+                fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = KC.Danger,
             )
         }
     }

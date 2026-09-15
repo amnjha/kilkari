@@ -73,7 +73,7 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(18.dp))
-                .background(Brush.linearGradient(listOf(KC.IndigoBg, KC.FuchsiaBg)))
+                .background(Brush.linearGradient(listOf(KC.CoralBg, KC.GoldBg)))
                 .border(1.dp, KC.BorderStrong, RoundedCornerShape(18.dp))
                 .clickable { editing = true }
                 .padding(14.dp),
@@ -93,30 +93,30 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
 
         KCard {
             val items = listOf(
-                MoreItem(Routes.TIMELINE, "timeline", "Timeline", "Milestones, events, photo moments", KC.FuchsiaDeep, KC.FuchsiaBg),
+                MoreItem(Routes.TIMELINE, "timeline", "Timeline", "Milestones, events, photo moments", KC.GoldDeep, KC.GoldBg),
                 MoreItem(
                     Routes.DOCUMENTS, "folder_open", "Documents",
                     if (documents.isEmpty()) "Scan certificates and prescriptions"
                     else "${documents.size} ${Fmt.plural(documents.size.toLong(), "scan")} filed",
-                    KC.AmberDeep, KC.AmberBg,
+                    KC.GoldDeep, KC.GoldBg,
                 ),
                 MoreItem(
                     Routes.PHOTOS, "photo_library", "Photo albums",
                     if (albums.isEmpty()) "Link a Google Photos album"
                     else "${albums.size} ${Fmt.plural(albums.size.toLong(), "album")} linked",
-                    KC.SkyDeep, KC.SkyBg,
+                    KC.SeaDeep, KC.SeaBg,
                 ),
                 MoreItem(
                     Routes.EVENTS, "cake", "Birthdays & events",
-                    "First birthday in $birthdayDays days", KC.Rose, KC.RoseBg,
+                    "First birthday in $birthdayDays days", KC.Danger, KC.DangerBg,
                 ),
-                MoreItem(Routes.REMINDERS, "notifications_active", "Reminders", "$remindersOn on", KC.IndigoDeep, KC.IndigoBg),
-                MoreItem(Routes.BACKUP, "backup", "Backup & export", "Everything stays on this phone", KC.GreenDeep, KC.GreenBg),
+                MoreItem(Routes.REMINDERS, "notifications_active", "Reminders", "$remindersOn on", KC.CoralDeep, KC.CoralBg),
+                MoreItem(Routes.BACKUP, "backup", "Backup & export", "Everything stays on this phone", KC.TealDeep, KC.TealBg),
                 MoreItem(
                     Routes.SETTINGS, "settings", "Settings",
                     "${settings.currency.symbol} ${settings.currency.code} · " +
                         "${VaccineSchedules.byId(settings.scheduleId).shortName} schedule",
-                    KC.Slate, KC.SlateBg,
+                    KC.Stone, KC.StoneBg,
                 ),
             )
             items.forEachIndexed { i, item ->
@@ -129,7 +129,7 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
                     divider = i != items.lastIndex,
                     onClick = { go.push(item.route) },
                 ) {
-                    Icon(KIcons["chevron_right"], null, tint = KC.IndigoPaler, modifier = Modifier.size(20.dp))
+                    Icon(KIcons["chevron_right"], null, tint = KC.CoralPaler, modifier = Modifier.size(20.dp))
                 }
             }
         }

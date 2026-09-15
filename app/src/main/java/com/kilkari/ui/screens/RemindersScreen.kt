@@ -67,7 +67,7 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Reminders", go::back) {
-                IconButton44("add", KC.Indigo, { ensurePermission(); editing = null to true }, iconSize = 26)
+                IconButton44("add", KC.Coral, { ensurePermission(); editing = null to true }, iconSize = 26)
             }
 
             Column(
