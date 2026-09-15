@@ -101,15 +101,25 @@ object Fmt {
      */
     fun money(amountInr: Long, currency: Currency): String {
         val v = amountInr * currency.perInr
-        return if (currency == Currency.INR) {
-            currency.symbol + NumberFormat.getIntegerInstance(Locale("en", "IN")).format(v.roundToLong())
+        // The sign belongs outside the symbol: "−₹2,400", not "₹-2,400".
+        val sign = if (v < 0) "\u2212" else ""
+        val magnitude = abs(v)
+        val body = if (currency == Currency.INR) {
+            NumberFormat.getIntegerInstance(Locale("en", "IN")).format(magnitude.roundToLong())
         } else {
-            currency.symbol + if (abs(v) < 100) String.format(Locale.US, "%.2f", v) else v.roundToLong().toString()
+            if (magnitude < 100) String.format(Locale.US, "%.2f", magnitude) else magnitude.roundToLong().toString()
         }
+        return sign + currency.symbol + body
     }
 
     /** Display value → whole rupees, so entry in any currency stores consistently. */
     fun toInr(amount: Double, currency: Currency): Long = (amount / currency.perInr).roundToLong()
+
+    /** Amount in the display currency with no symbol — for prefilling an input. */
+    fun plain(amountInr: Long, currency: Currency): String {
+        val v = amountInr * currency.perInr
+        return if (currency == Currency.INR) v.roundToLong().toString() else trimNum(v)
+    }
 
     fun weight(kg: Double?): String = kg?.let { trimNum(it) + " kg" } ?: "—"
 

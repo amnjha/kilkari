@@ -13,7 +13,7 @@ Built in Kotlin with Jetpack Compose and Room, from the Claude Design canvas in
 | Today | Three interchangeable layouts: **Agenda** (default), **Hero**, **Checklist**. Switch in Settings. |
 | Log | Six quick-log tiles (feed, sleep, diaper, medicine, growth, teeth) over the day's entries |
 | Health | Hub → Vaccines, Vaccine group detail, Growth, Teeth, Medications, Appointments |
-| Money | Monthly spend split Medical / General, filterable ledger |
+| Money | Three views: **Spending** (monthly split, ledger), **Fund** (the savings account everything is paid from), **Invest** (FD, RD, SIP, PPF, Sukanya Samriddhi, gold) |
 | More | Timeline, Documents, Document detail, Photo albums, Birthdays & events, Reminders, Backup & export, Settings |
 
 **Vaccination schedules** are generated from the baby's date of birth against one of four
@@ -25,6 +25,18 @@ given*: both open the same sheet — date, clinic, doctor, an optional **brand**
 a cost. Recording a dose writes a Timeline entry and, if you enter a cost, posts a Medical
 expense to Money. Marking part of a group and returning later accumulates the group's cost
 rather than replacing it.
+
+**The fund** is the savings account the child's costs come out of. You set a standing monthly
+top-up (amount, day, account name) and Kilkari nudges you when it is due. The balance is
+**derived, never mirrored**: deposits, less manual withdrawals, less expenses marked *paid from
+fund*, less investment contributions funded from it. Deleting an expense or a holding restores
+the balance on its own — there are no duplicate rows to keep in sync.
+
+**Investments** cover the instruments a parent actually opens for a child: fixed and recurring
+deposits, mutual fund SIPs, PPF, Sukanya Samriddhi, gold, or anything else. Each holding tracks
+what has been put in (its contribution ledger), what it is worth now (you restate the value when
+it moves), and — for fixed instruments — what the bank says it will be worth at maturity. The app
+does not project returns or invent numbers; it records what you tell it.
 
 **Currency** is a setting (₹ default, plus $ / € / £). Amounts are stored in whole rupees and
 converted for display, so switching currency reformats every screen at once.
@@ -90,7 +102,8 @@ Nothing leaves the device unless you export it.
 - **Backup** writes a `.kilkari` zip (SQLite database + scanned pages) through the Storage
   Access Framework, so you choose where it lands. Backups are **not encrypted**.
 - **Restore** replaces the current database and scans, and needs an app restart to take effect.
-- **CSV export** writes logs, growth, vaccines, expenses, timeline and events as one file.
+- **CSV export** writes logs, growth, vaccines, expenses, timeline, events, fund movements,
+  investments and contributions as one file.
 - **Vaccination record PDF** is a one-page A4 immunisation record for a school or clinic.
 - **Documents** are camera captures stored in app-private storage (`files/documents`), shared
   only through Android's share sheet.
@@ -104,4 +117,9 @@ Nothing leaves the device unless you export it.
 - Growth percentile curves. The design shows "55th pct" copy; the app charts raw weights
   without WHO reference data.
 - Editing existing entries — most screens support add and delete, not edit.
+- The fund assumes a single account. Multiple accounts, transfers between them, and reconciling
+  against a bank statement are not modelled.
+- Investment values are whatever you last entered. There is no price feed, no XIRR, and no
+  maturity projection — an FD's maturity value is a field you fill in from the bank, not a
+  calculation.
 - No tests yet.

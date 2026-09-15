@@ -132,3 +132,65 @@ data class Baby(
     val birthLengthCm: Double?,
     val birthPlace: String?,
 )
+
+/** Savings and investment instruments a parent typically opens for a child in India. */
+enum class InvestmentKind(val key: String, val label: String, val recurring: Boolean) {
+    FD("fd", "Fixed deposit", false),
+    RD("rd", "Recurring deposit", true),
+    SIP("sip", "Mutual fund SIP", true),
+    PPF("ppf", "PPF", true),
+    SSY("ssy", "Sukanya Samriddhi", true),
+    GOLD("gold", "Gold", false),
+    OTHER("other", "Other", false);
+
+    companion object {
+        fun of(key: String?) = entries.firstOrNull { it.key == key } ?: OTHER
+    }
+}
+
+/** Money moving in or out of the savings account the child's costs are paid from. */
+enum class FundTxnKind(val key: String, val label: String) {
+    DEPOSIT("deposit", "Deposit"),
+    WITHDRAWAL("withdrawal", "Withdrawal");
+
+    companion object {
+        fun of(key: String?) = entries.firstOrNull { it.key == key } ?: DEPOSIT
+    }
+}
+
+/** One line in the fund ledger, whatever its origin. */
+data class FundLedgerRow(
+    val id: String,
+    val date: LocalDate,
+    val title: String,
+    val subtitle: String,
+    val amountInr: Long,
+    /** True when money entered the fund. */
+    val incoming: Boolean,
+    val icon: String,
+    val origin: FundLedgerOrigin,
+)
+
+enum class FundLedgerOrigin { DEPOSIT, WITHDRAWAL, EXPENSE, INVESTMENT }
+
+/** An investment plus the totals derived from its contributions. */
+data class InvestmentSummary(
+    val id: Long,
+    val name: String,
+    val kind: InvestmentKind,
+    val institution: String?,
+    val investedInr: Long,
+    val currentValueInr: Long?,
+    val maturityValueInr: Long?,
+    val interestRate: Double?,
+    val startDate: LocalDate,
+    val maturityDate: LocalDate?,
+    val monthlyInr: Long?,
+    val active: Boolean,
+    val contributedThisMonth: Boolean,
+) {
+    /** What the holding is worth today as far as the app knows. */
+    val valueInr: Long get() = currentValueInr ?: investedInr
+
+    val gainInr: Long? get() = currentValueInr?.let { it - investedInr }
+}

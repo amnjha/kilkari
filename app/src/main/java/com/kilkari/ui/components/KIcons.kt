@@ -5,7 +5,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CurrencyRupee
+import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.AddLink
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BabyChangingStation
@@ -152,6 +160,14 @@ object KIcons {
         "settings" to Icons.Filled.Settings,
         // Money
         "shopping_bag" to Icons.Filled.ShoppingBag,
+        "savings" to Icons.Filled.Savings,
+        "account_balance" to Icons.Filled.AccountBalance,
+        "account_balance_wallet" to Icons.Filled.AccountBalanceWallet,
+        "trending_up" to Icons.AutoMirrored.Filled.TrendingUp,
+        "arrow_downward" to Icons.Filled.ArrowDownward,
+        "arrow_upward" to Icons.Filled.ArrowUpward,
+        "calendar_month" to Icons.Filled.CalendarMonth,
+        "currency_rupee" to Icons.Filled.CurrencyRupee,
         "checkroom" to Icons.Filled.Checkroom,
     )
 

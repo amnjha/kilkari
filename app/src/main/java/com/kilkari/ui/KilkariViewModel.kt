@@ -7,10 +7,13 @@ import com.kilkari.data.db.AlbumEntity
 import com.kilkari.data.db.AppointmentEntity
 import com.kilkari.data.db.BabyEntity
 import com.kilkari.data.db.ChecklistEntity
+import com.kilkari.data.db.ContributionEntity
 import com.kilkari.data.db.DocumentEntity
 import com.kilkari.data.db.EventEntity
 import com.kilkari.data.db.ExpenseEntity
+import com.kilkari.data.db.FundTxnEntity
 import com.kilkari.data.db.GrowthEntity
+import com.kilkari.data.db.InvestmentEntity
 import com.kilkari.data.db.LogEntryEntity
 import com.kilkari.data.db.MedicationDoseEntity
 import com.kilkari.data.db.MedicationEntity
@@ -23,6 +26,11 @@ import com.kilkari.domain.Currency
 import com.kilkari.domain.DiaperKind
 import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.FeedType
+import com.kilkari.domain.FundLedgerOrigin
+import com.kilkari.domain.FundLedgerRow
+import com.kilkari.domain.FundTxnKind
+import com.kilkari.domain.InvestmentKind
+import com.kilkari.domain.InvestmentSummary
 import com.kilkari.domain.LogKind
 import com.kilkari.domain.VaccineGroupState
 import com.kilkari.domain.VaccineItemState
@@ -39,6 +47,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.YearMonth
 
 /**
  * One ViewModel for the whole app. Kilkari is a single-baby, single-user surface with heavy
@@ -110,6 +119,104 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     val moneyFilter: StateFlow<ExpenseCategory?> = _moneyFilter.asStateFlow()
 
     fun setMoneyFilter(c: ExpenseCategory?) { _moneyFilter.value = c }
+
+    // ── Fund & investments ──────────────────────────────────────────────────
+
+    val fundTransactions: StateFlow<List<FundTxnEntity>> = repo.fundTransactions().state(emptyList())
+    val investments: StateFlow<List<InvestmentEntity>> = repo.investments().state(emptyList())
+    val contributions: StateFlow<List<ContributionEntity>> = repo.contributions().state(emptyList())
+
+    /**
+     * Deposits, less everything drawn from the account: manual withdrawals, expenses marked as
+     * paid from the fund, and investment contributions funded from it. Nothing is mirrored, so
+     * deleting an expense or a holding restores the balance on its own.
+     */
+    val fundBalance: StateFlow<Long> =
+        combine(fundTransactions, expenses, contributions) { txns, expenses, contributions ->
+            val deposits = txns.filter { it.kind == FundTxnKind.DEPOSIT.key }.sumOf { it.amountInr }
+            val withdrawals = txns.filter { it.kind == FundTxnKind.WITHDRAWAL.key }.sumOf { it.amountInr }
+            val spent = expenses.filter { it.paidFromFund }.sumOf { it.amountInr }
+            val invested = contributions.filter { it.paidFromFund }.sumOf { it.amountInr }
+            deposits - withdrawals - spent - invested
+        }.state(0)
+
+    /** Every movement through the account on one timeline, newest first. */
+    val fundLedger: StateFlow<List<FundLedgerRow>> =
+        combine(fundTransactions, expenses, contributions, investments) { txns, expenses, contributions, investments ->
+            val byId = investments.associateBy { it.id }
+            buildList {
+                txns.forEach { t ->
+                    val deposit = t.kind == FundTxnKind.DEPOSIT.key
+                    add(
+                        FundLedgerRow(
+                            id = "t${t.id}",
+                            date = t.date,
+                            title = if (deposit) "Deposit" else "Withdrawal",
+                            subtitle = t.note.orEmpty(),
+                            amountInr = t.amountInr,
+                            incoming = deposit,
+                            icon = if (deposit) "payments" else "shopping_bag",
+                            origin = if (deposit) FundLedgerOrigin.DEPOSIT else FundLedgerOrigin.WITHDRAWAL,
+                        )
+                    )
+                }
+                expenses.filter { it.paidFromFund }.forEach { e ->
+                    add(
+                        FundLedgerRow(
+                            id = "e${e.id}",
+                            date = e.date,
+                            title = e.title,
+                            subtitle = listOfNotNull(
+                                ExpenseCategory.of(e.category).label,
+                                e.vendor,
+                            ).joinToString(" · "),
+                            amountInr = e.amountInr,
+                            incoming = false,
+                            icon = e.icon,
+                            origin = FundLedgerOrigin.EXPENSE,
+                        )
+                    )
+                }
+                contributions.filter { it.paidFromFund }.forEach { c ->
+                    val investment = byId[c.investmentId]
+                    add(
+                        FundLedgerRow(
+                            id = "c${c.id}",
+                            date = c.date,
+                            title = investment?.name ?: "Investment",
+                            subtitle = investment?.let { InvestmentKind.of(it.kind).label }.orEmpty(),
+                            amountInr = c.amountInr,
+                            incoming = false,
+                            icon = "savings",
+                            origin = FundLedgerOrigin.INVESTMENT,
+                        )
+                    )
+                }
+            }.sortedWith(compareByDescending<FundLedgerRow> { it.date }.thenByDescending { it.id })
+        }.state(emptyList())
+
+    val investmentSummaries: StateFlow<List<InvestmentSummary>> =
+        combine(investments, contributions) { investments, contributions ->
+            val thisMonth = YearMonth.now()
+            investments.map { row ->
+                val own = contributions.filter { it.investmentId == row.id }
+                InvestmentSummary(
+                    id = row.id,
+                    name = row.name,
+                    kind = InvestmentKind.of(row.kind),
+                    institution = row.institution,
+                    investedInr = own.sumOf { it.amountInr },
+                    currentValueInr = row.currentValueInr,
+                    maturityValueInr = row.maturityValueInr,
+                    interestRate = row.interestRate,
+                    startDate = row.startDate,
+                    maturityDate = row.maturityDate,
+                    monthlyInr = row.monthlyInr,
+                    active = row.active,
+                    contributedThisMonth = own.any { YearMonth.from(it.date) == thisMonth },
+                )
+            }
+        }.state(emptyList())
 
     // ── More ────────────────────────────────────────────────────────────────
 
@@ -240,14 +347,87 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun deleteAppointment(row: AppointmentEntity) = viewModelScope.launch { repo.deleteAppointment(row) }
 
-    fun addExpense(title: String, vendor: String?, category: ExpenseCategory, amountDisplay: Double) =
-        viewModelScope.launch {
-            val inr = com.kilkari.domain.Fmt.toInr(amountDisplay, currency.value)
-            repo.addExpense(title, vendor, category, inr, LocalDate.now())
-            toast("Expense saved")
-        }
+    fun addExpense(
+        title: String,
+        vendor: String?,
+        category: ExpenseCategory,
+        amountDisplay: Double,
+        paidFromFund: Boolean,
+    ) = viewModelScope.launch {
+        repo.addExpense(title, vendor, category, toInr(amountDisplay), LocalDate.now(), paidFromFund)
+        toast("Expense saved")
+    }
 
     fun deleteExpense(row: ExpenseEntity) = viewModelScope.launch { repo.deleteExpense(row) }
+
+    fun addFundDeposit(amountDisplay: Double, date: LocalDate, note: String?) = viewModelScope.launch {
+        repo.addFundTransaction(FundTxnKind.DEPOSIT, toInr(amountDisplay), date, note)
+        toast("Deposit recorded")
+    }
+
+    fun addFundWithdrawal(amountDisplay: Double, date: LocalDate, note: String?) = viewModelScope.launch {
+        repo.addFundTransaction(FundTxnKind.WITHDRAWAL, toInr(amountDisplay), date, note)
+        toast("Withdrawal recorded")
+    }
+
+    fun deleteFundTransaction(row: FundTxnEntity) = viewModelScope.launch {
+        repo.deleteFundTransaction(row)
+    }
+
+    fun setFundPlan(monthlyDisplay: Double, day: Int, name: String) = viewModelScope.launch {
+        repo.setFundPlan(toInr(monthlyDisplay), day, name)
+        toast("Monthly plan saved")
+    }
+
+    fun addInvestment(
+        name: String,
+        kind: InvestmentKind,
+        institution: String?,
+        openingDisplay: Double?,
+        monthlyDisplay: Double?,
+        interestRate: Double?,
+        startDate: LocalDate,
+        maturityDate: LocalDate?,
+        maturityValueDisplay: Double?,
+        paidFromFund: Boolean,
+    ) = viewModelScope.launch {
+        repo.addInvestment(
+            name = name,
+            kind = kind,
+            institution = institution,
+            openingAmountInr = openingDisplay?.let(::toInr),
+            monthlyInr = monthlyDisplay?.let(::toInr),
+            interestRate = interestRate,
+            startDate = startDate,
+            maturityDate = maturityDate,
+            maturityValueInr = maturityValueDisplay?.let(::toInr),
+            paidFromFund = paidFromFund,
+        )
+        toast("$name added")
+    }
+
+    fun addContribution(investmentId: Long, amountDisplay: Double, date: LocalDate, paidFromFund: Boolean) =
+        viewModelScope.launch {
+            repo.addContribution(investmentId, toInr(amountDisplay), date, paidFromFund)
+            toast("Contribution recorded")
+        }
+
+    fun updateInvestmentValue(investmentId: Long, valueDisplay: Double) = viewModelScope.launch {
+        repo.updateInvestmentValue(investmentId, toInr(valueDisplay), LocalDate.now())
+        toast("Value updated")
+    }
+
+    fun setInvestmentActive(investmentId: Long, active: Boolean) = viewModelScope.launch {
+        repo.setInvestmentActive(investmentId, active)
+    }
+
+    fun deleteInvestment(investmentId: Long) = viewModelScope.launch {
+        repo.deleteInvestment(investmentId)
+        toast("Removed")
+    }
+
+    /** Display amounts are entered in the chosen currency; storage is always whole rupees. */
+    private fun toInr(amount: Double): Long = com.kilkari.domain.Fmt.toInr(amount, currency.value)
 
     fun addMilestone(title: String, subtitle: String, date: LocalDate, albumUrl: String?) =
         viewModelScope.launch {

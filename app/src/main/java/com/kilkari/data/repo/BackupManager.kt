@@ -128,9 +128,9 @@ object BackupManager {
                 out.newLine()
 
                 row("EXPENSES")
-                row("date", "title", "vendor", "category", "amountInr", "amount${currency.code}")
+                row("date", "title", "vendor", "category", "amountInr", "amount${currency.code}", "paidFromFund")
                 db.expenseDao().allForExport(id).forEach { x ->
-                    row(x.date, x.title, x.vendor, x.category, x.amountInr, Fmt.money(x.amountInr, currency))
+                    row(x.date, x.title, x.vendor, x.category, x.amountInr, Fmt.money(x.amountInr, currency), x.paidFromFund)
                 }
                 out.newLine()
 
@@ -142,6 +142,27 @@ object BackupManager {
                 row("EVENTS")
                 row("date", "title", "subtitle", "annual")
                 db.eventDao().allForExport(id).forEach { e -> row(e.date, e.title, e.subtitle, e.annual) }
+                out.newLine()
+
+                row("FUND")
+                row("date", "kind", "amountInr", "note")
+                db.fundDao().allForExport(id).forEach { f -> row(f.date, f.kind, f.amountInr, f.note) }
+                out.newLine()
+
+                row("INVESTMENTS")
+                row("name", "kind", "institution", "monthlyInr", "rate", "start", "maturity", "currentValueInr", "maturityValueInr", "active")
+                val investments = db.investmentDao().allForExport(id)
+                investments.forEach { v ->
+                    row(v.name, v.kind, v.institution, v.monthlyInr, v.interestRate, v.startDate, v.maturityDate, v.currentValueInr, v.maturityValueInr, v.active)
+                }
+                out.newLine()
+
+                row("INVESTMENT CONTRIBUTIONS")
+                row("investment", "date", "amountInr", "paidFromFund")
+                val nameById = investments.associate { it.id to it.name }
+                db.investmentDao().contributionsForExport(id).forEach { c ->
+                    row(nameById[c.investmentId], c.date, c.amountInr, c.paidFromFund)
+                }
             }
         }
 

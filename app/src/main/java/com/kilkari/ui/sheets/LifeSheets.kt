@@ -1,5 +1,6 @@
 package com.kilkari.ui.sheets
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
@@ -12,6 +13,16 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.kilkari.ui.components.KSwitch
+import com.kilkari.ui.theme.KC
+import com.kilkari.ui.theme.Sans
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -28,12 +39,14 @@ import java.time.LocalDate
 @Composable
 fun ColumnScope.ExpenseSheet(
     currency: Currency,
-    onSave: (String, String?, ExpenseCategory, Double) -> Unit,
+    fundName: String,
+    onSave: (String, String?, ExpenseCategory, Double, Boolean) -> Unit,
 ) {
     var categoryIndex by remember { mutableIntStateOf(0) }
     var amount by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
     var vendor by remember { mutableStateOf("") }
+    var paidFromFund by remember { mutableStateOf(true) }
 
     SheetTitle("Add expense")
     KSegmented(ExpenseCategory.entries.map { it.label }, categoryIndex) { categoryIndex = it }
@@ -45,6 +58,24 @@ fun ColumnScope.ExpenseSheet(
     SheetField("Where", vendor, "Shop or clinic") { vendor = it }
     SheetStatic("Date", "Today, ${Fmt.date(LocalDate.now())}")
 
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable { paidFromFund = !paidFromFund }
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                "Paid from $fundName", fontFamily = Sans,
+                fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = KC.Ink,
+            )
+            Text("Comes off the balance", fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
+        }
+        KSwitch(paidFromFund)
+    }
+
     val value = amount.toDoubleOrNull()
     PrimaryButton("Save expense", enabled = value != null && value > 0) {
         val category = ExpenseCategory.entries[categoryIndex]
@@ -53,6 +84,7 @@ fun ColumnScope.ExpenseSheet(
             vendor.trim().ifBlank { null },
             category,
             value!!,
+            paidFromFund,
         )
     }
 }

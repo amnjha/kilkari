@@ -133,6 +133,8 @@ data class ExpenseEntity(
     val amountInr: Long,
     val date: LocalDate,
     val icon: String = "shopping_bag",
+    /** Whether this came out of the savings account rather than from elsewhere. */
+    val paidFromFund: Boolean = true,
 )
 
 @Entity(tableName = "timeline", indices = [Index("babyId", "date")])
@@ -195,4 +197,55 @@ data class ReminderEntity(
     val title: String,
     val subtitle: String,
     val enabled: Boolean,
+)
+
+/**
+ * A deposit into, or withdrawal from, the savings account the child's costs are paid from.
+ * Expenses and investment contributions are *not* mirrored here — the balance subtracts them
+ * directly, so deleting an expense restores the balance with no rows to keep in sync.
+ */
+@Entity(tableName = "fund_txn", indices = [Index("babyId", "date")])
+data class FundTxnEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val babyId: Long,
+    /** deposit | withdrawal */
+    val kind: String,
+    val amountInr: Long,
+    val date: LocalDate,
+    val note: String? = null,
+)
+
+@Entity(tableName = "investment", indices = [Index("babyId")])
+data class InvestmentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val babyId: Long,
+    val name: String,
+    /** fd | rd | sip | ppf | ssy | gold | other */
+    val kind: String,
+    val institution: String? = null,
+    /** Instalment for a recurring plan; null for a lump sum. */
+    val monthlyInr: Long? = null,
+    /** Percent per annum, where the instrument has a stated rate. */
+    val interestRate: Double? = null,
+    val startDate: LocalDate,
+    val maturityDate: LocalDate? = null,
+    /** Latest value the parent recorded — market-linked holdings drift. */
+    val currentValueInr: Long? = null,
+    val valueAsOf: LocalDate? = null,
+    /** What the bank says it will be worth at maturity, for fixed instruments. */
+    val maturityValueInr: Long? = null,
+    val active: Boolean = true,
+)
+
+@Entity(
+    tableName = "investment_contribution",
+    indices = [Index("investmentId", "date")],
+)
+data class ContributionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val investmentId: Long,
+    val amountInr: Long,
+    val date: LocalDate,
+    /** Whether the money came out of the savings account rather than from elsewhere. */
+    val paidFromFund: Boolean = true,
 )

@@ -65,6 +65,18 @@ class ReminderWorker(
             notes += "Weekly weigh-in" to "How much does ${baby.name} weigh today?"
         }
 
+        if ("fund" in enabled) {
+            val settings = repo.settings.first()
+            val due = settings.fundMonthlyInr > 0 && today.dayOfMonth == settings.fundDepositDay.coerceIn(1, 28)
+            val alreadyPaid = repo.lastDepositDate()?.let {
+                it.year == today.year && it.month == today.month
+            } == true
+            if (due && !alreadyPaid) {
+                notes += "Top up ${settings.fundAccountName}" to
+                    "${Fmt.money(settings.fundMonthlyInr, settings.currency)} due today"
+            }
+        }
+
         if ("album" in enabled && today.dayOfWeek.value == 6) {
             notes += "Photo nudge" to "Add this week's photos to an album"
         }

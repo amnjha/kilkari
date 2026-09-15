@@ -297,3 +297,70 @@ interface ReminderDao {
     @Query("SELECT COUNT(*) FROM reminder")
     suspend fun count(): Int
 }
+
+@Dao
+interface FundDao {
+    @Query("SELECT * FROM fund_txn WHERE babyId = :babyId ORDER BY date DESC, id DESC")
+    fun observeAll(babyId: Long): Flow<List<FundTxnEntity>>
+
+    @Query("SELECT * FROM fund_txn WHERE babyId = :babyId ORDER BY date ASC")
+    suspend fun allForExport(babyId: Long): List<FundTxnEntity>
+
+    @Insert
+    suspend fun insert(row: FundTxnEntity): Long
+
+    @Delete
+    suspend fun delete(row: FundTxnEntity)
+
+    /** Most recent deposit, used to tell whether this month's top-up has happened. */
+    @Query("SELECT * FROM fund_txn WHERE babyId = :babyId AND kind = 'deposit' ORDER BY date DESC LIMIT 1")
+    suspend fun lastDeposit(babyId: Long): FundTxnEntity?
+}
+
+@Dao
+interface InvestmentDao {
+    @Query("SELECT * FROM investment WHERE babyId = :babyId ORDER BY active DESC, startDate DESC")
+    fun observeAll(babyId: Long): Flow<List<InvestmentEntity>>
+
+    @Query("SELECT * FROM investment WHERE babyId = :babyId ORDER BY startDate ASC")
+    suspend fun allForExport(babyId: Long): List<InvestmentEntity>
+
+    @Query("SELECT * FROM investment WHERE id = :id")
+    suspend fun byId(id: Long): InvestmentEntity?
+
+    @Insert
+    suspend fun insert(row: InvestmentEntity): Long
+
+    @Update
+    suspend fun update(row: InvestmentEntity)
+
+    @Delete
+    suspend fun delete(row: InvestmentEntity)
+
+    @Query(
+        """
+        SELECT * FROM investment_contribution
+        WHERE investmentId IN (SELECT id FROM investment WHERE babyId = :babyId)
+        ORDER BY date DESC, id DESC
+        """
+    )
+    fun observeContributions(babyId: Long): Flow<List<ContributionEntity>>
+
+    @Query(
+        """
+        SELECT * FROM investment_contribution
+        WHERE investmentId IN (SELECT id FROM investment WHERE babyId = :babyId)
+        ORDER BY date ASC
+        """
+    )
+    suspend fun contributionsForExport(babyId: Long): List<ContributionEntity>
+
+    @Insert
+    suspend fun insertContribution(row: ContributionEntity): Long
+
+    @Delete
+    suspend fun deleteContribution(row: ContributionEntity)
+
+    @Query("DELETE FROM investment_contribution WHERE investmentId = :investmentId")
+    suspend fun deleteContributionsFor(investmentId: Long)
+}

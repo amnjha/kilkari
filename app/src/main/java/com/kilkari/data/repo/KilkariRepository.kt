@@ -5,10 +5,13 @@ import com.kilkari.data.db.AlbumEntity
 import com.kilkari.data.db.AppointmentEntity
 import com.kilkari.data.db.BabyEntity
 import com.kilkari.data.db.ChecklistEntity
+import com.kilkari.data.db.ContributionEntity
 import com.kilkari.data.db.DocumentEntity
 import com.kilkari.data.db.EventEntity
 import com.kilkari.data.db.ExpenseEntity
+import com.kilkari.data.db.FundTxnEntity
 import com.kilkari.data.db.GrowthEntity
+import com.kilkari.data.db.InvestmentEntity
 import com.kilkari.data.db.KilkariDatabase
 import com.kilkari.data.db.LogEntryEntity
 import com.kilkari.data.db.MedicationDoseEntity
@@ -26,6 +29,8 @@ import com.kilkari.domain.Currency
 import com.kilkari.domain.DiaperKind
 import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.FeedType
+import com.kilkari.domain.FundTxnKind
+import com.kilkari.domain.InvestmentKind
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
 import com.kilkari.domain.VaccineGroupState
@@ -340,18 +345,120 @@ class KilkariRepository(
 
     fun expenses(): Flow<List<ExpenseEntity>> = forBaby { db.expenseDao().observeAll(it) }
 
-    suspend fun addExpense(title: String, vendor: String?, category: ExpenseCategory, amountInr: Long, date: LocalDate) {
+    suspend fun addExpense(
+        title: String,
+        vendor: String?,
+        category: ExpenseCategory,
+        amountInr: Long,
+        date: LocalDate,
+        paidFromFund: Boolean = true,
+    ) {
         val id = babyId() ?: return
         db.expenseDao().insert(
             ExpenseEntity(
                 babyId = id, title = title, vendor = vendor, category = category.key,
-                amountInr = amountInr, date = date,
+                amountInr = amountInr, date = date, paidFromFund = paidFromFund,
                 icon = if (category == ExpenseCategory.MEDICAL) "medical_services" else "shopping_bag",
             )
         )
     }
 
     suspend fun deleteExpense(row: ExpenseEntity) = db.expenseDao().delete(row)
+
+    // ── Fund ────────────────────────────────────────────────────────────────
+
+    fun fundTransactions(): Flow<List<FundTxnEntity>> = forBaby { db.fundDao().observeAll(it) }
+
+    suspend fun addFundTransaction(kind: FundTxnKind, amountInr: Long, date: LocalDate, note: String?) {
+        val id = babyId() ?: return
+        db.fundDao().insert(
+            FundTxnEntity(babyId = id, kind = kind.key, amountInr = amountInr, date = date, note = note)
+        )
+    }
+
+    suspend fun deleteFundTransaction(row: FundTxnEntity) = db.fundDao().delete(row)
+
+    /** Date of the most recent deposit, so the UI can tell whether this month's is done. */
+    suspend fun lastDepositDate(): LocalDate? = babyId()?.let { db.fundDao().lastDeposit(it)?.date }
+
+    // ── Investments ─────────────────────────────────────────────────────────
+
+    fun investments(): Flow<List<InvestmentEntity>> = forBaby { db.investmentDao().observeAll(it) }
+
+    fun contributions(): Flow<List<ContributionEntity>> =
+        forBaby { db.investmentDao().observeContributions(it) }
+
+    /**
+     * Opens a holding. A lump sum ([openingAmountInr]) is recorded as its first contribution so
+     * invested totals come from one place — the contribution ledger — for every kind.
+     */
+    suspend fun addInvestment(
+        name: String,
+        kind: InvestmentKind,
+        institution: String?,
+        openingAmountInr: Long?,
+        monthlyInr: Long?,
+        interestRate: Double?,
+        startDate: LocalDate,
+        maturityDate: LocalDate?,
+        maturityValueInr: Long?,
+        paidFromFund: Boolean,
+    ): Long {
+        val babyId = babyId() ?: return 0
+        val id = db.investmentDao().insert(
+            InvestmentEntity(
+                babyId = babyId,
+                name = name,
+                kind = kind.key,
+                institution = institution,
+                monthlyInr = monthlyInr,
+                interestRate = interestRate,
+                startDate = startDate,
+                maturityDate = maturityDate,
+                maturityValueInr = maturityValueInr,
+            )
+        )
+        val opening = openingAmountInr ?: monthlyInr
+        if (opening != null && opening > 0) {
+            db.investmentDao().insertContribution(
+                ContributionEntity(
+                    investmentId = id,
+                    amountInr = opening,
+                    date = startDate,
+                    paidFromFund = paidFromFund,
+                )
+            )
+        }
+        return id
+    }
+
+    suspend fun addContribution(investmentId: Long, amountInr: Long, date: LocalDate, paidFromFund: Boolean) {
+        db.investmentDao().insertContribution(
+            ContributionEntity(
+                investmentId = investmentId,
+                amountInr = amountInr,
+                date = date,
+                paidFromFund = paidFromFund,
+            )
+        )
+    }
+
+    suspend fun updateInvestmentValue(investmentId: Long, valueInr: Long, asOf: LocalDate) {
+        val row = db.investmentDao().byId(investmentId) ?: return
+        db.investmentDao().update(row.copy(currentValueInr = valueInr, valueAsOf = asOf))
+    }
+
+    suspend fun setInvestmentActive(investmentId: Long, active: Boolean) {
+        val row = db.investmentDao().byId(investmentId) ?: return
+        db.investmentDao().update(row.copy(active = active))
+    }
+
+    /** Removes the holding and its contributions, so the fund balance drops them too. */
+    suspend fun deleteInvestment(investmentId: Long) {
+        val row = db.investmentDao().byId(investmentId) ?: return
+        db.investmentDao().deleteContributionsFor(investmentId)
+        db.investmentDao().delete(row)
+    }
 
     // ── Timeline, documents, albums, events ─────────────────────────────────
 
@@ -479,6 +586,9 @@ class KilkariRepository(
     suspend fun setTodayVariant(v: String) = settingsStore.setTodayVariant(v)
     suspend fun setAutoBackup(v: Boolean) = settingsStore.setAutoBackup(v)
 
+    suspend fun setFundPlan(monthlyInr: Long, day: Int, name: String) =
+        settingsStore.setFundPlan(monthlyInr, day, name)
+
     suspend fun seedReminders() {
         if (db.reminderDao().count() > 0) return
         db.reminderDao().upsertAll(
@@ -488,6 +598,7 @@ class KilkariRepository(
                 ReminderEntity("appt", "Appointments", "1 day before, 1 hour before", true),
                 ReminderEntity("weigh", "Weekly weigh-in", "Sundays 9:00 am", false),
                 ReminderEntity("album", "Photo nudge", "Weekly: add photos to album", true),
+                ReminderEntity("fund", "Monthly fund top-up", "On the day the deposit is due", true),
             )
         )
     }
