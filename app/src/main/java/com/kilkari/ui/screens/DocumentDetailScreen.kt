@@ -56,7 +56,7 @@ fun DocumentDetailScreen(vm: KilkariViewModel, go: NavActions) {
         ) {
             pages.forEachIndexed { i, uri ->
                 Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))) {
-                    PagePreview(uri, height = 380)
+                    PagePreview(uri, height = 380, openable = true)
                 }
                 Text(
                     "Page ${i + 1} of ${pages.size}",

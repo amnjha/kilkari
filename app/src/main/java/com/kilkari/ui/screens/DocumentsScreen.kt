@@ -2,6 +2,7 @@ package com.kilkari.ui.screens
 
 import android.content.Context
 import android.net.Uri
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -198,9 +199,14 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
     }
 }
 
-/** Renders a captured page, falling back to a placeholder when the file is missing. */
+/**
+ * Renders a page: the image itself where there is one, otherwise what the file is.
+ *
+ * A PDF has no thumbnail, and an unlabelled placeholder said nothing about what had been
+ * attached or how to look at it. [openable] adds the way out to whatever app handles the type.
+ */
 @Composable
-internal fun PagePreview(uri: String, height: Int) {
+internal fun PagePreview(uri: String, height: Int, openable: Boolean = false) {
     val context = LocalContext.current
     val bitmap: ImageBitmap? = remember(uri) { loadThumbnail(context, uri) }
 
@@ -208,7 +214,10 @@ internal fun PagePreview(uri: String, height: Int) {
         Modifier
             .fillMaxWidth()
             .height(height.dp)
-            .background(KC.ClayBg),
+            .background(KC.ClayBg)
+            .let {
+                if (bitmap == null && openable) it.clickable { openFile(context, uri) } else it
+            },
         contentAlignment = Alignment.Center,
     ) {
         if (bitmap != null) {
@@ -219,11 +228,46 @@ internal fun PagePreview(uri: String, height: Int) {
                 contentScale = ContentScale.Crop,
             )
         } else {
-            Icon(
-                KIcons["document_scanner"], null,
-                tint = KC.ClayDeep, modifier = Modifier.size(28.dp),
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    KIcons["folder"], null,
+                    tint = KC.ClayDeep, modifier = Modifier.size(28.dp),
+                )
+                Text(
+                    fileLabel(uri),
+                    fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp, color = KC.ClayDeep,
+                )
+                if (openable) {
+                    Text(
+                        "Tap to open",
+                        fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                    )
+                }
+            }
         }
+    }
+}
+
+/** "PDF", "DOCX" — the type, taken off the stored file's own name. */
+private fun fileLabel(uri: String): String {
+    val name = Uri.parse(uri).lastPathSegment.orEmpty().substringAfterLast('/')
+    val extension = name.substringAfterLast('.', "")
+    return if (extension.isBlank()) "File" else extension.uppercase()
+}
+
+/** Hands the file to whatever app handles its type, with read access for the length of the view. */
+private fun openFile(context: Context, uri: String) {
+    runCatching {
+        val parsed = Uri.parse(uri)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(parsed, context.contentResolver.getType(parsed) ?: "*/*")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
     }
 }
 
