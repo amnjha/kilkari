@@ -178,4 +178,18 @@ object KIcons {
     )
 
     operator fun get(name: String): ImageVector = byName[name] ?: Icons.Filled.AutoAwesome
+
+    /**
+     * Whether [name] is one of the drawn icons. Anything else a reminder carries is an emoji
+     * the parent typed, which is painted as text rather than looked up here.
+     */
+    fun isDrawn(name: String): Boolean = name in byName
+
+    /** The icons offered when picking one for a reminder, in the order they are shown. */
+    val CHOICES: List<String> = listOf(
+        "notifications_active", "schedule", "check_circle", "favorite", "child_care",
+        "bathtub", "bedtime", "water_drop", "restaurant", "pill",
+        "vaccines", "monitor_weight", "photo_camera", "stethoscope", "event",
+        "celebration", "savings", "home", "auto_awesome",
+    )
 }

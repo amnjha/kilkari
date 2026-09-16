@@ -34,6 +34,7 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.KSwitch
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
+import com.kilkari.ui.sheets.DEFAULT_ICON
 import com.kilkari.ui.sheets.ReminderSheet
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -108,6 +109,7 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
                         KRow(
                             title = reminder.title,
                             subtitle = describe(reminder),
+                            icon = reminder.icon ?: DEFAULT_ICON,
                             divider = i != custom.lastIndex,
                             onClick = { editing = reminder to true },
                         ) {
@@ -133,8 +135,8 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
             if (open != null) {
                 ReminderSheet(
                     existing = open.first,
-                    onSave = { key, title, note, minute, repeat, weekday, dayOfMonth, date ->
-                        vm.saveCustomReminder(key, title, note, minute, repeat, weekday, dayOfMonth, date)
+                    onSave = { draft ->
+                        vm.saveCustomReminder(draft)
                         editing = null
                     },
                     onDelete = open.first?.let { existing ->

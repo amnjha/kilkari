@@ -180,7 +180,7 @@ object DueTaskBuilder {
                     r.minuteOfDay?.let(::clock),
                 ).joinToString(" · "),
                 trailing = if (days == 0) "today" else Fmt.dueBadge(days),
-                icon = iconFor(r.key),
+                icon = r.icon ?: iconFor(r.key),
                 done = acted?.done == true,
                 // Weekly prompts that exist to capture something open that screen instead.
                 completable = r.key !in NEEDS_ENTRY,
@@ -226,12 +226,11 @@ object DueTaskBuilder {
             RepeatRule.NONE -> r.startDate?.takeIf { !it.isAfter(today) }
         }
 
+    /** Fallback for the built-ins, which have no icon of their own to carry. */
     private fun iconFor(key: String) = when (key) {
         "album" -> "photo_camera"
         "weigh" -> "monitor_weight"
         "fund" -> "savings"
-        "bath" -> "bathtub"
-        "tummy" -> "child_care"
         else -> "notifications_active"
     }
 

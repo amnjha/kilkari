@@ -32,7 +32,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         TaskStateEntity::class,
         DoctorEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -64,7 +64,7 @@ abstract class KilkariDatabase : RoomDatabase() {
                 context.applicationContext,
                 KilkariDatabase::class.java,
                 DB_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7).build().also { instance = it }
         }
 
         /** Drops the cached handle so a restore can swap the file underneath us. */
@@ -170,6 +170,20 @@ abstract class KilkariDatabase : RoomDatabase() {
                         "('bath', 'Bath', 'Part of the evening routine', 0, 0, 'daily')"
                 )
                 db.execSQL("DELETE FROM checklist WHERE key IN ('bath', 'tummy')")
+            }
+        }
+
+        /**
+         * Lets a reminder carry its own icon — a name from the built-in set, or an emoji.
+         *
+         * The two seeded habits get theirs back, since they were being matched by key before
+         * and a parent who renames one should not lose its bathtub.
+         */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE reminder ADD COLUMN icon TEXT")
+                db.execSQL("UPDATE reminder SET icon = 'bathtub' WHERE `key` = 'bath'")
+                db.execSQL("UPDATE reminder SET icon = 'child_care' WHERE `key` = 'tummy'")
             }
         }
 

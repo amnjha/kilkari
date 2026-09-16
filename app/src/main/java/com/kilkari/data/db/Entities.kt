@@ -209,6 +209,11 @@ data class ReminderEntity(
     val dayOfMonth: Int? = null,
     /** The single occurrence for a non-repeating reminder. */
     val startDate: LocalDate? = null,
+    /**
+     * How it shows up on Today: either a name from the built-in icon set or an emoji the
+     * parent chose. Null falls back to whatever suits the reminder's key.
+     */
+    val icon: String? = null,
 )
 
 /**

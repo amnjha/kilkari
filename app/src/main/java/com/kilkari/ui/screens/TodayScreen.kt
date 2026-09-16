@@ -492,7 +492,9 @@ private fun DueTaskRow(task: DueTask, vm: KilkariViewModel, go: NavActions) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (task.completable) {
-                CheckRing(task.done)
+                // Only reminders carry an icon the parent picked; everything else keeps the
+                // plain ring rather than repeating an icon the row's text already says.
+                CheckRing(task.done, glyph = task.icon.takeIf { task.kind == DueTaskKind.REMINDER })
             } else {
                 IconBadge(task.icon, skin.first, skin.second)
             }

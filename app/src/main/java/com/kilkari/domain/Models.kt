@@ -210,6 +210,24 @@ enum class RepeatRule(val key: String, val label: String) {
     }
 }
 
+/**
+ * Everything the reminder sheet collects, travelling as one value.
+ *
+ * It was nine positional arguments, two of them adjacent nullable Ints, which made the call
+ * sites unreadable and a transposition invisible.
+ */
+data class ReminderDraft(
+    val key: String?,
+    val title: String,
+    val subtitle: String,
+    val icon: String?,
+    val minuteOfDay: Int?,
+    val repeat: RepeatRule,
+    val weekday: Int? = null,
+    val dayOfMonth: Int? = null,
+    val startDate: LocalDate? = null,
+)
+
 enum class DueTaskKind { MEDICATION, APPOINTMENT, VACCINE, CHECKLIST, REMINDER, SLEEP }
 
 /**

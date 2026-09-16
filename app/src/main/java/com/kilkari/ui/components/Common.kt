@@ -113,7 +113,13 @@ fun IconBadge(
             .background(background),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(KIcons[icon], contentDescription = null, tint = tint, modifier = Modifier.size(iconSize.dp))
+        // A reminder may carry an emoji instead of a drawn icon. Emoji are already coloured,
+        // so they are painted as text at the size the icon would have occupied.
+        if (KIcons.isDrawn(icon)) {
+            Icon(KIcons[icon], contentDescription = null, tint = tint, modifier = Modifier.size(iconSize.dp))
+        } else {
+            Text(icon, fontSize = (iconSize - 3).sp, lineHeight = (iconSize - 3).sp)
+        }
     }
 }
 
@@ -331,7 +337,7 @@ fun KRow(
 
 /** Checkbox-style ring used by the Today checklist and vaccine dose lists. */
 @Composable
-fun CheckRing(checked: Boolean, rounded: Boolean = false, size: Int = 24) {
+fun CheckRing(checked: Boolean, rounded: Boolean = false, size: Int = 24, glyph: String? = null) {
     val shape = if (rounded) RoundedCornerShape(8.dp) else RoundedCornerShape(percent = 50)
     Box(
         Modifier
@@ -341,8 +347,17 @@ fun CheckRing(checked: Boolean, rounded: Boolean = false, size: Int = 24) {
             .background(if (checked) KC.Coral else KC.Surface),
         contentAlignment = Alignment.Center,
     ) {
-        if (checked) {
-            Icon(KIcons["check"], null, tint = Color.White, modifier = Modifier.size((size * 2 / 3).dp))
+        val inner = (size * 2 / 3).dp
+        when {
+            // Ticked: the state matters more than what the row is.
+            checked ->
+                Icon(KIcons["check"], null, tint = Color.White, modifier = Modifier.size(inner))
+            // Still to do: the ring stays the tap target, and carries the chosen icon so the
+            // row is recognisable at a glance rather than being one of several bare circles.
+            glyph == null -> Unit
+            KIcons.isDrawn(glyph) ->
+                Icon(KIcons[glyph], null, tint = KC.Coral, modifier = Modifier.size(inner))
+            else -> Text(glyph, fontSize = (size / 2).sp, lineHeight = (size / 2).sp)
         }
     }
 }

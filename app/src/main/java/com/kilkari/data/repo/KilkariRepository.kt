@@ -36,6 +36,7 @@ import com.kilkari.domain.FundTxnKind
 import com.kilkari.domain.InvestmentKind
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
+import com.kilkari.domain.ReminderDraft
 import com.kilkari.domain.RepeatRule
 import com.kilkari.domain.VaccineGroupState
 import com.kilkari.domain.VaccineItemState
@@ -709,28 +710,22 @@ class KilkariRepository(
     suspend fun setReminderEnabled(row: ReminderEntity, enabled: Boolean) =
         db.reminderDao().upsert(row.copy(enabled = enabled))
 
-    suspend fun saveCustomReminder(
-        key: String?,
-        title: String,
-        subtitle: String,
-        minuteOfDay: Int?,
-        repeat: RepeatRule,
-        weekday: Int?,
-        dayOfMonth: Int?,
-        startDate: LocalDate?,
-    ) {
+    suspend fun saveCustomReminder(draft: ReminderDraft) {
+        // An existing reminder keeps whether it is switched on; a new one arrives on.
+        val enabled = draft.key?.let { db.reminderDao().byKey(it)?.enabled } ?: true
         db.reminderDao().upsert(
             ReminderEntity(
-                key = key ?: "custom:" + System.currentTimeMillis(),
-                title = title,
-                subtitle = subtitle,
-                enabled = true,
+                key = draft.key ?: "custom:" + System.currentTimeMillis(),
+                title = draft.title,
+                subtitle = draft.subtitle,
+                enabled = enabled,
                 builtIn = false,
-                minuteOfDay = minuteOfDay,
-                repeatRule = repeat.key,
-                weekday = weekday,
-                dayOfMonth = dayOfMonth,
-                startDate = startDate,
+                minuteOfDay = draft.minuteOfDay,
+                repeatRule = draft.repeat.key,
+                weekday = draft.weekday,
+                dayOfMonth = draft.dayOfMonth,
+                startDate = draft.startDate,
+                icon = draft.icon,
             )
         )
     }
@@ -987,11 +982,11 @@ class KilkariRepository(
                 // as ordinary custom reminders — and switched off, since nobody asked for them.
                 ReminderEntity(
                     "tummy", "Tummy time", "A few minutes of floor time", false,
-                    builtIn = false, repeatRule = "daily",
+                    builtIn = false, repeatRule = "daily", icon = "child_care",
                 ),
                 ReminderEntity(
                     "bath", "Bath", "Part of the evening routine", false,
-                    builtIn = false, repeatRule = "daily",
+                    builtIn = false, repeatRule = "daily", icon = "bathtub",
                 ),
             )
         )

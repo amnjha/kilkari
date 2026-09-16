@@ -28,6 +28,7 @@ import com.kilkari.domain.Currency
 import com.kilkari.domain.DiaperKind
 import com.kilkari.data.db.TaskStateEntity
 import com.kilkari.domain.DueTask
+import com.kilkari.domain.ReminderDraft
 import com.kilkari.domain.RepeatRule
 import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.FeedType
@@ -711,18 +712,9 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     fun setReminderEnabled(row: ReminderEntity, enabled: Boolean) =
         viewModelScope.launch { repo.setReminderEnabled(row, enabled) }
 
-    fun saveCustomReminder(
-        key: String?,
-        title: String,
-        subtitle: String,
-        minuteOfDay: Int?,
-        repeat: RepeatRule,
-        weekday: Int?,
-        dayOfMonth: Int?,
-        startDate: LocalDate?,
-    ) = viewModelScope.launch {
-        repo.saveCustomReminder(key, title, subtitle, minuteOfDay, repeat, weekday, dayOfMonth, startDate)
-        toast(if (key == null) "Reminder added" else "Reminder updated")
+    fun saveCustomReminder(draft: ReminderDraft) = viewModelScope.launch {
+        repo.saveCustomReminder(draft)
+        toast(if (draft.key == null) "Reminder added" else "Reminder updated")
     }
 
     fun deleteReminder(key: String) = viewModelScope.launch {
