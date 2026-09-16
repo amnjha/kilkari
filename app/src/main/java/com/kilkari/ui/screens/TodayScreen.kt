@@ -169,59 +169,36 @@ private fun TodayAgenda(
         Text("$name is ${Fmt.age(dob)}", style = ScreenTitle, color = KC.Ink)
     }
 
-    nextVac?.let { g ->
-        GradientCard(listOf(KC.Coral, KC.Clay), onClick = { go.push(Routes.VACCINES) }) {
-            // The label and the due badge belong at opposite ends of the card, so this row
-            // takes the full width; only what sits under it shares space with the photo.
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "NEXT UP", fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                    fontSize = 12.sp, letterSpacing = 0.5.sp,
-                    color = Color.White.copy(alpha = 0.85f),
-                )
-                Pill(Fmt.dueText(g.inDays))
-            }
+    // What is happening now outranks what is due later. A nap started ten minutes ago wants
+    // ending; the next vaccine may be six months off and can wait for the card below it.
+    val napping = openSleep
+    when {
+        napping != null -> NextUpCard(
+            label = "NAPPING NOW",
+            badge = Fmt.elapsed(napping.startAt),
+            title = "Asleep since ${Fmt.time(napping.startAt)}",
+            subtitle = napping.place?.takeIf { it.isNotBlank() } ?: "Tap to wake and record it",
+            action = "End the nap",
+            photoUri = photoUri,
+            name = name,
+            onAction = { onQuickLog(LogKind.SLEEP) },
+            onEditPhoto = onEditPhoto,
+            onCard = { onQuickLog(LogKind.SLEEP) },
+        )
 
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Seven tenths to the words, three to the picture. Vaccine names are long and
-                // unpredictable, so everything on this side truncates rather than pushing the
-                // photo around.
-                Column(
-                    Modifier.weight(0.7f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        "${g.label} vaccines · ${g.count} ${Fmt.plural(g.count.toLong(), "dose")}",
-                        fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 20.sp,
-                        color = Color.White,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        "${Fmt.date(g.dueDate)} · ${g.names}",
-                        fontFamily = Sans, fontSize = 13.sp, color = Color.White.copy(alpha = 0.9f),
-                        maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    )
-                    WhiteButton("See schedule") { go.push(Routes.VACCINES) }
-                }
-
-                // Its own tap target inside a card that opens the schedule: the picture is the
-                // way to change the picture, everything else on the card is vaccines.
-                ChildAvatar(
-                    photoUri = photoUri,
-                    name = name,
-                    modifier = Modifier.weight(0.3f).aspectRatio(1f),
-                    ring = Color.White.copy(alpha = 0.55f),
-                    onClick = onEditPhoto,
-                )
-            }
+        nextVac != null -> nextVac?.let { g ->
+            NextUpCard(
+                label = "NEXT UP",
+                badge = Fmt.dueText(g.inDays),
+                title = "${g.label} vaccines · ${g.count} ${Fmt.plural(g.count.toLong(), "dose")}",
+                subtitle = "${Fmt.date(g.dueDate)} · ${g.names}",
+                action = "See schedule",
+                photoUri = photoUri,
+                name = name,
+                onAction = { go.push(Routes.VACCINES) },
+                onEditPhoto = onEditPhoto,
+                onCard = { go.push(Routes.VACCINES) },
+            )
         }
     }
 
@@ -268,6 +245,72 @@ private fun TodayAgenda(
 
     SectionLabel("Today", Modifier.padding(top = 2.dp))
     DueTaskList(vm, go, "Nothing due right now. 🎈")
+}
+
+/**
+ * The headline card: whatever most wants attention, with the child's picture beside it.
+ *
+ * The label row spans the card so the badge sits at its far edge; below it the words take
+ * seven tenths and truncate rather than shoving the photo around, and the photo takes three.
+ */
+@Composable
+private fun NextUpCard(
+    label: String,
+    badge: String,
+    title: String,
+    subtitle: String,
+    action: String,
+    photoUri: String?,
+    name: String,
+    onAction: () -> Unit,
+    onEditPhoto: () -> Unit,
+    onCard: () -> Unit,
+) {
+    GradientCard(listOf(KC.Coral, KC.Clay), onClick = onCard) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                label, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp, letterSpacing = 0.5.sp,
+                color = Color.White.copy(alpha = 0.85f),
+            )
+            Pill(badge)
+        }
+
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(0.7f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    title,
+                    fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 20.sp,
+                    color = Color.White,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    subtitle,
+                    fontFamily = Sans, fontSize = 13.sp, color = Color.White.copy(alpha = 0.9f),
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+                WhiteButton(action, onClick = onAction)
+            }
+
+            // Its own tap target inside a card that does something else: the picture is the
+            // way to change the picture.
+            ChildAvatar(
+                photoUri = photoUri,
+                name = name,
+                modifier = Modifier.weight(0.3f).aspectRatio(1f),
+                ring = Color.White.copy(alpha = 0.55f),
+                onClick = onEditPhoto,
+            )
+        }
+    }
 }
 
 // ── Variant B · Hero ────────────────────────────────────────────────────────
