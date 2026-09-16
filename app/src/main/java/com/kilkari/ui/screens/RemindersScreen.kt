@@ -29,6 +29,8 @@ import com.kilkari.ui.DueTaskBuilder
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconButton44
+import com.kilkari.ui.components.IconPickerSheet
+import com.kilkari.ui.components.rememberIconPickerState
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KRow
 import com.kilkari.ui.components.KSheet
@@ -62,6 +64,7 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
         if (!granted) permission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
+    val iconPicker = rememberIconPickerState()
     val builtIn = reminders.filter { it.builtIn }
     val custom = reminders.filterNot { it.builtIn }
 
@@ -136,6 +139,7 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
             if (open != null) {
                 ReminderSheet(
                     existing = open.first,
+                    onPickIcon = iconPicker::open,
                     onSave = { draft ->
                         vm.saveCustomReminder(draft)
                         editing = null
@@ -149,6 +153,7 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
                 )
             }
         }
+        IconPickerSheet(iconPicker)
     }
 }
 
