@@ -10,6 +10,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.KeyboardType
 import com.kilkari.data.db.BabyEntity
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.Sex
+import com.kilkari.ui.components.KSegmented
 import com.kilkari.ui.components.KDateField
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.SheetField
@@ -22,10 +24,19 @@ import java.time.LocalDate
 @Composable
 fun ColumnScope.BabySheet(
     baby: BabyEntity,
-    onSave: (name: String, dob: LocalDate, place: String?, weight: Double?, length: Double?, head: Double?) -> Unit,
+    onSave: (
+        name: String,
+        dob: LocalDate,
+        sex: Sex?,
+        place: String?,
+        weight: Double?,
+        length: Double?,
+        head: Double?,
+    ) -> Unit,
 ) {
     var name by remember(baby.id) { mutableStateOf(baby.name) }
     var dob by remember(baby.id) { mutableStateOf(baby.dob) }
+    var sex by remember(baby.id) { mutableStateOf(Sex.of(baby.sex)) }
     var place by remember(baby.id) { mutableStateOf(baby.birthPlace.orEmpty()) }
     var weight by remember(baby.id) { mutableStateOf(baby.birthWeightKg?.let(Fmt::trimNum).orEmpty()) }
     var length by remember(baby.id) { mutableStateOf(baby.birthLengthCm?.let(Fmt::trimNum).orEmpty()) }
@@ -36,6 +47,11 @@ fun ColumnScope.BabySheet(
     SheetTitle("${baby.name}'s details")
     SheetField("Name", name, "Name") { name = it }
     KDateField("Date of birth", dob, selectableTo = LocalDate.now()) { dob = it }
+
+    // Only the growth chart reads this: the WHO curve is published per sex.
+    SheetHint("Sex — picks the growth curve the chart compares against.")
+    KSegmented(Sex.entries.map { it.label }, Sex.entries.indexOf(sex)) { sex = Sex.entries[it] }
+
     SheetField("Born at", place, "Hospital or city") { place = it }
 
     SheetHint("Birth measurements — these anchor the growth chart.")
@@ -51,6 +67,7 @@ fun ColumnScope.BabySheet(
         onSave(
             name.trim(),
             dob,
+            sex,
             place.trim().ifBlank { null },
             weight.toDoubleOrNull(),
             length.toDoubleOrNull(),

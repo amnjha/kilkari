@@ -30,6 +30,7 @@ import com.kilkari.data.db.TaskStateEntity
 import com.kilkari.domain.DueTask
 import com.kilkari.domain.ReminderDraft
 import com.kilkari.domain.RepeatRule
+import com.kilkari.domain.Sex
 import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.FeedType
 import com.kilkari.domain.Fmt
@@ -389,6 +390,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     fun onboard(
         name: String,
         dob: LocalDate,
+        sex: Sex?,
         birthTime: LocalDateTime?,
         weightKg: Double?,
         lengthCm: Double?,
@@ -400,7 +402,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         milestones: Map<String, LocalDate>,
     ) = viewModelScope.launch {
         repo.onboard(
-            name, dob, birthTime, weightKg, lengthCm, headCm, place,
+            name, dob, sex, birthTime, weightKg, lengthCm, headCm, place,
             scheduleId, currency, givenGroups, milestones,
         )
     }
@@ -735,6 +737,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     fun updateBabyDetails(
         name: String,
         dob: LocalDate,
+        sex: Sex?,
         place: String?,
         weightKg: Double?,
         lengthCm: Double?,
@@ -745,6 +748,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             current.copy(
                 name = name,
                 dob = dob,
+                sex = sex?.key,
                 birthPlace = place,
                 birthWeightKg = weightKg,
                 birthLengthCm = lengthCm,

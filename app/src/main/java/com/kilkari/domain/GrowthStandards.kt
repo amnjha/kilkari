@@ -4,13 +4,13 @@ package com.kilkari.domain
  * Weight-for-age medians from the WHO Child Growth Standards (2006), in kilograms, by completed
  * month from birth to two years.
  *
- * These are the 50th percentile — the weight half of healthy children are above at that age —
- * and the standards are published separately for boys and girls, which is why both are here.
- * Kilkari does not record a child's sex, so the chart plots the mean of the two; the difference
- * between them is about half a kilogram at two years, so the curve is a guide to the shape of
- * normal growth rather than a number to measure a particular child against. A child's own
- * healthy line can sit some way above or below it. Only a clinician reading the full percentile
- * chart can say whether a given reading matters.
+ * These are the 50th percentile — the weight half of healthy children are above at that age.
+ * The standards are published separately for boys and girls; where the child's sex is not
+ * recorded the mean of the two is used, which is roughly half a kilogram wide by two years.
+ *
+ * Either way the curve is a guide to the shape of normal growth, not a number to measure a
+ * particular child against: a healthy line can sit some way above or below it, and only a
+ * clinician reading the full percentile chart can say whether a given reading matters.
  */
 object GrowthStandards {
 
@@ -30,17 +30,21 @@ object GrowthStandards {
     const val MAX_MONTHS: Int = 24
 
     /**
-     * Median expected weight at an age in months, straight-lined between the published monthly
-     * figures so the curve is smooth. Null beyond the end of the table.
+     * Median expected weight at an age in months for [sex], straight-lined between the
+     * published monthly figures so the curve is smooth. Null beyond the end of the table.
      */
-    fun medianWeightKg(months: Double): Double? {
+    fun medianWeightKg(months: Double, sex: Sex?): Double? {
         if (months < 0.0 || months > MAX_MONTHS) return null
         val lower = months.toInt().coerceAtMost(MAX_MONTHS)
-        val atLower = median(lower)
+        val atLower = median(lower, sex)
         if (lower == MAX_MONTHS) return atLower
         val fraction = months - lower
-        return atLower + (median(lower + 1) - atLower) * fraction
+        return atLower + (median(lower + 1, sex) - atLower) * fraction
     }
 
-    private fun median(month: Int): Double = (BOYS[month] + GIRLS[month]) / 2.0
+    private fun median(month: Int, sex: Sex?): Double = when (sex) {
+        Sex.BOY -> BOYS[month]
+        Sex.GIRL -> GIRLS[month]
+        null -> (BOYS[month] + GIRLS[month]) / 2.0
+    }
 }

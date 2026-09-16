@@ -59,6 +59,8 @@ import com.kilkari.ui.components.CheckRing
 import com.kilkari.ui.components.Hint
 import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.KCard
+import com.kilkari.domain.Sex
+import com.kilkari.ui.components.KSegmented
 import com.kilkari.ui.components.KDateField
 import com.kilkari.ui.components.KChip
 import com.kilkari.ui.components.PrimaryButton
@@ -76,6 +78,7 @@ import java.time.temporal.ChronoUnit
 private class OnboardingState {
     var name by mutableStateOf("")
     var dob by mutableStateOf<LocalDate?>(null)
+    var sex by mutableStateOf<Sex?>(null)
     var place by mutableStateOf("")
     var weight by mutableStateOf("")
     var length by mutableStateOf("")
@@ -195,6 +198,7 @@ fun OnboardingScreen(vm: KilkariViewModel) {
                         weightKg = state.weight.toDoubleOrNull(),
                         lengthCm = state.length.toDoubleOrNull(),
                         headCm = state.head.toDoubleOrNull(),
+                        sex = state.sex,
                         place = state.place.trim().ifBlank { null },
                         scheduleId = state.scheduleId,
                         currency = state.currency,
@@ -323,6 +327,13 @@ private fun ColumnScope.BabyStep(state: OnboardingState) {
         ValueField("Born at", state.place, "Hospital or city", divider = false) { state.place = it }
     }
     state.dob?.let { Hint("${state.name.ifBlank { "Baby" }} is ${Fmt.age(it)} today.") }
+
+    // Optional, and only the growth chart uses it — the WHO curve is published per sex, so
+    // without this the chart can only show the average of the two.
+    Hint("Sex — sets the growth curve the weight chart compares against. You can skip it.")
+    KSegmented(Sex.entries.map { it.label }, Sex.entries.indexOf(state.sex)) {
+        state.sex = Sex.entries[it]
+    }
 }
 
 @Composable

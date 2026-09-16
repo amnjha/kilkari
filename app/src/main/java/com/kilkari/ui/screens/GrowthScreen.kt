@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.Sex
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.WeightChart
 import com.kilkari.ui.components.WeightChartLegend
@@ -117,13 +118,24 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                                 fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
                             )
                         } else {
-                            WeightChart(series)
+                            val sex = Sex.of(baby?.sex)
+                            WeightChart(series, sex)
                             WeightChartLegend(baby?.name ?: "Weight")
                             Text(
-                                "The dotted line is the WHO median for a child this age, " +
-                                    "averaged across boys and girls. Healthy children sit above " +
-                                    "and below it; only a clinician reading the full chart can " +
-                                    "say whether a reading matters.",
+                                when (sex) {
+                                    null ->
+                                        "The dotted line is the WHO median for a child this age, " +
+                                            "averaged across boys and girls — add the child's sex " +
+                                            "in their details for the exact curve. Healthy " +
+                                            "children sit above and below it; only a clinician " +
+                                            "reading the full chart can say whether a reading " +
+                                            "matters."
+                                    else ->
+                                        "The dotted line is the WHO median for a ${sex.label.lowercase()} " +
+                                            "this age. Healthy children sit above and below it; " +
+                                            "only a clinician reading the full chart can say " +
+                                            "whether a reading matters."
+                                },
                                 fontFamily = Sans, fontSize = 11.sp, lineHeight = 16.sp,
                                 color = KC.Muted,
                             )

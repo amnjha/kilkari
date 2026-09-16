@@ -136,8 +136,8 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
     }
 
         KSheet(editing, onDismiss = { editing = false }) {
-            BabySheet(b) { name, dob, place, weight, length, head ->
-                vm.updateBabyDetails(name, dob, place, weight, length, head)
+            BabySheet(b) { name, dob, sex, place, weight, length, head ->
+                vm.updateBabyDetails(name, dob, sex, place, weight, length, head)
                 editing = false
             }
         }

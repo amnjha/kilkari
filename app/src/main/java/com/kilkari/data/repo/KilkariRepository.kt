@@ -38,6 +38,7 @@ import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
 import com.kilkari.domain.ReminderDraft
 import com.kilkari.domain.RepeatRule
+import com.kilkari.domain.Sex
 import com.kilkari.domain.VaccineGroupState
 import com.kilkari.domain.VaccineItemState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -751,12 +752,12 @@ class KilkariRepository(
     // ── Baby & settings ─────────────────────────────────────────────────────
 
     suspend fun createBaby(
-        name: String, dob: LocalDate, birthTime: LocalDateTime?,
+        name: String, dob: LocalDate, sex: Sex?, birthTime: LocalDateTime?,
         weightKg: Double?, lengthCm: Double?, headCm: Double?, place: String?,
     ): Long {
         val id = db.babyDao().insert(
             BabyEntity(
-                name = name, dob = dob, birthTime = birthTime,
+                name = name, dob = dob, sex = sex?.key, birthTime = birthTime,
                 birthWeightKg = weightKg, birthLengthCm = lengthCm,
                 birthHeadCm = headCm, birthPlace = place,
             )
@@ -797,6 +798,7 @@ class KilkariRepository(
     suspend fun onboard(
         name: String,
         dob: LocalDate,
+        sex: Sex?,
         birthTime: LocalDateTime?,
         weightKg: Double?,
         lengthCm: Double?,
@@ -809,7 +811,7 @@ class KilkariRepository(
     ) {
         settingsStore.setSchedule(scheduleId)
         settingsStore.setCurrency(currency)
-        val babyId = createBaby(name, dob, birthTime, weightKg, lengthCm, headCm, place)
+        val babyId = createBaby(name, dob, sex, birthTime, weightKg, lengthCm, headCm, place)
 
         val schedule = VaccineSchedules.byId(scheduleId)
         givenGroups.forEach { (label, on) ->

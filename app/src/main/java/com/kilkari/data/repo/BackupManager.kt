@@ -7,6 +7,7 @@ import android.net.Uri
 import com.kilkari.data.db.KilkariDatabase
 import com.kilkari.domain.Currency
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.Sex
 import com.kilkari.domain.VaccineGroupState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -103,7 +104,12 @@ object BackupManager {
                 }
 
                 row("Kilkari export", Fmt.dateFull(java.time.LocalDate.now()))
-                baby?.let { row("Baby", it.name, "DOB", it.dob.toString()) }
+                baby?.let {
+                    row(
+                        "Baby", it.name, "DOB", it.dob.toString(),
+                        *Sex.of(it.sex)?.let { sex -> arrayOf("Sex", sex.label) } ?: emptyArray(),
+                    )
+                }
                 out.newLine()
 
                 val id = baby?.id ?: return@use

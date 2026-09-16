@@ -16,6 +16,8 @@ data class BabyEntity(
     val birthLengthCm: Double? = null,
     val birthHeadCm: Double? = null,
     val birthPlace: String? = null,
+    /** "f" | "m", or null where it was never given. Only the growth chart reads it. */
+    val sex: String? = null,
 )
 
 /**

@@ -198,6 +198,22 @@ data class InvestmentSummary(
 }
 
 
+/**
+ * Which WHO growth curve applies to a child.
+ *
+ * Recorded because the growth standards are published separately for boys and girls, not
+ * because anything else in the app varies by it. Null where the parent has not said, in which
+ * case the chart falls back to the mean of the two curves.
+ */
+enum class Sex(val key: String, val label: String) {
+    GIRL("f", "Girl"),
+    BOY("m", "Boy");
+
+    companion object {
+        fun of(key: String?): Sex? = entries.firstOrNull { it.key == key }
+    }
+}
+
 /** How often a reminder comes round. */
 enum class RepeatRule(val key: String, val label: String) {
     NONE("none", "Once"),

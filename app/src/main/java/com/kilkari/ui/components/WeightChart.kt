@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.GrowthStandards
+import com.kilkari.domain.Sex
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import kotlin.math.ceil
@@ -47,7 +48,7 @@ private const val TOP_PAD = 10f
  * the whole question with growth — and gives the reference curve something to be read against.
  */
 @Composable
-fun WeightChart(points: List<WeightPoint>, modifier: Modifier = Modifier) {
+fun WeightChart(points: List<WeightPoint>, sex: Sex?, modifier: Modifier = Modifier) {
     val measurer = rememberTextMeasurer()
     val labelStyle = TextStyle(fontFamily = Sans, fontSize = 10.sp, color = KC.Muted)
 
@@ -57,7 +58,7 @@ fun WeightChart(points: List<WeightPoint>, modifier: Modifier = Modifier) {
     val xMax = ceil(maxOf(oldest, 3.0) * 1.15).coerceAtMost(GrowthStandards.MAX_MONTHS.toDouble())
 
     val reference = (0..xMax.roundToInt()).mapNotNull { m ->
-        GrowthStandards.medianWeightKg(m.toDouble())?.let { WeightPoint(m.toDouble(), it) }
+        GrowthStandards.medianWeightKg(m.toDouble(), sex)?.let { WeightPoint(m.toDouble(), it) }
     }
 
     val all = points.map { it.kg } + reference.map { it.kg }
