@@ -510,11 +510,34 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         reminderMinute: Int?,
     ) = viewModelScope.launch {
         repo.addMedication(name, dose, scheduleText, prescriber, start, reminderMinute)
+        repo.rescheduleNotifications()
         toast("$name added")
     }
 
-    fun setMedicationActive(med: MedicationEntity, active: Boolean) =
-        viewModelScope.launch { repo.setMedicationActive(med, active) }
+    fun updateMedication(
+        med: MedicationEntity,
+        name: String,
+        dose: String,
+        scheduleText: String,
+        prescriber: String?,
+        start: LocalDate,
+        reminderMinute: Int?,
+    ) = viewModelScope.launch {
+        repo.updateMedication(med, name, dose, scheduleText, prescriber, start, reminderMinute)
+        repo.rescheduleNotifications()
+        toast("$name updated")
+    }
+
+    fun deleteMedication(med: MedicationEntity) = viewModelScope.launch {
+        repo.deleteMedication(med)
+        repo.rescheduleNotifications()
+        toast("${med.name} removed")
+    }
+
+    fun setMedicationActive(med: MedicationEntity, active: Boolean) = viewModelScope.launch {
+        repo.setMedicationActive(med, active)
+        repo.rescheduleNotifications()
+    }
 
     fun addAppointment(title: String, at: LocalDateTime, doctor: String?, place: String?, reminderDaysBefore: Int?) =
         viewModelScope.launch {
@@ -721,16 +744,20 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         toast("Removed")
     }
 
-    fun setReminderEnabled(row: ReminderEntity, enabled: Boolean) =
-        viewModelScope.launch { repo.setReminderEnabled(row, enabled) }
+    fun setReminderEnabled(row: ReminderEntity, enabled: Boolean) = viewModelScope.launch {
+        repo.setReminderEnabled(row, enabled)
+        repo.rescheduleNotifications()
+    }
 
     fun saveCustomReminder(draft: ReminderDraft) = viewModelScope.launch {
         repo.saveCustomReminder(draft)
+        repo.rescheduleNotifications()
         toast(if (draft.key == null) "Reminder added" else "Reminder updated")
     }
 
     fun deleteReminder(key: String) = viewModelScope.launch {
         repo.deleteReminder(key)
+        repo.rescheduleNotifications()
         toast("Reminder removed")
     }
 

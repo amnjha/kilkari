@@ -23,9 +23,10 @@ class KilkariApp : Application() {
         super.onCreate()
         repository = KilkariRepository(this, SettingsStore(this))
         createNotificationChannel()
+        ReminderScheduler.ensureSafetyNet(this)
         scope.launch {
             repository.seedReminders()
-            ReminderScheduler.rescheduleAll(this@KilkariApp)
+            ReminderScheduler.arm(this@KilkariApp, repository)
         }
     }
 

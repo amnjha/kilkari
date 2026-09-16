@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kilkari.data.db.MedicationEntity
+import com.kilkari.ui.components.clockLabel
 import com.kilkari.data.db.DoctorEntity
 import com.kilkari.data.seed.VaccineSchedules
 import com.kilkari.domain.Currency
@@ -180,21 +182,27 @@ fun ColumnScope.ScheduleSheet(currentId: String, onPick: (String) -> Unit) {
 
 @Composable
 fun ColumnScope.MedicationSheet(
+    existing: MedicationEntity? = null,
     dob: LocalDate? = null,
     onPickDoctor: (current: String?, apply: (DoctorEntity?) -> Unit) -> Unit,
+    onDelete: (() -> Unit)? = null,
     onSave: (String, String, String, String?, LocalDate, Int?) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var dose by remember { mutableStateOf("") }
-    var schedule by remember { mutableStateOf("Daily · 8:00 pm") }
-    var prescriber by remember { mutableStateOf("") }
-    var start by remember { mutableStateOf(LocalDate.now()) }
-    var reminderMinute by remember { mutableStateOf<Int?>(20 * 60) }
+    var name by remember(existing) { mutableStateOf(existing?.name.orEmpty()) }
+    var dose by remember(existing) { mutableStateOf(existing?.dose.orEmpty()) }
+    // The cadence only. The time used to be typed into this same box as well as picked below,
+    // so the two could disagree and the one that fired was not the one on display.
+    var cadence by remember(existing) { mutableStateOf(cadenceOf(existing?.scheduleText) ?: "Daily") }
+    var prescriber by remember(existing) { mutableStateOf(existing?.prescriber.orEmpty()) }
+    var start by remember(existing) { mutableStateOf(existing?.startDate ?: LocalDate.now()) }
+    var reminderMinute by remember(existing) {
+        mutableStateOf<Int?>(existing?.reminderMinute ?: 20 * 60)
+    }
 
-    SheetTitle("Add a medicine")
+    SheetTitle(if (existing == null) "Add a medicine" else "Edit ${existing.name}")
     SheetField("Medicine", name, "e.g. Vitamin D3 drops") { name = it }
     SheetField("Dose", dose, "e.g. 1 drop (400 IU)") { dose = it }
-    SheetField("Schedule", schedule, "Daily · 8:00 pm") { schedule = it }
+    SheetField("How often", cadence, "e.g. Daily, Twice daily") { cadence = it }
     DoctorPickerField("Prescribed by", prescriber) {
         onPickDoctor(prescriber) { picked -> prescriber = picked?.name.orEmpty() }
     }
@@ -203,14 +211,35 @@ fun ColumnScope.MedicationSheet(
         format = { Fmt.relativeDate(it) },
     ) { start = it }
     KTimeField("Remind at", reminderMinute) { reminderMinute = it }
+    SheetHint("The reminder arrives at this time, and it is the time shown on the medicine.")
 
-    PrimaryButton("Save medicine", enabled = name.isNotBlank() && dose.isNotBlank()) {
+    PrimaryButton(
+        if (existing == null) "Save medicine" else "Save changes",
+        enabled = name.isNotBlank() && dose.isNotBlank(),
+    ) {
         onSave(
-            name.trim(), dose.trim(), schedule.trim(),
+            name.trim(), dose.trim(), scheduleTextOf(cadence, reminderMinute),
             prescriber.trim().ifBlank { null }, start, reminderMinute,
         )
     }
+
+    if (onDelete != null) SheetDelete("Remove this medicine", onDelete)
 }
+
+/**
+ * The stored schedule line, built from the two things that are actually asked for.
+ *
+ * Kept in the same "Daily · 8:00 pm" shape every screen already reads, so nothing downstream
+ * changes and medicines saved before this split still read correctly.
+ */
+private fun scheduleTextOf(cadence: String, minuteOfDay: Int?): String {
+    val words = cadence.trim().ifBlank { "Daily" }
+    return if (minuteOfDay == null) words else "$words · ${clockLabel(minuteOfDay)}"
+}
+
+/** The cadence half of a stored schedule line, so editing one does not re-show the time. */
+private fun cadenceOf(scheduleText: String?): String? =
+    scheduleText?.substringBefore(" · ")?.trim()?.ifBlank { null }
 
 @Composable
 fun ColumnScope.AppointmentSheet(

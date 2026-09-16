@@ -55,6 +55,8 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
     val doses by vm.medicationDoses.collectAsStateWithLifecycle()
     val baby by vm.baby.collectAsStateWithLifecycle()
     var sheetOpen by remember { mutableStateOf(false) }
+    /** The medicine being corrected, or null when adding a new one. */
+    var editing by remember { mutableStateOf<MedicationEntity?>(null) }
 
     val active = meds.filter { it.active }
     val past = meds.filterNot { it.active }
@@ -64,7 +66,7 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Medications", go::back) {
-                IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)
+                IconButton44("add", KC.Coral, { editing = null; sheetOpen = true }, iconSize = 26)
             }
 
             Column(
@@ -93,6 +95,7 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
                         taken = taken,
                         onLogToday = { vm.logMedicine(med) },
                         onStop = { vm.setMedicationActive(med, false) },
+                        onEdit = { editing = med; sheetOpen = true },
                         onToggleDay = { day -> vm.setDoseTaken(med.id, day, day !in taken) },
                     )
                 }
@@ -130,13 +133,23 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
             }
         }
 
-        KSheet(sheetOpen, onDismiss = { sheetOpen = false }) {
+        KSheet(sheetOpen, onDismiss = { sheetOpen = false; editing = null }) {
+            val target = editing
             MedicationSheet(
+                existing = target,
                 dob = baby?.dob,
                 onPickDoctor = picker::open,
+                onDelete = target?.let {
+                    { vm.deleteMedication(it); sheetOpen = false; editing = null }
+                },
             ) { name, dose, schedule, prescriber, start, minute ->
-                vm.addMedication(name, dose, schedule, prescriber, start, minute)
+                if (target == null) {
+                    vm.addMedication(name, dose, schedule, prescriber, start, minute)
+                } else {
+                    vm.updateMedication(target, name, dose, schedule, prescriber, start, minute)
+                }
                 sheetOpen = false
+                editing = null
             }
         }
         DoctorPickerSheets(
@@ -156,6 +169,7 @@ private fun ActiveMedCard(
     taken: Set<LocalDate>,
     onLogToday: () -> Unit,
     onStop: () -> Unit,
+    onEdit: () -> Unit,
     onToggleDay: (LocalDate) -> Unit,
 ) {
     val today = LocalDate.now()
@@ -169,7 +183,9 @@ private fun ActiveMedCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconBadge("pill", KC.Danger, KC.DangerBg2)
-                Column(Modifier.weight(1f)) {
+                // The name and details open the medicine for correcting; Stop stays its own
+                // target so tapping to fix a dose cannot end the course by accident.
+                Column(Modifier.weight(1f).clickable(onClick = onEdit)) {
                     Text(
                         med.name, fontFamily = Sans, fontWeight = FontWeight.Bold,
                         fontSize = 15.sp, color = KC.Ink,

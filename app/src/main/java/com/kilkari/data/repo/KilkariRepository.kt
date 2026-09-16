@@ -38,6 +38,7 @@ import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
 import com.kilkari.domain.ReminderDraft
 import com.kilkari.domain.RepeatRule
+import com.kilkari.work.ReminderScheduler
 import com.kilkari.domain.Sex
 import com.kilkari.domain.VaccineGroupState
 import com.kilkari.domain.VaccineItemState
@@ -76,6 +77,15 @@ class KilkariRepository(
 
     /** Held for the few places that touch files the app owns, such as the child's photo. */
     private val appContext = context.applicationContext
+
+    /**
+     * Re-points the notification chain at whatever is now due first.
+     *
+     * Anything that changes what is due, or when, has to call this: the chain only re-arms
+     * itself when it fires, so a reminder set for five minutes from now would otherwise wait
+     * for a run that was scheduled before it existed.
+     */
+    suspend fun rescheduleNotifications() = ReminderScheduler.arm(appContext, this)
 
     val settings: Flow<AppSettings> = settingsStore.settings
     val baby: Flow<BabyEntity?> = db.babyDao().observe()
@@ -409,6 +419,17 @@ class KilkariRepository(
             )
         )
     }
+
+    /** Corrects a medicine already on the list — a mistyped dose, a changed time. */
+    suspend fun updateMedication(
+        med: MedicationEntity, name: String, dose: String, scheduleText: String,
+        prescriber: String?, start: LocalDate, reminderMinute: Int?,
+    ) = db.medicationDao().update(
+        med.copy(
+            name = name, dose = dose, scheduleText = scheduleText,
+            prescriber = prescriber, startDate = start, reminderMinute = reminderMinute,
+        )
+    )
 
     suspend fun setMedicationActive(med: MedicationEntity, active: Boolean) =
         db.medicationDao().update(med.copy(active = active, endDate = if (active) null else LocalDate.now()))
