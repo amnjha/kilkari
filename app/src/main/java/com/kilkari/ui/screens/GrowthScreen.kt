@@ -33,6 +33,7 @@ import com.kilkari.ui.components.IconButton44
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.StatCell
+import com.kilkari.ui.components.StatRow
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.GrowthSheet
 import com.kilkari.ui.theme.KC
@@ -77,7 +78,7 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                     .padding(top = 10.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatRow {
                     StatCell(
                         "Weight", Fmt.weight(latest?.weightKg),
                         weightDelta?.let { Fmt.grams(it) },

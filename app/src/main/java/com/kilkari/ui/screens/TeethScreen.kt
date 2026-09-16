@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,6 +34,7 @@ import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.StatCell
+import com.kilkari.ui.components.StatRow
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.ToothSheet
 import com.kilkari.ui.theme.KC
@@ -83,6 +85,9 @@ fun TeethScreen(vm: KilkariViewModel, go: NavActions) {
                     ToothRow(UPPER_MONTHS, prefix = "u", upper = true, erupted = teeth) { code, month ->
                         open = code to month
                     }
+                    // A gap between the arches. At the old 6dp the two rows read as one block
+                    // of twenty boxes, with the UPPER and LOWER labels floating unattached.
+                    Spacer(Modifier.height(6.dp))
                     ToothRow(LOWER_MONTHS, prefix = "l", upper = false, erupted = teeth) { code, month ->
                         open = code to month
                     }
@@ -95,7 +100,7 @@ fun TeethScreen(vm: KilkariViewModel, go: NavActions) {
                 }
             }
 
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatRow {
                 StatCell("Erupted", "${teeth.size} / 20", modifier = Modifier.weight(1f))
                 StatCell("Usually first", "Lower central", "6–10 mo", KC.Muted, Modifier.weight(1f))
             }
@@ -134,7 +139,7 @@ private fun ToothRow(
 ) {
     Row(
         Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         months.forEachIndexed { i, month ->
             val code = "$prefix$i"
@@ -146,18 +151,20 @@ private fun ToothRow(
             }
             Box(
                 Modifier
-                    .width(28.dp)
-                    .height(40.dp)
+                    // Ten teeth cannot each be 48dp wide on a phone, so the row takes all the
+                    // width there is and splits it evenly, and the height carries the target.
+                    .weight(1f)
+                    .height(52.dp)
                     .clip(shape)
                     .background(if (on) KC.SeaBg else KC.Surface)
                     .border(2.dp, if (on) KC.Sea else KC.BorderStrong, shape)
                     .clickable { onTap(code, month) }
-                    .padding(bottom = if (upper) 3.dp else 0.dp, top = if (upper) 0.dp else 3.dp),
+                    .padding(bottom = if (upper) 5.dp else 0.dp, top = if (upper) 0.dp else 5.dp),
                 contentAlignment = if (upper) Alignment.BottomCenter else Alignment.TopCenter,
             ) {
                 Text(
                     "${month}m",
-                    fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 9.sp,
+                    fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 10.sp,
                     color = if (on) KC.SeaDeep else KC.Faint,
                 )
             }

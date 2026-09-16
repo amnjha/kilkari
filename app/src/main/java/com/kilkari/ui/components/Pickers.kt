@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DatePicker
@@ -256,14 +257,24 @@ private fun PickerRow(
                     if (sheetStyle) it.clip(RoundedCornerShape(14.dp)).background(KC.Screen) else it
                 }
                 .clickable(onClick = onClick)
-                .padding(horizontal = 14.dp, vertical = 13.dp),
+                // In a form the row sits beside ValueField and must match it; in a sheet it
+                // keeps the tighter rhythm the surrounding controls already use.
+                .let { if (sheetStyle) it else it.heightIn(min = FORM_ROW_HEIGHT) }
+                .padding(
+                    horizontal = if (sheetStyle) 14.dp else 16.dp,
+                    vertical = if (sheetStyle) 13.dp else 12.dp,
+                ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(label, fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
+            Text(
+                label,
+                fontFamily = Sans, fontSize = if (sheetStyle) 13.sp else 14.sp, color = KC.Muted,
+            )
             Text(
                 text,
-                fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
+                fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+                fontSize = if (sheetStyle) 14.sp else 16.sp,
                 color = if (placeholder) KC.Faint else KC.Coral,
             )
         }

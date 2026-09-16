@@ -288,9 +288,11 @@ fun OverlineLabel(text: String) {
 
 @Composable
 fun Hint(text: String, modifier: Modifier = Modifier) {
+    // Onboarding leans on these lines to explain each step, so they are sized as prose with a
+    // 1.5 line height rather than as a caption squeezed under a heading.
     Text(
         text, modifier = modifier,
-        fontFamily = Sans, fontSize = 13.sp, lineHeight = 19.sp, color = KC.Muted,
+        fontFamily = Sans, fontSize = 14.sp, lineHeight = 21.sp, color = KC.Muted,
     )
 }
 

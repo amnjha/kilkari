@@ -35,7 +35,7 @@ import kotlin.math.roundToInt
 /** One recorded weight, placed by the child's age when it was taken. */
 data class WeightPoint(val ageMonths: Double, val kg: Double)
 
-private const val CHART_HEIGHT_DP = 180
+private const val CHART_HEIGHT_DP = 196
 private const val LEFT_GUTTER = 34f
 private const val BOTTOM_GUTTER = 22f
 private const val TOP_PAD = 10f
@@ -165,11 +165,20 @@ private fun DrawScope.drawPolyline(
  */
 private fun niceScale(low: Double, high: Double): Triple<Double, Double, Double> {
     val span = (high - low).coerceAtLeast(1.0)
-    val step = listOf(0.5, 1.0, 2.0, 2.5, 5.0, 10.0).firstOrNull { span / it <= 5 } ?: 20.0
+    // Rounding the ends outwards can widen the range past the step that was chosen for it, so
+    // the candidates are tested against the rounded result rather than the raw span.
+    val step = listOf(0.5, 1.0, 2.0, 2.5, 5.0, 10.0, 20.0).first { candidate ->
+        val bottom = (floor(low / candidate) * candidate).coerceAtLeast(0.0)
+        val top = ceil(high / candidate) * candidate
+        (top - bottom) / candidate <= MAX_GRID_INTERVALS || candidate == 20.0
+    }
     val bottom = (floor(low / step) * step).coerceAtLeast(0.0)
     val top = ceil(high / step) * step
     return Triple(bottom, top, step)
 }
+
+/** Above five bands the horizontal rules crowd each other and stop being readable. */
+private const val MAX_GRID_INTERVALS = 5
 
 /** Horizontal rules with their kilogram value, enough to read a weight off without clutter. */
 private fun DrawScope.drawGrid(
