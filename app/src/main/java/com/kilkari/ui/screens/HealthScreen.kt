@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.seed.VaccineSchedules
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.ToothChart
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.GradientCard
 import com.kilkari.ui.components.KCard
@@ -131,7 +132,12 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
             ) { go.push(Routes.GROWTH) }
             HealthTile(
                 "dentistry", KC.Sea, "Teeth",
-                "${teeth.size} of 20 · first ~6 mo",
+                // Points at the tooth actually due next rather than repeating the first one
+                // forever, which stopped being true the moment it came through.
+                ToothChart.nextExpected(teeth).let { next ->
+                    if (next == null) "All ${ToothChart.TOTAL} through"
+                    else "${teeth.size} of ${ToothChart.TOTAL} · next ~${next.second.fromMonth} mo"
+                },
                 Modifier.weight(1f),
             ) { go.push(Routes.TEETH) }
         }

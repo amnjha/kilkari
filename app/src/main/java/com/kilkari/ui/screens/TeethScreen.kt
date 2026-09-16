@@ -29,6 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kilkari.domain.ToothChart
+import com.kilkari.domain.ToothSpec
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.KCard
@@ -40,10 +42,6 @@ import com.kilkari.ui.sheets.ToothSheet
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
-/** Typical eruption month for each of the twenty primary teeth, left to right. */
-private val UPPER_MONTHS = listOf(24, 18, 12, 9, 10, 10, 9, 12, 18, 24)
-private val LOWER_MONTHS = listOf(22, 15, 12, 10, 7, 7, 10, 12, 15, 22)
-
 /** Tap a tooth when it appears; the chart is the record. */
 @Composable
 fun TeethScreen(vm: KilkariViewModel, go: NavActions) {
@@ -51,8 +49,8 @@ fun TeethScreen(vm: KilkariViewModel, go: NavActions) {
     val dates by vm.toothDates.collectAsStateWithLifecycle()
     val baby by vm.baby.collectAsStateWithLifecycle()
 
-    /** The tooth whose sheet is open, as code to typical eruption month. */
-    var open by remember { mutableStateOf<Pair<String, Int>?>(null) }
+    /** The code of the tooth whose sheet is open. */
+    var open by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize()) {
         DetailBar("Teeth", go::back)
@@ -82,14 +80,14 @@ fun TeethScreen(vm: KilkariViewModel, go: NavActions) {
                         letterSpacing = 0.7.sp,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     )
-                    ToothRow(UPPER_MONTHS, prefix = "u", upper = true, erupted = teeth) { code, month ->
-                        open = code to month
+                    ToothRow(ToothChart.UPPER, prefix = "u", upper = true, erupted = teeth) { code ->
+                        open = code
                     }
                     // A gap between the arches. At the old 6dp the two rows read as one block
                     // of twenty boxes, with the UPPER and LOWER labels floating unattached.
                     Spacer(Modifier.height(6.dp))
-                    ToothRow(LOWER_MONTHS, prefix = "l", upper = false, erupted = teeth) { code, month ->
-                        open = code to month
+                    ToothRow(ToothChart.LOWER, prefix = "l", upper = false, erupted = teeth) { code ->
+                        open = code
                     }
                     Text(
                         "LOWER", modifier = Modifier.fillMaxWidth(),
@@ -100,19 +98,26 @@ fun TeethScreen(vm: KilkariViewModel, go: NavActions) {
                 }
             }
 
+            val next = ToothChart.nextExpected(teeth)
             StatRow {
-                StatCell("Erupted", "${teeth.size} / 20", modifier = Modifier.weight(1f))
-                StatCell("Usually first", "Lower central", "6–10 mo", KC.Muted, Modifier.weight(1f))
+                StatCell("Erupted", "${teeth.size} / ${ToothChart.TOTAL}", modifier = Modifier.weight(1f))
+                StatCell(
+                    caption = "Next expected",
+                    value = next?.let { ToothChart.labelFor(it.first) } ?: "All through",
+                    note = next?.let { "${it.second.fromMonth}–${it.second.toMonth} mo" },
+                    noteColor = KC.Muted,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
 
         val opened = open
         KSheet(opened != null, onDismiss = { open = null }) {
             if (opened != null) {
-                val (code, month) = opened
-                val jaw = if (code.startsWith("u")) "Upper" else "Lower"
+                val code = opened
+                val spec = ToothChart.specFor(code)
                 ToothSheet(
-                    label = "$jaw tooth · usually ${month}m",
+                    label = "${ToothChart.labelFor(code)} · usually ${spec.fromMonth}–${spec.toMonth} mo",
                     recorded = dates[code],
                     earliest = baby?.dob,
                     onSave = { on ->
@@ -131,17 +136,17 @@ fun TeethScreen(vm: KilkariViewModel, go: NavActions) {
 
 @Composable
 private fun ToothRow(
-    months: List<Int>,
+    specs: List<ToothSpec>,
     prefix: String,
     upper: Boolean,
     erupted: Set<String>,
-    onTap: (code: String, typicalMonth: Int) -> Unit,
+    onTap: (code: String) -> Unit,
 ) {
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        months.forEachIndexed { i, month ->
+        specs.forEachIndexed { i, spec ->
             val code = "$prefix$i"
             val on = code in erupted
             val shape = if (upper) {
@@ -158,12 +163,13 @@ private fun ToothRow(
                     .clip(shape)
                     .background(if (on) KC.SeaBg else KC.Surface)
                     .border(2.dp, if (on) KC.Sea else KC.BorderStrong, shape)
-                    .clickable { onTap(code, month) }
+                    .clickable { onTap(code) }
                     .padding(bottom = if (upper) 5.dp else 0.dp, top = if (upper) 0.dp else 5.dp),
                 contentAlignment = if (upper) Alignment.BottomCenter else Alignment.TopCenter,
             ) {
                 Text(
-                    "${month}m",
+                    // The month the window opens: when to start looking, not an average.
+                    "${spec.fromMonth}m",
                     fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 10.sp,
                     color = if (on) KC.SeaDeep else KC.Faint,
                 )
