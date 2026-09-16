@@ -107,15 +107,24 @@ is not committed — Android Studio writes it for you, or:
 echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties
 ```
 
-Build the release artifacts (R8 + resource shrinking):
+Build every shippable artifact in one command:
 
 ```bash
-./gradlew :app:bundleRelease :app:assembleRelease
+./tools/build-artifacts.sh
 ```
 
-`bundleRelease` produces the **.aab** that Google Play requires for new apps; `assembleRelease`
-produces an **.apk** for sideloading and manual testing. Both are unsigned unless you add a
-`keystore.properties` at the repo root — copy `keystore.properties.example` and create the key:
+That runs `bundleRelease`, `assembleRelease` and `assembleDebug`, then collects the results in
+`release/` under version-stamped names, verifies each APK actually opens and reports whether it
+is signed, and writes a `release/BUILD-INFO.md` recording the commit, sizes and SHA-256s. Run it
+with `--help` for the options (`--clean`, `--debug-only`, `--release-only`, `--out DIR`).
+
+You get the **.aab** Google Play requires for new apps, a universal **.apk** for sideloading, the
+**debug APK** (installs alongside the release as `com.kilkari.debug`), and the R8 **mapping.txt**
+you need to read Play crash reports for a minified build.
+
+The release artifacts are unsigned unless you add a `keystore.properties` at the repo root — the
+script picks it up automatically and drops `-unsigned` from the filenames. Copy
+`keystore.properties.example` and create the key:
 
 ```bash
 keytool -genkeypair -v -keystore kilkari-upload.jks -alias kilkari -keyalg RSA -keysize 2048 -validity 10000
@@ -123,6 +132,10 @@ keytool -genkeypair -v -keystore kilkari-upload.jks -alias kilkari -keyalg RSA -
 
 The keystore and `keystore.properties` are gitignored. **Back the keystore up somewhere safe** —
 losing it means never being able to publish an update to the same listing.
+
+Without a keystore the script also emits a copy of the release APK signed with the SDK's public
+debug key, so the minified build can still be installed and smoke-tested. It is marked
+`DEBUGSIGNED-testing-only` and must never be published.
 
 ## Layout
 

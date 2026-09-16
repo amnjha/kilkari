@@ -1,15 +1,28 @@
-# Release artifacts — Kilkari 1.0 (versionCode 1)
+# Release artifacts
 
-Built from `51b2053` (bottom-nav fix included).
+Everything in this directory except this file is generated and gitignored. Build it with:
 
-Built from the repo with `./gradlew :app:bundleRelease :app:assembleRelease`
-(R8 + resource shrinking, targetSdk 35, minSdk 26).
+```bash
+./tools/build-artifacts.sh
+```
 
-| File | Size | What it is |
-| --- | --- | --- |
-| `kilkari-1.0-unsigned.aab` | 4.85 MB | The Android App Bundle **Play requires for new apps**. Unsigned. |
-| `kilkari-1.0-unsigned.apk` | 2.42 MB | Universal APK for sideloading. Unsigned, so not installable as-is. |
-| `kilkari-1.0-DEBUGSIGNED-testing-only.apk` | 2.44 MB | The same release build signed with the SDK's public debug key, purely to verify the minified build runs. **Never publish this**, and uninstall it before installing a properly signed build — the signatures differ, so an update would be rejected. |
+The script writes a **`BUILD-INFO.md`** next to the artifacts recording the exact commit, file
+sizes and SHA-256s of the build that produced them — read that rather than trusting the notes
+here, which describe the shape of a build rather than any particular one.
+
+| File | What it is |
+| --- | --- |
+| `kilkari-<version>.aab` | The Android App Bundle **Play requires for new apps**. |
+| `kilkari-<version>.apk` | Universal APK for sideloading. |
+| `kilkari-<version>-mapping.txt` | R8 mapping. Upload it with the bundle, or Play crash reports for the minified build are unreadable. |
+| `kilkari-<version>-debug.apk` | Debug build. Its applicationId is `com.kilkari.debug`, so it installs alongside the release. |
+
+Without a signing key the two release filenames gain an `-unsigned` suffix and cannot be
+uploaded, and the script additionally emits:
+
+| File | What it is |
+| --- | --- |
+| `kilkari-<version>-DEBUGSIGNED-testing-only.apk` | The release build signed with the SDK's public debug key, purely so the minified build can be installed and verified. **Never publish it.** Uninstall it before installing a properly signed build — the signatures differ, so an update would be rejected. |
 
 ## To make these uploadable
 
@@ -23,13 +36,11 @@ Built from the repo with `./gradlew :app:bundleRelease :app:assembleRelease`
 2. Copy `keystore.properties.example` to `keystore.properties` at the repo root and fill it in.
    Both the keystore and that file are gitignored.
 
-3. Rebuild — the signing config picks it up automatically:
+3. Re-run `./tools/build-artifacts.sh`. It detects the keystore, signs the release artifacts and
+   drops the `-unsigned` suffix; the verify step prints the signing state of each APK so you can
+   confirm it took.
 
-   ```bash
-   ./gradlew :app:bundleRelease
-   ```
-
-Upload `app/build/outputs/bundle/release/app-release.aab` to the Play Console.
+Upload the `.aab` and the `mapping.txt` to the Play Console.
 
 **Back up the keystore and its passwords.** Without them you cannot publish an update to the
 same listing, short of asking Google to reset the upload key under Play App Signing.
