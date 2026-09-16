@@ -1,35 +1,32 @@
 package com.kilkari.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.WeightChart
+import com.kilkari.ui.components.WeightChartLegend
+import com.kilkari.ui.components.WeightPoint
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconButton44
 import com.kilkari.ui.components.KCard
@@ -97,7 +94,10 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                     )
                 }
 
-                val bars = weightBars(growth.mapNotNull { g -> g.weightKg?.let { it to g.date } }, baby?.dob)
+                val series = weightSeries(
+                    growth.mapNotNull { g -> g.weightKg?.let { it to g.date } },
+                    baby?.dob,
+                )
                 KCard {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(
@@ -111,40 +111,22 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                             )
                             Text("kg", fontFamily = Sans, fontSize = 11.sp, color = KC.Muted)
                         }
-                        if (bars.isEmpty()) {
+                        if (series.isEmpty()) {
                             Text(
                                 "Add a weight to start the chart.",
                                 fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
                             )
                         } else {
-                            Row(
-                                Modifier.fillMaxWidth().height(140.dp).padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.Bottom,
-                            ) {
-                                val max = bars.maxOf { it.value }
-                                bars.forEach { bar ->
-                                    Column(
-                                        Modifier.weight(1f).fillMaxHeight(),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Bottom,
-                                    ) {
-                                        Text(
-                                            Fmt.trimNum(bar.value), fontFamily = Sans,
-                                            fontWeight = FontWeight.Bold, fontSize = 11.sp, color = KC.Coral,
-                                        )
-                                        Box(
-                                            Modifier
-                                                .padding(vertical = 6.dp)
-                                                .fillMaxWidth()
-                                                .fillMaxHeight((bar.value / max).toFloat().coerceIn(0.08f, 1f))
-                                                .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 4.dp, bottomEnd = 4.dp))
-                                                .background(Brush.verticalGradient(listOf(KC.CoralLight, KC.Coral))),
-                                        )
-                                        Text(bar.label, fontFamily = Sans, fontSize = 11.sp, color = KC.Muted)
-                                    }
-                                }
-                            }
+                            WeightChart(series)
+                            WeightChartLegend(baby?.name ?: "Weight")
+                            Text(
+                                "The dotted line is the WHO median for a child this age, " +
+                                    "averaged across boys and girls. Healthy children sit above " +
+                                    "and below it; only a clinician reading the full chart can " +
+                                    "say whether a reading matters.",
+                                fontFamily = Sans, fontSize = 11.sp, lineHeight = 16.sp,
+                                color = KC.Muted,
+                            )
                         }
                     }
                 }
@@ -173,15 +155,15 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
     }
 }
 
-internal data class Bar(val label: String, val value: Double)
-
-/** Last eight weight readings, labelled "Birth" then by week since birth. */
-private fun weightBars(points: List<Pair<Double, LocalDate>>, dob: LocalDate?): List<Bar> =
-    points.takeLast(8).map { (kg, date) ->
-        val label = when {
-            dob == null -> Fmt.date(date)
-            date == dob -> "Birth"
-            else -> "Wk ${ChronoUnit.WEEKS.between(dob, date).coerceAtLeast(1)}"
+/** Recorded weights placed by the child's age, which is the axis the WHO curve is drawn on. */
+private fun weightSeries(points: List<Pair<Double, LocalDate>>, dob: LocalDate?): List<WeightPoint> {
+    if (dob == null) return emptyList()
+    return points
+        .map { (kg, date) ->
+            WeightPoint(ChronoUnit.DAYS.between(dob, date).coerceAtLeast(0).toDouble() / DAYS_PER_MONTH, kg)
         }
-        Bar(label, kg)
-    }
+        .sortedBy { it.ageMonths }
+}
+
+/** Average length of a month, so days convert to the months the WHO table is indexed by. */
+private const val DAYS_PER_MONTH = 30.4375
