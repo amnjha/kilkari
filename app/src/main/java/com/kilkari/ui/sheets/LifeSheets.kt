@@ -209,10 +209,12 @@ fun ColumnScope.DocumentSheet(pageCount: Int, onSave: (String, String, LocalDate
     var tags by remember { mutableStateOf("") }
     var filed by remember { mutableStateOf(LocalDate.now()) }
 
-    SheetTitle("File this scan")
+    SheetTitle("File this document")
     SheetHint(
-        if (pageCount == 0) "No pages captured — the scan was cancelled."
-        else "$pageCount ${Fmt.plural(pageCount.toLong(), "page")} captured."
+        // A page may have been photographed, picked from the gallery or attached as a file,
+        // so the wording no longer assumes the camera.
+        if (pageCount == 0) "Nothing added yet — add a page below."
+        else "$pageCount ${Fmt.plural(pageCount.toLong(), "page")} attached."
     )
     SheetField("Title", title, "e.g. Birth certificate") { title = it }
     SheetField("Tags", tags, "Legal, ID") { tags = it }

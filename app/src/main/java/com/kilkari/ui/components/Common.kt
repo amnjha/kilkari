@@ -1,11 +1,21 @@
 package com.kilkari.ui.components
 
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -122,6 +132,64 @@ fun IconBadge(
         }
     }
 }
+
+/**
+ * The child's picture, round, falling back to their initial until one is taken.
+ *
+ * Sized by [modifier] rather than a fixed dimension, so it can take a share of a row as
+ * readily as a fixed diameter; the monogram's letter scales to whatever box it lands in.
+ * [ring] draws the border that keeps the circle legible against a coloured card.
+ */
+@Composable
+fun ChildAvatar(
+    photoUri: String?,
+    name: String,
+    modifier: Modifier = Modifier.size(44.dp),
+    ring: Color? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    val context = LocalContext.current
+    val bitmap = remember(photoUri) { photoUri?.let { loadAvatar(context, it) } }
+    val shape = RoundedCornerShape(percent = 50)
+
+    BoxWithConstraints(
+        modifier
+            .clip(shape)
+            .let { if (ring != null) it.border(2.dp, ring, shape) else it }
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = "$name's photo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        } else {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(Brush.linearGradient(listOf(KC.CoralLight, KC.GoldLight)))
+            )
+            Text(
+                name.take(1).uppercase(),
+                color = Color.White,
+                fontFamily = Sans,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = (maxWidth.value / 2.4f).sp,
+            )
+        }
+    }
+}
+
+/** Decoded small: the avatar is never drawn bigger than a few dozen dp. */
+private fun loadAvatar(context: Context, uri: String): ImageBitmap? = runCatching {
+    context.contentResolver.openInputStream(Uri.parse(uri))?.use { stream ->
+        val options = BitmapFactory.Options().apply { inSampleSize = 4 }
+        BitmapFactory.decodeStream(stream, null, options)?.asImageBitmap()
+    }
+}.getOrNull()
 
 /** Circular monogram avatar on the indigo → fuchsia ramp. */
 @Composable

@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import androidx.core.net.toUri
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -55,6 +56,9 @@ import java.time.LocalDateTime
  * Icons on the two rows the app writes for itself at the start. They are also how those rows
  * are found again when the child's details are edited, so both ends read the same constant.
  */
+/** Where portraits are written, shared with the UI that captures them. */
+const val PHOTO_DIR = "photos"
+
 private const val BIRTH_ICON = "favorite"
 private const val BIRTHDAY_ICON = "cake"
 
@@ -69,6 +73,9 @@ class KilkariRepository(
     private val settingsStore: SettingsStore,
 ) {
     private val db = KilkariDatabase.get(context)
+
+    /** Held for the few places that touch files the app owns, such as the child's photo. */
+    private val appContext = context.applicationContext
 
     val settings: Flow<AppSettings> = settingsStore.settings
     val baby: Flow<BabyEntity?> = db.babyDao().observe()
@@ -896,6 +903,33 @@ class KilkariRepository(
             }
 
         syncBirthMeasurement(previous, updated)
+    }
+
+    /**
+     * Sets the child's picture. The old file is deleted rather than left behind — a weekly
+     * portrait would otherwise pile up a year of orphans in app storage.
+     */
+    suspend fun setChildPhoto(uri: String?, takenOn: LocalDate?) {
+        val current = db.babyDao().get() ?: return
+        if (current.photoUri == uri) return
+        current.photoUri?.let { previous -> deletePhotoFile(previous) }
+        db.babyDao().update(current.copy(photoUri = uri, photoUpdatedOn = takenOn))
+    }
+
+    /**
+     * Removes a portrait this app wrote.
+     *
+     * A FileProvider URI's path is the provider's own — "/photos/portrait_1.jpg" — and not a
+     * filesystem path, so deleting by it silently did nothing and the files piled up. The file
+     * is found under files/ by name instead.
+     */
+    private fun deletePhotoFile(uri: String) {
+        runCatching {
+            val name = uri.toUri().lastPathSegment?.substringAfterLast('/') ?: return
+            java.io.File(java.io.File(appContext.filesDir, PHOTO_DIR), name)
+                .takeIf { it.exists() }
+                ?.delete()
+        }
     }
 
     private fun arrivalTitle(baby: BabyEntity) = "${baby.name} arrived"

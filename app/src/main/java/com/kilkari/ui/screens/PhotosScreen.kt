@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kilkari.data.repo.PHOTO_DIR
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconButton44
@@ -37,6 +38,8 @@ import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
+import com.kilkari.ui.components.rememberImageSource
+import com.kilkari.ui.sheets.PhotoCheckInSheet
 import com.kilkari.ui.sheets.AlbumSheet
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -48,10 +51,17 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
     val context = LocalContext.current
     var sheetOpen by remember { mutableStateOf(false) }
 
+    val baby by vm.baby.collectAsStateWithLifecycle()
+    // The weekly check-in is its own two-step flow; the + button adds an album on its own.
+    var checkInOpen by remember { mutableStateOf(false) }
+    val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri ->
+        vm.setChildPhoto(uri.toString())
+    }
+
     val pendingEntry by vm.pendingEntry.collectAsStateWithLifecycle()
     LaunchedEffect(pendingEntry) {
         if (pendingEntry == "album") {
-            sheetOpen = true
+            checkInOpen = true
             vm.consumeEntry()
         }
     }
@@ -152,6 +162,22 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
                 vm.addAlbum(title, subtitle, url)
                 sheetOpen = false
             }
+        }
+
+        KSheet(checkInOpen, onDismiss = { checkInOpen = false }) {
+            PhotoCheckInSheet(
+                childName = baby?.name ?: "your baby",
+                photoUri = baby?.photoUri,
+                onCamera = photo::camera,
+                onGallery = photo::gallery,
+                onSaveAlbum = { title, url -> vm.addAlbum(title, "", url) },
+                onDone = {
+                    // Either step may have been skipped; reaching the end is what counts as
+                    // having dealt with the week's prompt.
+                    vm.completePhotoCheckIn()
+                    checkInOpen = false
+                },
+            )
         }
     }
 }

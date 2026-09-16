@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BabyChangingStation
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Bathtub
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Call
@@ -131,6 +132,7 @@ object KIcons {
         "celebration" to Icons.Filled.Celebration,
         "child_care" to Icons.Filled.ChildCare,
         "bathtub" to Icons.Filled.Bathtub,
+        "folder" to Icons.Filled.Folder,
         "home" to Icons.Filled.Home,
         "auto_awesome" to Icons.Filled.AutoAwesome,
         // Chrome

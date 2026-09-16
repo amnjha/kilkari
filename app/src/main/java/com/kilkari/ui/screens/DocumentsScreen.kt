@@ -42,6 +42,11 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.rememberImageSource
+import com.kilkari.ui.components.rememberFileSource
+import com.kilkari.ui.components.IconBadge
+import com.kilkari.ui.sheets.SheetTitle
+import com.kilkari.ui.sheets.SheetHint
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KFab
@@ -55,8 +60,11 @@ import com.kilkari.ui.theme.Sans
 import java.io.File
 
 /**
- * Camera scans filed by date. Pages are captured straight into app-private storage, so
- * nothing lands in the shared gallery.
+ * Certificates, prescriptions and the rest, filed by date.
+ *
+ * A page can be photographed, chosen from the gallery, or attached as a file. Everything is
+ * copied into app-private storage: a scan never lands in the shared gallery, and a picked
+ * file stops depending on a read permission that expires.
  */
 @Composable
 fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
@@ -66,9 +74,23 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
     val pages = remember { mutableStateListOf<String>() }
     var pendingUri by remember { mutableStateOf<Uri?>(null) }
 
+    // Opened by the + button; the three ways in all end at the same sheet.
+    var chooserOpen by remember { mutableStateOf(false) }
+
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (ok) pendingUri?.let { pages += it.toString() }
         pendingUri = null
+        sheetOpen = true
+    }
+
+    // Like the camera, these reopen the sheet on the way back rather than before the picker
+    // appears, so the sheet is never sitting behind it.
+    val gallery = rememberImageSource("documents", "page") { uri ->
+        pages += uri.toString()
+        sheetOpen = true
+    }
+    val files = rememberFileSource("documents", "file") { uri ->
+        pages += uri.toString()
         sheetOpen = true
     }
 
@@ -91,14 +113,14 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    "Scanned and stored on this phone, filed by date.",
+                    "Scans, photos and files, kept on this phone and filed by date.",
                     fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
                 )
 
                 if (documents.isEmpty()) {
                     KCard {
                         Text(
-                            "No documents yet. Tap Scan to photograph a certificate or prescription.",
+                            "No documents yet. Tap + to scan, pick a photo, or attach a file.",
                             modifier = Modifier.padding(14.dp),
                             fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
                         )
@@ -139,9 +161,26 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
             }
         }
 
-        KFab("document_scanner", "Scan") {
+        KFab("add", "Add") {
             pages.clear()
-            scanPage()
+            chooserOpen = true
+        }
+
+        KSheet(chooserOpen, onDismiss = { chooserOpen = false }) {
+            SheetTitle("Add a document")
+            SheetHint("Whatever you pick is copied into this app, not left where it was.")
+            SourceRow("document_scanner", "Scan a page", "Photograph it with the camera") {
+                chooserOpen = false
+                scanPage()
+            }
+            SourceRow("photo_camera", "Choose an image", "From the phone's photos") {
+                chooserOpen = false
+                gallery.gallery()
+            }
+            SourceRow("folder", "Choose a file", "A PDF or anything else saved on the phone") {
+                chooserOpen = false
+                files()
+            }
         }
 
         KSheet(sheetOpen, onDismiss = { sheetOpen = false; pages.clear() }) {
@@ -150,18 +189,11 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
                 pages.clear()
                 sheetOpen = false
             }
-            Text(
-                "Add another page",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(KC.CoralBg)
-                    .clickable { sheetOpen = false; scanPage() }
-                    .padding(vertical = 12.dp),
-                fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp,
-                color = KC.CoralDeep,
-                textAlign = TextAlign.Center,
-            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AddMore("Scan", Modifier.weight(1f)) { sheetOpen = false; scanPage() }
+                AddMore("Image", Modifier.weight(1f)) { sheetOpen = false; gallery.gallery() }
+                AddMore("File", Modifier.weight(1f)) { sheetOpen = false; files() }
+            }
         }
     }
 }
@@ -210,4 +242,45 @@ internal fun newPageUri(context: Context): Uri {
     val dir = File(context.filesDir, "documents").apply { mkdirs() }
     val file = File(dir, "page_${System.currentTimeMillis()}.jpg")
     return FileProvider.getUriForFile(context, "${context.packageName}.files", file)
+}
+
+/** One way of getting a document in, on the chooser sheet. */
+@Composable
+private fun SourceRow(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(KC.Screen)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconBadge(icon, KC.Coral, KC.CoralBg, size = 38, corner = 12, iconSize = 20)
+        Column(Modifier.weight(1f)) {
+            Text(
+                title, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp, color = KC.Ink,
+            )
+            Text(subtitle, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
+        }
+        Icon(KIcons["chevron_right"], null, tint = KC.Faint, modifier = Modifier.size(18.dp))
+    }
+}
+
+/** Adding a further page to a document already being filled in. */
+@Composable
+private fun AddMore(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Text(
+        label,
+        modifier = modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(KC.CoralBg)
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp,
+        color = KC.CoralDeep,
+        textAlign = TextAlign.Center,
+    )
 }

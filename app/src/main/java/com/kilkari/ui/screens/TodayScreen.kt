@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,9 +39,13 @@ import com.kilkari.domain.DueTask
 import com.kilkari.domain.DueTaskKind
 import com.kilkari.data.db.BabyEntity
 import com.kilkari.ui.components.KSheet
+import com.kilkari.ui.components.ChildAvatar
+import com.kilkari.ui.components.rememberImageSource
+import com.kilkari.ui.sheets.ChildPhotoSheet
 import com.kilkari.ui.sheets.BabySheet
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
+import com.kilkari.data.repo.PHOTO_DIR
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.CheckRing
 import com.kilkari.ui.components.GradientCard
@@ -68,7 +73,12 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
     val baby by vm.baby.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf(false) }
+    var photoSheet by remember { mutableStateOf(false) }
     val b = baby ?: return
+
+    val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri ->
+        vm.setChildPhoto(uri.toString())
+    }
 
     Box(Modifier.fillMaxSize()) {
         Column(
@@ -83,7 +93,7 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
             when (settings.todayVariant) {
                 "B" -> TodayHero(vm, go, b.name, b.dob, editDetails)
                 "C" -> TodayChecklist(vm, go, b.dob)
-                else -> TodayAgenda(vm, go, b.name, b.dob, editDetails)
+                else -> TodayAgenda(vm, go, b.name, b.dob, b.photoUri) { photoSheet = true }
             }
         }
 
@@ -92,6 +102,17 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
                 vm.updateBabyDetails(name, dob, sex, place, weight, length, head)
                 editing = false
             }
+        }
+
+        KSheet(photoSheet, onDismiss = { photoSheet = false }) {
+            ChildPhotoSheet(
+                childName = b.name,
+                photoUri = b.photoUri,
+                onCamera = photo::camera,
+                onGallery = photo::gallery,
+                onRemove = { vm.setChildPhoto(null); photoSheet = false },
+                onDone = { photoSheet = false },
+            )
         }
     }
 }
@@ -104,29 +125,22 @@ private fun TodayAgenda(
     go: NavActions,
     name: String,
     dob: LocalDate,
-    onEditDetails: () -> Unit,
+    photoUri: String?,
+    onEditPhoto: () -> Unit,
 ) {
     val nextVac by vm.nextVaccine.collectAsStateWithLifecycle()
     val latest by vm.latestPerKind.collectAsStateWithLifecycle()
     val openSleep by vm.openSleep.collectAsStateWithLifecycle()
 
-    Row(
-        Modifier.fillMaxWidth().padding(top = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column {
-            Text(greeting(), fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
-            Text("$name is ${Fmt.age(dob)}", style = ScreenTitle, color = KC.Ink)
-        }
-        // The avatar is the way into the child's details from here.
-        Box(Modifier.clip(RoundedCornerShape(percent = 50)).clickable(onClick = onEditDetails)) {
-            Monogram(name.take(1).uppercase())
-        }
+    Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+        Text(greeting(), fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
+        Text("$name is ${Fmt.age(dob)}", style = ScreenTitle, color = KC.Ink)
     }
 
     nextVac?.let { g ->
         GradientCard(listOf(KC.Coral, KC.Clay), onClick = { go.push(Routes.VACCINES) }) {
+            // The label and the due badge belong at opposite ends of the card, so this row
+            // takes the full width; only what sits under it shares space with the photo.
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -134,20 +148,48 @@ private fun TodayAgenda(
             ) {
                 Text(
                     "NEXT UP", fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                    fontSize = 12.sp, letterSpacing = 0.5.sp, color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 12.sp, letterSpacing = 0.5.sp,
+                    color = Color.White.copy(alpha = 0.85f),
                 )
                 Pill(Fmt.dueText(g.inDays))
             }
-            Text(
-                "${g.label} vaccines · ${g.count} ${Fmt.plural(g.count.toLong(), "dose")}",
-                fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.White,
-            )
-            Text(
-                "${Fmt.date(g.dueDate)} · ${g.names}",
-                fontFamily = Sans, fontSize = 13.sp, color = Color.White.copy(alpha = 0.9f),
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
-            )
-            WhiteButton("See schedule") { go.push(Routes.VACCINES) }
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Seven tenths to the words, three to the picture. Vaccine names are long and
+                // unpredictable, so everything on this side truncates rather than pushing the
+                // photo around.
+                Column(
+                    Modifier.weight(0.7f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        "${g.label} vaccines · ${g.count} ${Fmt.plural(g.count.toLong(), "dose")}",
+                        fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 20.sp,
+                        color = Color.White,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        "${Fmt.date(g.dueDate)} · ${g.names}",
+                        fontFamily = Sans, fontSize = 13.sp, color = Color.White.copy(alpha = 0.9f),
+                        maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    )
+                    WhiteButton("See schedule") { go.push(Routes.VACCINES) }
+                }
+
+                // Its own tap target inside a card that opens the schedule: the picture is the
+                // way to change the picture, everything else on the card is vaccines.
+                ChildAvatar(
+                    photoUri = photoUri,
+                    name = name,
+                    modifier = Modifier.weight(0.3f).aspectRatio(1f),
+                    ring = Color.White.copy(alpha = 0.55f),
+                    onClick = onEditPhoto,
+                )
+            }
         }
     }
 

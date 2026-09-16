@@ -686,7 +686,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         viewModelScope.launch {
             repo.addDocument(title, filedOn, tags, pageUris)
             val day = if (filedOn == LocalDate.now()) "today" else Fmt.date(filedOn)
-            toast("Scan filed under $day")
+            toast("Document filed under $day")
         }
 
     fun deleteDocument(row: DocumentEntity) = viewModelScope.launch { repo.deleteDocument(row) }
@@ -757,6 +757,21 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         )
         toast("Details saved")
     }
+
+    fun setChildPhoto(uri: String?) = viewModelScope.launch {
+        repo.setChildPhoto(uri, if (uri == null) null else LocalDate.now())
+        // A new picture is what the weekly check-in is asking for, whether it was taken from
+        // the prompt or from the avatar on a whim.
+        if (uri != null) satisfyReminder("album")
+        toast(if (uri == null) "Photo removed" else "Photo saved")
+    }
+
+    /**
+     * The weekly check-in is dealt with once its steps have been walked through, skips
+     * included — choosing to add nothing this week is still an answer, and the prompt should
+     * not keep asking after the parent has been through it.
+     */
+    fun completePhotoCheckIn() = satisfyReminder("album")
 
     fun setCurrency(c: Currency) = viewModelScope.launch { repo.setCurrency(c) }
 

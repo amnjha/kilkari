@@ -18,6 +18,10 @@ data class BabyEntity(
     val birthPlace: String? = null,
     /** "f" | "m", or null where it was never given. Only the growth chart reads it. */
     val sex: String? = null,
+    /** The child's picture, copied into app-private storage. Null until one is taken. */
+    val photoUri: String? = null,
+    /** When that picture was taken, so the weekly check-in knows how stale it is. */
+    val photoUpdatedOn: LocalDate? = null,
 )
 
 /**
