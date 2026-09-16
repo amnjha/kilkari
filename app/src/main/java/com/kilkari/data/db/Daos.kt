@@ -87,6 +87,9 @@ interface GrowthDao {
     @Upsert
     suspend fun upsert(row: GrowthEntity)
 
+    @Update
+    suspend fun update(row: GrowthEntity)
+
     @Delete
     suspend fun delete(row: GrowthEntity)
 }
@@ -315,6 +318,9 @@ interface FundDao {
     @Insert
     suspend fun insert(row: FundTxnEntity): Long
 
+    @Update
+    suspend fun update(row: FundTxnEntity)
+
     @Delete
     suspend fun delete(row: FundTxnEntity)
 
@@ -363,6 +369,9 @@ interface InvestmentDao {
 
     @Insert
     suspend fun insertContribution(row: ContributionEntity): Long
+
+    @Update
+    suspend fun updateContribution(row: ContributionEntity)
 
     @Delete
     suspend fun deleteContribution(row: ContributionEntity)

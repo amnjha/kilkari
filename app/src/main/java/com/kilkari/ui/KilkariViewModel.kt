@@ -94,6 +94,9 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     val todayLogs: StateFlow<List<LogEntryEntity>> =
         today.flatMapLatest { repo.logsForDay(it) }.state(emptyList())
 
+    /** Everything logged, newest first, so entries filed against an earlier day stay reachable. */
+    val recentLogs: StateFlow<List<LogEntryEntity>> = repo.recentLogs().state(emptyList())
+
     val latestPerKind: StateFlow<Map<LogKind, LogEntryEntity>> =
         repo.latestPerKind().state(emptyMap())
 
@@ -178,6 +181,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
                     add(
                         FundLedgerRow(
                             id = "t${t.id}",
+                            sourceId = t.id,
                             date = t.date,
                             title = if (deposit) "Deposit" else "Withdrawal",
                             subtitle = t.note.orEmpty(),
@@ -192,6 +196,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
                     add(
                         FundLedgerRow(
                             id = "e${e.id}",
+                            sourceId = e.id,
                             date = e.date,
                             title = e.title,
                             subtitle = listOfNotNull(
@@ -210,6 +215,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
                     add(
                         FundLedgerRow(
                             id = "c${c.id}",
+                            sourceId = c.id,
                             date = c.date,
                             title = investment?.name ?: "Investment",
                             subtitle = investment?.let { InvestmentKind.of(it.kind).label }.orEmpty(),
@@ -422,12 +428,41 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     fun setDoseTaken(medId: Long, date: LocalDate, taken: Boolean) =
         viewModelScope.launch { repo.setDoseTaken(medId, date, taken) }
 
+    /** A correction to something already logged — the row carries its own id and babyId. */
+    fun updateLog(entry: LogEntryEntity) = viewModelScope.launch {
+        repo.updateLog(entry)
+        toast("Entry updated" + forDay(entry.startAt.toLocalDate()))
+    }
+
+    fun deleteLog(entry: LogEntryEntity) = viewModelScope.launch {
+        repo.deleteLog(entry)
+        toast("Entry removed")
+    }
+
     fun addGrowth(date: LocalDate, weightKg: Double?, lengthCm: Double?, headCm: Double?) =
         viewModelScope.launch {
             repo.addGrowth(date, weightKg, lengthCm, headCm)
             satisfyReminder("weigh", date)
             toast("Measurement saved" + forDay(date))
         }
+
+    /** [marker] is the journal row that announced the measurement; the two move together. */
+    fun updateGrowth(
+        marker: LogEntryEntity?,
+        measurement: GrowthEntity?,
+        date: LocalDate,
+        weightKg: Double?,
+        lengthCm: Double?,
+        headCm: Double?,
+    ) = viewModelScope.launch {
+        repo.updateGrowth(marker, measurement, date, weightKg, lengthCm, headCm)
+        toast("Measurement updated" + forDay(date))
+    }
+
+    fun deleteGrowth(marker: LogEntryEntity?, measurement: GrowthEntity?) = viewModelScope.launch {
+        repo.deleteGrowth(marker, measurement)
+        toast("Measurement removed")
+    }
 
     fun toggleTooth(code: String, erupted: Boolean, on: LocalDate = LocalDate.now()) =
         viewModelScope.launch { repo.toggleTooth(code, erupted, on) }
@@ -489,7 +524,23 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         toast("Expense saved" + forDay(date))
     }
 
-    fun deleteExpense(row: ExpenseEntity) = viewModelScope.launch { repo.deleteExpense(row) }
+    fun updateExpense(
+        row: ExpenseEntity,
+        title: String,
+        vendor: String?,
+        category: ExpenseCategory,
+        amountDisplay: Double,
+        date: LocalDate,
+        paidFromFund: Boolean,
+    ) = viewModelScope.launch {
+        repo.updateExpense(row, title, vendor, category, toInr(amountDisplay), date, paidFromFund)
+        toast("Expense updated" + forDay(date))
+    }
+
+    fun deleteExpense(row: ExpenseEntity) = viewModelScope.launch {
+        repo.deleteExpense(row)
+        toast("Expense removed")
+    }
 
     fun addFundDeposit(amountDisplay: Double, date: LocalDate, note: String?) = viewModelScope.launch {
         repo.addFundTransaction(FundTxnKind.DEPOSIT, toInr(amountDisplay), date, note)
@@ -502,8 +553,21 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         toast("Withdrawal recorded" + forDay(date))
     }
 
+    fun updateFundTransaction(
+        row: FundTxnEntity,
+        deposit: Boolean,
+        amountDisplay: Double,
+        date: LocalDate,
+        note: String?,
+    ) = viewModelScope.launch {
+        val kind = if (deposit) FundTxnKind.DEPOSIT else FundTxnKind.WITHDRAWAL
+        repo.updateFundTransaction(row, kind, toInr(amountDisplay), date, note)
+        toast("${kind.label} updated" + forDay(date))
+    }
+
     fun deleteFundTransaction(row: FundTxnEntity) = viewModelScope.launch {
         repo.deleteFundTransaction(row)
+        toast("${FundTxnKind.of(row.kind).label} removed")
     }
 
     fun setFundPlan(monthlyDisplay: Double, day: Int, name: String) = viewModelScope.launch {
@@ -544,6 +608,21 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             toast("Contribution recorded" + forDay(date))
         }
 
+    fun updateContribution(
+        row: ContributionEntity,
+        amountDisplay: Double,
+        date: LocalDate,
+        paidFromFund: Boolean,
+    ) = viewModelScope.launch {
+        repo.updateContribution(row, toInr(amountDisplay), date, paidFromFund)
+        toast("Contribution updated" + forDay(date))
+    }
+
+    fun deleteContribution(row: ContributionEntity) = viewModelScope.launch {
+        repo.deleteContribution(row)
+        toast("Contribution removed")
+    }
+
     fun updateInvestmentValue(investmentId: Long, valueDisplay: Double, asOf: LocalDate = LocalDate.now()) =
         viewModelScope.launch {
             repo.updateInvestmentValue(investmentId, toInr(valueDisplay), asOf)
@@ -575,7 +654,21 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             toast("Added to timeline" + forDay(date))
         }
 
-    fun deleteTimelineEntry(row: TimelineEntity) = viewModelScope.launch { repo.deleteTimelineEntry(row) }
+    fun updateMilestone(
+        row: TimelineEntity,
+        title: String,
+        subtitle: String,
+        date: LocalDate,
+        albumUrl: String?,
+    ) = viewModelScope.launch {
+        repo.updateTimelineEntry(row, date, title, subtitle, albumUrl)
+        toast("Moment updated" + forDay(date))
+    }
+
+    fun deleteTimelineEntry(row: TimelineEntity) = viewModelScope.launch {
+        repo.deleteTimelineEntry(row)
+        toast("Moment removed")
+    }
 
     fun addDocument(title: String, tags: String, pageUris: List<String>, filedOn: LocalDate = LocalDate.now()) =
         viewModelScope.launch {

@@ -1,6 +1,7 @@
 package com.kilkari.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kilkari.data.db.ContributionEntity
+import com.kilkari.data.db.ExpenseEntity
+import com.kilkari.data.db.FundTxnEntity
 import com.kilkari.domain.Currency
 import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.Fmt
@@ -49,6 +53,7 @@ import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSegmented
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.SectionLabel
+import com.kilkari.ui.sheets.ContributionSheet
 import com.kilkari.ui.sheets.ExpenseSheet
 import com.kilkari.ui.sheets.FundPlanSheet
 import com.kilkari.ui.sheets.FundTxnSheet
@@ -63,6 +68,9 @@ import java.time.YearMonth
 
 private enum class MoneySheet { EXPENSE, FUND_TXN, FUND_PLAN, INVESTMENT }
 
+/** How much of the account's history the Fund view lists. */
+private const val LEDGER_SHOWN = 60
+
 /**
  * Three views over the same money: what has been **spent**, the savings account it is
  * **funded** from, and what is being **invested** for later.
@@ -76,6 +84,18 @@ fun MoneyScreen(vm: KilkariViewModel) {
     var sheet by remember { mutableStateOf<MoneySheet?>(null) }
     var openInvestment by remember { mutableStateOf<InvestmentSummary?>(null) }
 
+    // Each is non-null while the entry it holds is open for correction. The three are collected
+    // here rather than in the views so a fund ledger line can be traced back to whichever of
+    // them it came from.
+    var editingExpense by remember { mutableStateOf<ExpenseEntity?>(null) }
+    var editingTxn by remember { mutableStateOf<FundTxnEntity?>(null) }
+    var editingContribution by remember { mutableStateOf<ContributionEntity?>(null) }
+
+    val expenses by vm.expenses.collectAsStateWithLifecycle()
+    val fundTransactions by vm.fundTransactions.collectAsStateWithLifecycle()
+    val contributions by vm.contributions.collectAsStateWithLifecycle()
+    val investments by vm.investmentSummaries.collectAsStateWithLifecycle()
+
     val pendingEntry by vm.pendingEntry.collectAsStateWithLifecycle()
     LaunchedEffect(pendingEntry) {
         if (pendingEntry == "fund") {
@@ -86,6 +106,17 @@ fun MoneyScreen(vm: KilkariViewModel) {
     }
 
     val fundName = settings.fundAccountName
+
+    fun openLedgerRow(row: FundLedgerRow) {
+        when (row.origin) {
+            FundLedgerOrigin.DEPOSIT, FundLedgerOrigin.WITHDRAWAL ->
+                editingTxn = fundTransactions.firstOrNull { it.id == row.sourceId }
+            FundLedgerOrigin.EXPENSE ->
+                editingExpense = expenses.firstOrNull { it.id == row.sourceId }
+            FundLedgerOrigin.INVESTMENT ->
+                editingContribution = contributions.firstOrNull { it.id == row.sourceId }
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -116,9 +147,13 @@ fun MoneyScreen(vm: KilkariViewModel) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 when (tab) {
-                    1 -> FundView(vm, currency, fundName) { sheet = MoneySheet.FUND_PLAN }
+                    1 -> FundView(
+                        vm, currency, fundName,
+                        onEditPlan = { sheet = MoneySheet.FUND_PLAN },
+                        onOpenRow = { openLedgerRow(it) },
+                    )
                     2 -> InvestView(vm, currency) { openInvestment = it }
-                    else -> SpendingView(vm, currency, fundName)
+                    else -> SpendingView(vm, currency, fundName) { editingExpense = it }
                 }
             }
         }
@@ -174,6 +209,7 @@ fun MoneyScreen(vm: KilkariViewModel) {
                     investment = open,
                     currency = currency,
                     fundName = fundName,
+                    contributions = contributions.filter { it.investmentId == open.id },
                     onContribute = { amount, date, fromFund ->
                         vm.addContribution(open.id, amount, date, fromFund)
                         openInvestment = null
@@ -181,6 +217,11 @@ fun MoneyScreen(vm: KilkariViewModel) {
                     onUpdateValue = { value, asOf ->
                         vm.updateInvestmentValue(open.id, value, asOf)
                         openInvestment = null
+                    },
+                    // Sheets do not stack, so the holding closes as the contribution opens.
+                    onEditContribution = { row ->
+                        openInvestment = null
+                        editingContribution = row
                     },
                     onSetActive = { active ->
                         vm.setInvestmentActive(open.id, active)
@@ -193,13 +234,67 @@ fun MoneyScreen(vm: KilkariViewModel) {
                 )
             }
         }
+
+        val expense = editingExpense
+        KSheet(expense != null, onDismiss = { editingExpense = null }) {
+            if (expense != null) {
+                ExpenseSheet(
+                    currency = currency,
+                    fundName = fundName,
+                    existing = expense,
+                    onDelete = { vm.deleteExpense(expense); editingExpense = null },
+                ) { title, vendor, category, amount, date, fromFund ->
+                    vm.updateExpense(expense, title, vendor, category, amount, date, fromFund)
+                    editingExpense = null
+                }
+            }
+        }
+
+        val txn = editingTxn
+        KSheet(txn != null, onDismiss = { editingTxn = null }) {
+            if (txn != null) {
+                FundTxnSheet(
+                    currency = currency,
+                    fundName = fundName,
+                    suggestedDeposit = 0,
+                    existing = txn,
+                    onDelete = { vm.deleteFundTransaction(txn); editingTxn = null },
+                ) { deposit, amount, date, note ->
+                    vm.updateFundTransaction(txn, deposit, amount, date, note)
+                    editingTxn = null
+                }
+            }
+        }
+
+        val contribution = editingContribution
+        KSheet(contribution != null, onDismiss = { editingContribution = null }) {
+            if (contribution != null) {
+                val holding = investments.firstOrNull { it.id == contribution.investmentId }
+                ContributionSheet(
+                    contribution = contribution,
+                    investmentName = holding?.name ?: "Investment",
+                    currency = currency,
+                    fundName = fundName,
+                    earliest = holding?.startDate,
+                    onDelete = { vm.deleteContribution(contribution); editingContribution = null },
+                ) { amount, date, fromFund ->
+                    vm.updateContribution(contribution, amount, date, fromFund)
+                    editingContribution = null
+                }
+            }
+        }
     }
 }
 
 // ── Spending ────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ColumnScope.SpendingView(vm: KilkariViewModel, currency: Currency, fundName: String) {
+private fun ColumnScope.SpendingView(
+    vm: KilkariViewModel,
+    currency: Currency,
+    fundName: String,
+    onOpen: (ExpenseEntity) -> Unit,
+) {
     val expenses by vm.expenses.collectAsStateWithLifecycle()
     val filter by vm.moneyFilter.collectAsStateWithLifecycle()
 
@@ -253,7 +348,10 @@ private fun ColumnScope.SpendingView(vm: KilkariViewModel, currency: Currency, f
         visible.forEachIndexed { i, expense ->
             val isMedical = expense.category == ExpenseCategory.MEDICAL.key
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpen(expense) }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -287,6 +385,13 @@ private fun ColumnScope.SpendingView(vm: KilkariViewModel, currency: Currency, f
             if (i != visible.lastIndex) Divider()
         }
     }
+
+    if (visible.isNotEmpty()) {
+        Text(
+            "Tap an expense to change or remove it.",
+            fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+        )
+    }
 }
 
 // ── Fund ────────────────────────────────────────────────────────────────────
@@ -297,6 +402,7 @@ private fun ColumnScope.FundView(
     currency: Currency,
     fundName: String,
     onEditPlan: () -> Unit,
+    onOpenRow: (FundLedgerRow) -> Unit,
 ) {
     val balance by vm.fundBalance.collectAsStateWithLifecycle()
     val ledger by vm.fundLedger.collectAsStateWithLifecycle()
@@ -366,15 +472,16 @@ private fun ColumnScope.FundView(
         if (ledger.isEmpty()) {
             EmptyLine("Nothing yet. Tap + to record a deposit.")
         }
-        ledger.take(60).forEachIndexed { i, row ->
-            LedgerRow(row, currency)
-            if (i != ledger.take(60).lastIndex) Divider()
+        val visible = ledger.take(LEDGER_SHOWN)
+        visible.forEachIndexed { i, row ->
+            LedgerRow(row, currency) { onOpenRow(row) }
+            if (i != visible.lastIndex) Divider()
         }
     }
 
     Text(
-        "Expenses and investment contributions marked as paid from $fundName come off this " +
-            "balance automatically — they are not recorded twice.",
+        "Tap any line to change or remove it. Expenses and investment contributions marked as " +
+            "paid from $fundName come off this balance automatically — they are not recorded twice.",
         fontFamily = Sans, fontSize = 12.sp, lineHeight = 18.sp, color = KC.Muted,
     )
 }
@@ -396,7 +503,7 @@ private fun FundStat(caption: String, value: String, modifier: Modifier = Modifi
 }
 
 @Composable
-private fun LedgerRow(row: FundLedgerRow, currency: Currency) {
+private fun LedgerRow(row: FundLedgerRow, currency: Currency, onClick: () -> Unit) {
     val tint = when (row.origin) {
         FundLedgerOrigin.DEPOSIT -> KC.Teal
         FundLedgerOrigin.WITHDRAWAL -> KC.Danger
@@ -410,7 +517,10 @@ private fun LedgerRow(row: FundLedgerRow, currency: Currency) {
         FundLedgerOrigin.INVESTMENT -> KC.ClayBg
     }
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

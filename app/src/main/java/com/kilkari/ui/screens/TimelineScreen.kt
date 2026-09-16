@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kilkari.data.db.TimelineEntity
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.DetailBar
@@ -49,6 +50,9 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
     val baby by vm.baby.collectAsStateWithLifecycle()
     val timeline by vm.timeline.collectAsStateWithLifecycle()
     var sheetOpen by remember { mutableStateOf(false) }
+
+    /** Non-null while a moment already on the spine is open for correction. */
+    var editing by remember { mutableStateOf<TimelineEntity?>(null) }
     val context = LocalContext.current
 
     Box(Modifier.fillMaxSize()) {
@@ -157,10 +161,10 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
                                 }
                             }
                             Text(
-                                "Remove",
+                                "Edit or remove",
                                 modifier = Modifier
                                     .padding(top = 6.dp)
-                                    .clickable { vm.deleteTimelineEntry(entry) },
+                                    .clickable { editing = entry },
                                 fontFamily = Sans, fontSize = 12.sp, color = KC.Faint,
                             )
                         }
@@ -173,6 +177,20 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
             MilestoneSheet(earliest = baby?.dob) { title, note, date, album ->
                 vm.addMilestone(title, note, date, album)
                 sheetOpen = false
+            }
+        }
+
+        val edit = editing
+        KSheet(edit != null, onDismiss = { editing = null }) {
+            if (edit != null) {
+                MilestoneSheet(
+                    earliest = baby?.dob,
+                    existing = edit,
+                    onDelete = { vm.deleteTimelineEntry(edit); editing = null },
+                ) { title, note, date, album ->
+                    vm.updateMilestone(edit, title, note, date, album)
+                    editing = null
+                }
             }
         }
     }
