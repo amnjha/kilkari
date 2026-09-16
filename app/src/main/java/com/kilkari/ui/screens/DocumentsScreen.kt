@@ -45,11 +45,11 @@ import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.rememberImageSource
 import com.kilkari.ui.components.rememberFileSource
-import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.sheets.SheetTitle
 import com.kilkari.ui.sheets.SheetHint
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.KCard
+import com.kilkari.ui.components.SourceRow
 import com.kilkari.ui.components.KFab
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
@@ -286,31 +286,6 @@ internal fun newPageUri(context: Context): Uri {
     val dir = File(context.filesDir, "documents").apply { mkdirs() }
     val file = File(dir, "page_${System.currentTimeMillis()}.jpg")
     return FileProvider.getUriForFile(context, "${context.packageName}.files", file)
-}
-
-/** One way of getting a document in, on the chooser sheet. */
-@Composable
-private fun SourceRow(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(KC.Screen)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconBadge(icon, KC.Coral, KC.CoralBg, size = 38, corner = 12, iconSize = 20)
-        Column(Modifier.weight(1f)) {
-            Text(
-                title, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp, color = KC.Ink,
-            )
-            Text(subtitle, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
-        }
-        Icon(KIcons["chevron_right"], null, tint = KC.Faint, modifier = Modifier.size(18.dp))
-    }
 }
 
 /** Adding a further page to a document already being filled in. */

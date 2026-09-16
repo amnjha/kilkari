@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -40,6 +42,8 @@ import com.kilkari.domain.DueTaskKind
 import com.kilkari.data.db.BabyEntity
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.ChildAvatar
+import com.kilkari.ui.components.ImageCropDialog
+import com.kilkari.ui.components.deleteOwnFile
 import com.kilkari.ui.components.rememberImageSource
 import com.kilkari.ui.sheets.ChildPhotoSheet
 import com.kilkari.ui.sheets.FeedSheet
@@ -82,9 +86,11 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
     val openSleep by vm.openSleep.collectAsStateWithLifecycle()
     val b = baby ?: return
 
-    val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri ->
-        vm.setChildPhoto(uri.toString())
-    }
+    // Straight to framing rather than straight to the avatar: a phone photo is rarely a
+    // square with the face in the middle.
+    val context = LocalContext.current
+    var cropping by remember { mutableStateOf<Uri?>(null) }
+    val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri -> cropping = uri }
 
     Box(Modifier.fillMaxSize()) {
         Column(
@@ -133,6 +139,24 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
                 }
                 else -> Unit
             }
+        }
+
+
+        cropping?.let { source ->
+            ImageCropDialog(
+                source = source,
+                // The captured or picked file has served its purpose either way; only the
+                // framed result is worth keeping.
+                onCancel = {
+                    deleteOwnFile(context, source, PHOTO_DIR)
+                    cropping = null
+                },
+                onCropped = { framed ->
+                    vm.setChildPhoto(framed.toString())
+                    deleteOwnFile(context, source, PHOTO_DIR)
+                    cropping = null
+                },
+            )
         }
 
         KSheet(photoSheet, onDismiss = { photoSheet = false }) {

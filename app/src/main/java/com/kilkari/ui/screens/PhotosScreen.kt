@@ -3,6 +3,7 @@ package com.kilkari.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,6 +39,8 @@ import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
+import com.kilkari.ui.components.ImageCropDialog
+import com.kilkari.ui.components.deleteOwnFile
 import com.kilkari.ui.components.rememberImageSource
 import com.kilkari.ui.sheets.PhotoCheckInSheet
 import com.kilkari.ui.sheets.AlbumSheet
@@ -54,9 +57,10 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
     val baby by vm.baby.collectAsStateWithLifecycle()
     // The weekly check-in is its own two-step flow; the + button adds an album on its own.
     var checkInOpen by remember { mutableStateOf(false) }
-    val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri ->
-        vm.setChildPhoto(uri.toString())
-    }
+    // Straight to framing rather than straight to the avatar: a phone photo is rarely a
+    // square with the face in the middle.
+    var cropping by remember { mutableStateOf<Uri?>(null) }
+    val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri -> cropping = uri }
 
     val pendingEntry by vm.pendingEntry.collectAsStateWithLifecycle()
     LaunchedEffect(pendingEntry) {
@@ -162,6 +166,24 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
                 vm.addAlbum(title, subtitle, url)
                 sheetOpen = false
             }
+        }
+
+
+        cropping?.let { source ->
+            ImageCropDialog(
+                source = source,
+                // The captured or picked file has served its purpose either way; only the
+                // framed result is worth keeping.
+                onCancel = {
+                    deleteOwnFile(context, source, PHOTO_DIR)
+                    cropping = null
+                },
+                onCropped = { framed ->
+                    vm.setChildPhoto(framed.toString())
+                    deleteOwnFile(context, source, PHOTO_DIR)
+                    cropping = null
+                },
+            )
         }
 
         KSheet(checkInOpen, onDismiss = { checkInOpen = false }) {

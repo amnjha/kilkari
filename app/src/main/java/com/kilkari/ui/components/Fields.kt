@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -310,5 +311,29 @@ private fun StepperButton(glyph: String, onClick: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         Text(glyph, fontFamily = Sans, fontSize = 20.sp, color = KC.Coral)
+    }
+}
+
+@Composable
+fun SourceRow(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(KC.Screen)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconBadge(icon, KC.Coral, KC.CoralBg, size = 38, corner = 12, iconSize = 20)
+        Column(Modifier.weight(1f)) {
+            Text(
+                title, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp, color = KC.Ink,
+            )
+            Text(subtitle, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
+        }
+        Icon(KIcons["chevron_right"], null, tint = KC.Faint, modifier = Modifier.size(18.dp))
     }
 }

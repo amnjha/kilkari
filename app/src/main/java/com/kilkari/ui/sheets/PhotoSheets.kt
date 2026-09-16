@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kilkari.ui.components.ChildAvatar
 import com.kilkari.ui.components.PrimaryButton
-import com.kilkari.ui.components.SecondaryButton
+import com.kilkari.ui.components.SourceRow
 import com.kilkari.ui.components.SheetField
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -103,10 +103,9 @@ private fun ColumnScope.PhotoChooser(
             fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
         )
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        SecondaryButton("Take photo", Modifier.weight(1f), onClick = onCamera)
-        SecondaryButton("Choose photo", Modifier.weight(1f), onClick = onGallery)
-    }
+    // The same two rows a document offers, so choosing a picture reads the same everywhere.
+    SourceRow("photo_camera", "Take a photo", "Use the camera now", onClick = onCamera)
+    SourceRow("folder", "Choose from gallery", "From the phone's photos", onClick = onGallery)
 }
 
 /** The way out of a step that is not compulsory. */

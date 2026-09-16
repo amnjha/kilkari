@@ -48,6 +48,19 @@ fun copyIntoApp(
     target
 }.getOrNull()
 
+/**
+ * Deletes a file this app wrote under [folder], and ignores anything else.
+ *
+ * Capturing or picking writes a file before it is framed, so both finishing and abandoning a
+ * crop leave an intermediate behind; without this every attempt would add one.
+ */
+fun deleteOwnFile(context: Context, uri: Uri, folder: String) {
+    runCatching {
+        val name = uri.lastPathSegment?.substringAfterLast('/') ?: return
+        File(File(context.filesDir, folder), name).takeIf { it.exists() }?.delete()
+    }
+}
+
 /** The file extension behind a content URI, so a copy keeps the original's type. */
 fun extensionOf(context: Context, uri: Uri): String {
     val fromType = context.contentResolver.getType(uri)
