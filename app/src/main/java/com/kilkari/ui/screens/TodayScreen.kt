@@ -42,6 +42,9 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.ChildAvatar
 import com.kilkari.ui.components.rememberImageSource
 import com.kilkari.ui.sheets.ChildPhotoSheet
+import com.kilkari.ui.sheets.FeedSheet
+import com.kilkari.ui.sheets.SleepSheet
+import com.kilkari.ui.sheets.DiaperSheet
 import com.kilkari.ui.sheets.BabySheet
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
@@ -74,6 +77,9 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf(false) }
     var photoSheet by remember { mutableStateOf(false) }
+    // The quick-action cards log from here rather than sending you to the Log tab to do it.
+    var quickLog by remember { mutableStateOf<LogKind?>(null) }
+    val openSleep by vm.openSleep.collectAsStateWithLifecycle()
     val b = baby ?: return
 
     val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri ->
@@ -93,7 +99,15 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
             when (settings.todayVariant) {
                 "B" -> TodayHero(vm, go, b.name, b.dob, editDetails)
                 "C" -> TodayChecklist(vm, go, b.dob)
-                else -> TodayAgenda(vm, go, b.name, b.dob, b.photoUri) { photoSheet = true }
+                else -> TodayAgenda(
+                    vm = vm,
+                    go = go,
+                    name = b.name,
+                    dob = b.dob,
+                    photoUri = b.photoUri,
+                    onEditPhoto = { photoSheet = true },
+                    onQuickLog = { quickLog = it },
+                )
             }
         }
 
@@ -101,6 +115,23 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
             BabySheet(b) { name, dob, sex, place, weight, length, head ->
                 vm.updateBabyDetails(name, dob, sex, place, weight, length, head)
                 editing = false
+            }
+        }
+
+        KSheet(quickLog != null, onDismiss = { quickLog = null }) {
+            when (quickLog) {
+                LogKind.FEED -> FeedSheet { type, side, amount, at ->
+                    vm.logFeed(type, side, amount, at); quickLog = null
+                }
+                LogKind.SLEEP -> SleepSheet(
+                    asleepSince = openSleep?.startAt,
+                    onStart = { place, from, to -> vm.logSleepStart(place, from, to); quickLog = null },
+                    onEnd = { at -> vm.logSleepEnd(at); quickLog = null },
+                )
+                LogKind.DIAPER -> DiaperSheet { kind, at ->
+                    vm.logDiaper(kind, at); quickLog = null
+                }
+                else -> Unit
             }
         }
 
@@ -127,6 +158,7 @@ private fun TodayAgenda(
     dob: LocalDate,
     photoUri: String?,
     onEditPhoto: () -> Unit,
+    onQuickLog: (LogKind) -> Unit,
 ) {
     val nextVac by vm.nextVaccine.collectAsStateWithLifecycle()
     val latest by vm.latestPerKind.collectAsStateWithLifecycle()
@@ -193,7 +225,9 @@ private fun TodayAgenda(
         }
     }
 
-    SectionLabel("Last logged", Modifier.padding(top = 2.dp))
+    // One card, two jobs: what it says is when this last happened, what it does is log the
+    // next one. Reaching the Log tab to record a feed was four taps from here.
+    SectionLabel("Quick actions", Modifier.padding(top = 2.dp))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(LogKind.FEED, LogKind.SLEEP, LogKind.DIAPER).forEach { kind ->
             val spec = tileSpec(kind)
@@ -202,14 +236,31 @@ private fun TodayAgenda(
                     "asleep ${Fmt.elapsed(openSleep!!.startAt)}"
                 else -> Fmt.ago(latest[kind]?.startAt)
             }
-            KCard(Modifier.weight(1f), corner = 14, onClick = { go.tab(Routes.LOG) }) {
+            KCard(Modifier.weight(1f), corner = 14, onClick = { onQuickLog(kind) }) {
                 Column(
-                    Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Icon(KIcons[spec.icon], null, tint = spec.fg, modifier = Modifier.size(20.dp))
-                    Text(spec.title, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = KC.Ink)
-                    Text(agoText, fontFamily = Sans, fontSize = 11.sp, color = KC.Muted, maxLines = 1)
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(KIcons[spec.icon], null, tint = spec.fg, modifier = Modifier.size(20.dp))
+                        // Says the card does something, without a button competing with it.
+                        Icon(
+                            KIcons["add"], null,
+                            tint = KC.Faint, modifier = Modifier.size(15.dp),
+                        )
+                    }
+                    Text(
+                        spec.title, fontFamily = Sans, fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp, color = KC.Ink,
+                    )
+                    Text(
+                        agoText, fontFamily = Sans, fontSize = 11.sp, color = KC.Muted,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
@@ -496,6 +547,11 @@ private fun UpcomingRow(
 private fun DueTaskList(vm: KilkariViewModel, go: NavActions, emptyText: String) {
     val tasks by vm.dueTasks.collectAsStateWithLifecycle()
 
+    // Finished items are kept, not hidden — but folded away, because a day's worth of struck
+    // through rows pushes what is still outstanding off the screen.
+    var showDone by remember { mutableStateOf(false) }
+    val (done, todo) = tasks.partition { it.done }
+
     if (tasks.isEmpty()) {
         KCard(corner = 14) {
             Text(
@@ -507,7 +563,45 @@ private fun DueTaskList(vm: KilkariViewModel, go: NavActions, emptyText: String)
         return
     }
 
-    tasks.forEach { task -> DueTaskRow(task, vm, go) }
+    if (todo.isEmpty()) {
+        KCard(corner = 14) {
+            Text(
+                "All done for today. 🎈",
+                modifier = Modifier.padding(14.dp),
+                fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
+            )
+        }
+    }
+    todo.forEach { task -> DueTaskRow(task, vm, go) }
+
+    if (done.isNotEmpty()) {
+        DoneHeader(done.size, showDone) { showDone = !showDone }
+        if (showDone) done.forEach { task -> DueTaskRow(task, vm, go) }
+    }
+}
+
+/** The fold over the day's finished items: a count, and a way back to them. */
+@Composable
+private fun DoneHeader(count: Int, expanded: Boolean, onToggle: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(999.dp))
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            KIcons[if (expanded) "expand_more" else "chevron_right"], null,
+            tint = KC.Muted, modifier = Modifier.size(18.dp),
+        )
+        Text(
+            "$count done",
+            fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
+            color = KC.Muted,
+        )
+    }
 }
 
 @Composable
