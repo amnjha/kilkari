@@ -394,7 +394,6 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         )
     }
 
-    fun updateBaby(row: BabyEntity) = viewModelScope.launch { repo.updateBaby(row) }
 
     fun logFeed(type: FeedType, side: BreastSide?, amount: Int, at: LocalDateTime = LocalDateTime.now()) =
         viewModelScope.launch {
@@ -740,7 +739,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         headCm: Double?,
     ) = viewModelScope.launch {
         val current = baby.value ?: return@launch
-        repo.updateBaby(
+        repo.updateBabyDetails(
             current.copy(
                 name = name,
                 dob = dob,

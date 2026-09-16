@@ -50,6 +50,13 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
+ * Icons on the two rows the app writes for itself at the start. They are also how those rows
+ * are found again when the child's details are edited, so both ends read the same constant.
+ */
+private const val BIRTH_ICON = "favorite"
+private const val BIRTHDAY_ICON = "cake"
+
+/**
  * Single access point for app data. Screens observe flows keyed off the one baby row; every
  * mutation is a suspend function so callers stay off the main thread.
  */
@@ -765,19 +772,20 @@ class KilkariRepository(
         db.timelineDao().insert(
             TimelineEntity(
                 babyId = id, date = dob, title = "$name arrived",
-                subtitle = listOfNotNull(
-                    birthTime?.let { Fmt.time(it) },
-                    weightKg?.let { Fmt.weight(it) },
-                    lengthCm?.let { Fmt.length(it) },
-                    place,
-                ).joinToString(" · "),
-                icon = "favorite",
+                subtitle = birthSubtitle(
+                    BabyEntity(
+                        id = id, name = name, dob = dob, birthTime = birthTime,
+                        birthWeightKg = weightKg, birthLengthCm = lengthCm,
+                        birthHeadCm = headCm, birthPlace = place,
+                    )
+                ),
+                icon = BIRTH_ICON,
             )
         )
         db.eventDao().insert(
             EventEntity(
                 babyId = id, title = "$name's birthday", subtitle = Fmt.dateFull(dob.plusYears(1)),
-                date = dob.plusYears(1), icon = "cake", annual = true,
+                date = dob.plusYears(1), icon = BIRTHDAY_ICON, annual = true,
             )
         )
         seedReminders()
@@ -844,7 +852,106 @@ class KilkariRepository(
         settingsStore.setOnboarded(true)
     }
 
-    suspend fun updateBaby(row: BabyEntity) = db.babyDao().update(row)
+    /**
+     * Saves edited child details, moving the rows that were derived from them.
+     *
+     * [createBaby] fans the name and date of birth out into an arrival entry on the timeline,
+     * a first birthday and the growth chart's first point. Rewriting only the baby row left
+     * those behind, so a corrected date of birth kept the old birthday — and because the events
+     * screen rolls an annual date forward to its next occurrence, announced it as due today.
+     *
+     * Each row is looked for where [createBaby] put it, against the details being replaced.
+     * Anything that no longer matches is something the parent has changed by hand, and is left
+     * alone rather than dragged along or overwritten.
+     */
+    suspend fun updateBabyDetails(updated: BabyEntity) {
+        val previous = db.babyDao().get()
+        db.babyDao().update(updated)
+        if (previous == null || previous == updated) return
+
+        db.timelineDao().allForExport(updated.id)
+            .firstOrNull { it.icon == BIRTH_ICON && it.date == previous.dob }
+            ?.let { row ->
+                db.timelineDao().update(
+                    row.copy(
+                        date = updated.dob,
+                        title = if (row.title == arrivalTitle(previous)) arrivalTitle(updated) else row.title,
+                        subtitle = if (row.subtitle == birthSubtitle(previous)) {
+                            birthSubtitle(updated)
+                        } else {
+                            row.subtitle
+                        },
+                    )
+                )
+            }
+
+        db.eventDao().allForExport(updated.id)
+            .firstOrNull { it.annual && it.icon == BIRTHDAY_ICON && it.date == previous.dob.plusYears(1) }
+            ?.let { row ->
+                val birthday = updated.dob.plusYears(1)
+                db.eventDao().update(
+                    row.copy(
+                        title = if (row.title == birthdayTitle(previous)) birthdayTitle(updated) else row.title,
+                        subtitle = Fmt.dateFull(birthday),
+                        date = birthday,
+                    )
+                )
+            }
+
+        syncBirthMeasurement(previous, updated)
+    }
+
+    private fun arrivalTitle(baby: BabyEntity) = "${baby.name} arrived"
+
+    private fun birthdayTitle(baby: BabyEntity) = "${baby.name}'s birthday"
+
+    /** The line under the arrival entry: whatever of the birth details was given. */
+    private fun birthSubtitle(baby: BabyEntity) = listOfNotNull(
+        baby.birthTime?.let { Fmt.time(it) },
+        baby.birthWeightKg?.let { Fmt.weight(it) },
+        baby.birthLengthCm?.let { Fmt.length(it) },
+        baby.birthPlace,
+    ).joinToString(" · ")
+
+    /**
+     * Keeps the growth chart's first point in step with the birth measurements, which the edit
+     * sheet offers and which otherwise reached nothing. Clearing them all removes the point
+     * instead of leaving an empty one behind.
+     *
+     * Only the point this code wrote is touched — same date and same numbers as the details
+     * being replaced — so a measurement the parent recorded on the birthday itself survives.
+     */
+    private suspend fun syncBirthMeasurement(previous: BabyEntity, updated: BabyEntity) {
+        val hasAny = updated.birthWeightKg != null ||
+            updated.birthLengthCm != null ||
+            updated.birthHeadCm != null
+        val ours = db.growthDao().allForExport(updated.id).firstOrNull {
+            it.date == previous.dob &&
+                it.weightKg == previous.birthWeightKg &&
+                it.lengthCm == previous.birthLengthCm &&
+                it.headCm == previous.birthHeadCm
+        }
+        when {
+            ours != null && !hasAny -> db.growthDao().delete(ours)
+            ours != null -> db.growthDao().update(
+                ours.copy(
+                    date = updated.dob,
+                    weightKg = updated.birthWeightKg,
+                    lengthCm = updated.birthLengthCm,
+                    headCm = updated.birthHeadCm,
+                )
+            )
+            hasAny -> db.growthDao().upsert(
+                GrowthEntity(
+                    babyId = updated.id,
+                    date = updated.dob,
+                    weightKg = updated.birthWeightKg,
+                    lengthCm = updated.birthLengthCm,
+                    headCm = updated.birthHeadCm,
+                )
+            )
+        }
+    }
 
     suspend fun setCurrency(c: Currency) = settingsStore.setCurrency(c)
     suspend fun setSchedule(id: String) = settingsStore.setSchedule(id)

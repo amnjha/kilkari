@@ -264,6 +264,9 @@ interface EventDao {
     @Insert
     suspend fun insert(row: EventEntity): Long
 
+    @Update
+    suspend fun update(row: EventEntity)
+
     @Delete
     suspend fun delete(row: EventEntity)
 }
