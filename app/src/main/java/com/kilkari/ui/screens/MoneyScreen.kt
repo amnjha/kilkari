@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,6 +31,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -65,6 +68,7 @@ import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 
 private enum class MoneySheet { EXPENSE, FUND_TXN, FUND_PLAN, INVESTMENT }
 
@@ -297,25 +301,47 @@ private fun ColumnScope.SpendingView(
 ) {
     val expenses by vm.expenses.collectAsStateWithLifecycle()
     val filter by vm.moneyFilter.collectAsStateWithLifecycle()
+    val allTime by vm.moneyAllTime.collectAsStateWithLifecycle()
 
-    val month = YearMonth.now()
-    val thisMonth = expenses.filter { YearMonth.from(it.date) == month }
-    val medical = thisMonth.filter { it.category == ExpenseCategory.MEDICAL.key }.sumOf { it.amountInr }
-    val general = thisMonth.filter { it.category == ExpenseCategory.GENERAL.key }.sumOf { it.amountInr }
+    val thisMonth = YearMonth.now()
+    val earliest = expenses.minOfOrNull { YearMonth.from(it.date) } ?: thisMonth
+
+    val counted = if (allTime) expenses else expenses.filter { YearMonth.from(it.date) == thisMonth }
+    val medical = counted.filter { it.category == ExpenseCategory.MEDICAL.key }.sumOf { it.amountInr }
+    val general = counted.filter { it.category == ExpenseCategory.GENERAL.key }.sumOf { it.amountInr }
     val total = medical + general
     val medFraction = if (total == 0L) 0f else medical.toFloat() / total
+
+    // The category chips narrow the list; the headline above keeps counting everything, so the
+    // two numbers on screen never look like they disagree about the same month.
     val visible = expenses.filter { filter == null || it.category == filter?.key }
+    val byMonth = visible.groupBy { YearMonth.from(it.date) }
+    val current = byMonth[thisMonth].orEmpty()
+    val previousMonths = byMonth.keys.filter { it != thisMonth }.sortedDescending()
 
     KCard(corner = 20) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Column {
-                Text("Spent this month", fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
-                Text(
-                    Fmt.money(total, currency),
-                    fontFamily = Display, fontWeight = FontWeight.ExtraBold,
-                    fontSize = 32.sp, color = KC.Ink, letterSpacing = (-0.64).sp,
-                )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text(
+                        if (allTime) "Spent since you started" else "Spent this month",
+                        fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                    )
+                    Text(
+                        Fmt.money(total, currency),
+                        fontFamily = Display, fontWeight = FontWeight.ExtraBold,
+                        fontSize = 32.sp, color = KC.Ink, letterSpacing = (-0.64).sp,
+                    )
+                }
+                KChip(if (allTime) "This month" else "All time", false) {
+                    vm.setMoneyAllTime(!allTime)
+                }
             }
+            SpendFootnote(expenses, allTime, thisMonth, earliest, total, currency)
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -341,48 +367,46 @@ private fun ColumnScope.SpendingView(
         KChip("General", filter == ExpenseCategory.GENERAL) { vm.setMoneyFilter(ExpenseCategory.GENERAL) }
     }
 
+    SectionLabel("This month")
     KCard {
-        if (visible.isEmpty()) {
-            EmptyLine("No expenses yet. Tap + to add one.")
+        if (current.isEmpty()) {
+            EmptyLine(
+                if (expenses.isEmpty()) "No expenses yet. Tap + to add one."
+                else "Nothing this month."
+            )
         }
-        visible.forEachIndexed { i, expense ->
-            val isMedical = expense.category == ExpenseCategory.MEDICAL.key
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { onOpen(expense) }
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconBadge(
-                    expense.icon,
-                    if (isMedical) KC.Clay else KC.SeaMid,
-                    if (isMedical) KC.ClayBg else KC.SeaBg,
-                    size = 36, corner = 10, iconSize = 20,
-                )
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        expense.title, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp, color = KC.Ink,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        listOfNotNull(
-                            Fmt.date(expense.date),
-                            expense.vendor,
-                            if (expense.paidFromFund) fundName else null,
-                        ).joinToString(" · "),
-                        fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
+        current.forEachIndexed { i, expense ->
+            ExpenseRow(expense, currency, fundName) { onOpen(expense) }
+            if (i != current.lastIndex) Divider()
+        }
+    }
+
+    if (previousMonths.isNotEmpty()) {
+        // Collapsed by default: the point of the section is the monthly totals, and opening
+        // every month at once would bury them under a year of individual rows.
+        val expanded = remember { mutableStateMapOf<YearMonth, Boolean>() }
+
+        SectionLabel("Previous months")
+        KCard {
+            previousMonths.forEachIndexed { i, month ->
+                val items = byMonth.getValue(month)
+                val open = expanded[month] == true
+                MonthGroupHeader(
+                    month = month,
+                    total = items.sumOf { it.amountInr },
+                    count = items.size,
+                    expanded = open,
+                    currency = currency,
+                ) { expanded[month] = !open }
+
+                if (open) {
+                    items.forEach { expense ->
+                        Divider()
+                        ExpenseRow(expense, currency, fundName) { onOpen(expense) }
+                    }
                 }
-                Text(
-                    Fmt.money(expense.amountInr, currency),
-                    fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = KC.Ink,
-                )
+                if (i != previousMonths.lastIndex) Divider()
             }
-            if (i != visible.lastIndex) Divider()
         }
     }
 
@@ -393,6 +417,123 @@ private fun ColumnScope.SpendingView(
         )
     }
 }
+
+/**
+ * The line under the headline: across all time, how much of the total there is per month —
+ * the figure that says whether a large number is large or merely old. For a single month, what
+ * the month before came to, so the headline has something to be bigger or smaller than.
+ */
+@Composable
+private fun SpendFootnote(
+    expenses: List<ExpenseEntity>,
+    allTime: Boolean,
+    thisMonth: YearMonth,
+    earliest: YearMonth,
+    total: Long,
+    currency: Currency,
+) {
+    if (expenses.isEmpty()) return
+    val text = if (allTime) {
+        val months = ChronoUnit.MONTHS.between(earliest, thisMonth).toInt() + 1
+        "${expenses.size} ${Fmt.plural(expenses.size.toLong(), "expense")} over " +
+            "$months ${Fmt.plural(months.toLong(), "month")} · " +
+            "${Fmt.money(total / months, currency)} a month"
+    } else {
+        val previous = thisMonth.minusMonths(1)
+        val before = expenses.filter { YearMonth.from(it.date) == previous }.sumOf { it.amountInr }
+        "${Fmt.money(before, currency)} in ${Fmt.monthYear(previous)}"
+    }
+    Text(text, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
+}
+
+/** A past month: its total is the point, the expenses behind it are opened only on request. */
+@Composable
+private fun MonthGroupHeader(
+    month: YearMonth,
+    total: Long,
+    count: Int,
+    expanded: Boolean,
+    currency: Currency,
+    onToggle: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            KIcons[if (expanded) "expand_more" else "chevron_right"],
+            contentDescription = null,
+            tint = KC.Faint,
+            modifier = Modifier.size(20.dp),
+        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                Fmt.monthYear(month),
+                fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = KC.Ink,
+            )
+            Text(
+                "$count ${Fmt.plural(count.toLong(), "expense")}",
+                fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+            )
+        }
+        Text(
+            Fmt.money(total, currency),
+            fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = KC.Ink,
+        )
+    }
+}
+
+/** One expense, in whichever month's group it belongs to. */
+@Composable
+private fun ExpenseRow(
+    expense: ExpenseEntity,
+    currency: Currency,
+    fundName: String,
+    onOpen: () -> Unit,
+) {
+    val isMedical = expense.category == ExpenseCategory.MEDICAL.key
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpen)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconBadge(
+            expense.icon,
+            if (isMedical) KC.Clay else KC.SeaMid,
+            if (isMedical) KC.ClayBg else KC.SeaBg,
+            size = 36, corner = 10, iconSize = 20,
+        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                expense.title, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp, color = KC.Ink,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                listOfNotNull(
+                    Fmt.date(expense.date),
+                    expense.vendor,
+                    if (expense.paidFromFund) fundName else null,
+                ).joinToString(" · "),
+                fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(
+            Fmt.money(expense.amountInr, currency),
+            fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = KC.Ink,
+        )
+    }
+}
+
+
 
 // ── Fund ────────────────────────────────────────────────────────────────────
 

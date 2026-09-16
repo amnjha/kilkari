@@ -4,6 +4,7 @@ import java.text.NumberFormat
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.abs
@@ -12,6 +13,11 @@ import kotlin.math.roundToLong
 private val MONTHS = listOf(
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+)
+
+private val MONTH_NAMES = listOf(
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
 )
 
 private val DAYS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
@@ -43,6 +49,12 @@ object Fmt {
     }
 
     fun monthShort(d: LocalDate): String = MONTHS[d.monthValue - 1].uppercase(Locale.US)
+
+    /** "September" this year, "September 2025" otherwise — the Spending period heading. */
+    fun monthYear(m: YearMonth, today: LocalDate = LocalDate.now()): String {
+        val name = MONTH_NAMES[m.monthValue - 1]
+        return if (m.year == today.year) name else "$name ${m.year}"
+    }
 
     /** 12-hour clock, lowercase meridiem: "9:30 am". */
     fun time(t: LocalDateTime): String {

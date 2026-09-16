@@ -152,6 +152,16 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun setMoneyFilter(c: ExpenseCategory?) { _moneyFilter.value = c }
 
+    /**
+     * Whether the Spending headline totals every expense ever recorded rather than this month.
+     * Per-month figures live on the list's own month headings, so this is the one extra span
+     * the headline needs to offer.
+     */
+    private val _moneyAllTime = MutableStateFlow(false)
+    val moneyAllTime: StateFlow<Boolean> = _moneyAllTime.asStateFlow()
+
+    fun setMoneyAllTime(on: Boolean) { _moneyAllTime.value = on }
+
     // ── Fund & investments ──────────────────────────────────────────────────
 
     val fundTransactions: StateFlow<List<FundTxnEntity>> = repo.fundTransactions().state(emptyList())
