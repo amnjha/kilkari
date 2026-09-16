@@ -133,7 +133,42 @@ class KilkariRepository(
         }
     }
 
-    suspend fun deleteLog(entry: LogEntryEntity) = db.logDao().delete(entry)
+    /**
+     * Everything logged, newest first — the Log tab reads back beyond today through this so a
+     * back-dated entry does not become uncorrectable once the day rolls over.
+     */
+    fun recentLogs(limit: Int = 200): Flow<List<LogEntryEntity>> = forBaby { id ->
+        db.logDao().observeRecent(id, limit)
+    }
+
+    /**
+     * Saves a corrected entry. A medicine dose is mirrored in `medication_dose` so the Today
+     * tick knows about it, so moving one to another day has to move that tick with it.
+     */
+    suspend fun updateLog(entry: LogEntryEntity) {
+        val before = db.logDao().byId(entry.id) ?: return
+        db.logDao().update(entry)
+        clearMirroredDose(before)
+        if (entry.kind == LogKind.MEDICINE.key) {
+            entry.medicationId?.let {
+                db.medicationDao().upsertDose(
+                    MedicationDoseEntity(it, entry.startAt.toLocalDate(), entry.startAt)
+                )
+            }
+        }
+    }
+
+    suspend fun deleteLog(entry: LogEntryEntity) {
+        db.logDao().delete(entry)
+        clearMirroredDose(entry)
+    }
+
+    /** Drops the "taken" tick mirroring a medicine entry that has moved day or gone. */
+    private suspend fun clearMirroredDose(entry: LogEntryEntity) {
+        if (entry.kind != LogKind.MEDICINE.key) return
+        val medId = entry.medicationId ?: return
+        db.medicationDao().removeDose(medId, entry.startAt.toLocalDate())
+    }
 
     // ── Growth ──────────────────────────────────────────────────────────────
 
@@ -143,6 +178,43 @@ class KilkariRepository(
         val id = babyId() ?: return
         db.growthDao().upsert(GrowthEntity(babyId = id, date = date, weightKg = weightKg, lengthCm = lengthCm, headCm = headCm))
         db.logDao().insert(LogEntryEntity(babyId = id, kind = LogKind.GROWTH.key, startAt = date.atTime(9, 0)))
+    }
+
+    /**
+     * A measurement and the journal row announcing it are one entry as far as the parent is
+     * concerned, so they are corrected and dropped together. Callers pair them up by date.
+     */
+    suspend fun updateGrowth(
+        marker: LogEntryEntity?,
+        measurement: GrowthEntity?,
+        date: LocalDate,
+        weightKg: Double?,
+        lengthCm: Double?,
+        headCm: Double?,
+    ) {
+        val id = babyId() ?: return
+        if (measurement == null) {
+            db.growthDao().upsert(
+                GrowthEntity(
+                    babyId = id, date = date,
+                    weightKg = weightKg, lengthCm = lengthCm, headCm = headCm,
+                )
+            )
+        } else {
+            db.growthDao().update(
+                measurement.copy(
+                    date = date, weightKg = weightKg, lengthCm = lengthCm, headCm = headCm,
+                )
+            )
+        }
+        if (marker != null) {
+            db.logDao().update(marker.copy(startAt = date.atTime(marker.startAt.toLocalTime())))
+        }
+    }
+
+    suspend fun deleteGrowth(marker: LogEntryEntity?, measurement: GrowthEntity?) {
+        if (measurement != null) db.growthDao().delete(measurement)
+        if (marker != null) db.logDao().delete(marker)
     }
 
     // ── Teeth ───────────────────────────────────────────────────────────────
@@ -368,6 +440,33 @@ class KilkariRepository(
         )
     }
 
+    /** The icon follows the category, so it only moves when the category does. */
+    suspend fun updateExpense(
+        row: ExpenseEntity,
+        title: String,
+        vendor: String?,
+        category: ExpenseCategory,
+        amountInr: Long,
+        date: LocalDate,
+        paidFromFund: Boolean,
+    ) = db.expenseDao().update(
+        row.copy(
+            title = title,
+            vendor = vendor,
+            category = category.key,
+            amountInr = amountInr,
+            date = date,
+            paidFromFund = paidFromFund,
+            icon = if (category.key == row.category) {
+                row.icon
+            } else if (category == ExpenseCategory.MEDICAL) {
+                "medical_services"
+            } else {
+                "shopping_bag"
+            },
+        )
+    )
+
     suspend fun deleteExpense(row: ExpenseEntity) = db.expenseDao().delete(row)
 
     // ── Doctors ─────────────────────────────────────────────────────────────
@@ -407,6 +506,16 @@ class KilkariRepository(
             FundTxnEntity(babyId = id, kind = kind.key, amountInr = amountInr, date = date, note = note)
         )
     }
+
+    suspend fun updateFundTransaction(
+        row: FundTxnEntity,
+        kind: FundTxnKind,
+        amountInr: Long,
+        date: LocalDate,
+        note: String?,
+    ) = db.fundDao().update(
+        row.copy(kind = kind.key, amountInr = amountInr, date = date, note = note)
+    )
 
     suspend fun deleteFundTransaction(row: FundTxnEntity) = db.fundDao().delete(row)
 
@@ -475,6 +584,19 @@ class KilkariRepository(
         )
     }
 
+    /** Contributions are the invested total, so correcting one moves the fund balance with it. */
+    suspend fun updateContribution(
+        row: ContributionEntity,
+        amountInr: Long,
+        date: LocalDate,
+        paidFromFund: Boolean,
+    ) = db.investmentDao().updateContribution(
+        row.copy(amountInr = amountInr, date = date, paidFromFund = paidFromFund)
+    )
+
+    suspend fun deleteContribution(row: ContributionEntity) =
+        db.investmentDao().deleteContribution(row)
+
     suspend fun updateInvestmentValue(investmentId: Long, valueInr: Long, asOf: LocalDate) {
         val row = db.investmentDao().byId(investmentId) ?: return
         db.investmentDao().update(row.copy(currentValueInr = valueInr, valueAsOf = asOf))
@@ -500,6 +622,17 @@ class KilkariRepository(
         val id = babyId() ?: return
         db.timelineDao().insert(TimelineEntity(babyId = id, date = date, title = title, subtitle = subtitle, icon = icon, albumUrl = albumUrl))
     }
+
+    /** The icon is left alone: a birth or a vaccination keeps its own even when reworded. */
+    suspend fun updateTimelineEntry(
+        row: TimelineEntity,
+        date: LocalDate,
+        title: String,
+        subtitle: String,
+        albumUrl: String?,
+    ) = db.timelineDao().update(
+        row.copy(date = date, title = title, subtitle = subtitle, albumUrl = albumUrl)
+    )
 
     suspend fun deleteTimelineEntry(row: TimelineEntity) = db.timelineDao().delete(row)
 

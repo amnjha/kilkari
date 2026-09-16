@@ -26,6 +26,8 @@ import com.kilkari.ui.theme.Sans
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.kilkari.data.db.ExpenseEntity
+import com.kilkari.data.db.TimelineEntity
 import com.kilkari.domain.Currency
 import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.Fmt
@@ -36,20 +38,32 @@ import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.SheetField
 import java.time.LocalDate
 
+/**
+ * What was spent. With [existing] the same form reopens a spend already recorded, so a wrong
+ * amount or a wrongly categorised one can be put right instead of deleted and retyped.
+ */
 @Composable
 fun ColumnScope.ExpenseSheet(
     currency: Currency,
     fundName: String,
+    existing: ExpenseEntity? = null,
+    onDelete: (() -> Unit)? = null,
     onSave: (String, String?, ExpenseCategory, Double, LocalDate, Boolean) -> Unit,
 ) {
-    var categoryIndex by remember { mutableIntStateOf(0) }
-    var amount by remember { mutableStateOf("") }
-    var title by remember { mutableStateOf("") }
-    var vendor by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now()) }
-    var paidFromFund by remember { mutableStateOf(true) }
+    var categoryIndex by remember(existing) {
+        mutableIntStateOf(
+            existing?.let { ExpenseCategory.entries.indexOf(ExpenseCategory.of(it.category)) } ?: 0
+        )
+    }
+    var amount by remember(existing) {
+        mutableStateOf(existing?.let { Fmt.plain(it.amountInr, currency) } ?: "")
+    }
+    var title by remember(existing) { mutableStateOf(existing?.title.orEmpty()) }
+    var vendor by remember(existing) { mutableStateOf(existing?.vendor.orEmpty()) }
+    var date by remember(existing) { mutableStateOf(existing?.date ?: LocalDate.now()) }
+    var paidFromFund by remember(existing) { mutableStateOf(existing?.paidFromFund ?: true) }
 
-    SheetTitle("Add expense")
+    SheetTitle(if (existing == null) "Add expense" else "Edit expense")
     KSegmented(ExpenseCategory.entries.map { it.label }, categoryIndex) { categoryIndex = it }
     SheetField(
         "Amount (${currency.symbol})", amount, "0", big = true,
@@ -78,7 +92,10 @@ fun ColumnScope.ExpenseSheet(
     }
 
     val value = amount.toDoubleOrNull()
-    PrimaryButton("Save expense", enabled = value != null && value > 0) {
+    PrimaryButton(
+        if (existing == null) "Save expense" else "Save changes",
+        enabled = value != null && value > 0,
+    ) {
         val category = ExpenseCategory.entries[categoryIndex]
         onSave(
             title.trim().ifBlank { if (category == ExpenseCategory.MEDICAL) "Medical expense" else "General expense" },
@@ -89,6 +106,7 @@ fun ColumnScope.ExpenseSheet(
             paidFromFund,
         )
     }
+    if (onDelete != null) SheetDelete("Delete this expense", onDelete)
 }
 
 private val MILESTONE_CHIPS = listOf(
@@ -96,19 +114,36 @@ private val MILESTONE_CHIPS = listOf(
     "Festival", "Family visit", "Other",
 )
 
+/**
+ * A moment on the timeline. Reopening [existing] falls back to "Other" with the title typed out
+ * when it is not one of the chips — which is the case for anything the app recorded itself.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ColumnScope.MilestoneSheet(
     earliest: LocalDate? = null,
+    existing: TimelineEntity? = null,
+    onDelete: (() -> Unit)? = null,
     onSave: (String, String, LocalDate, String?) -> Unit,
 ) {
-    var chip by remember { mutableStateOf(MILESTONE_CHIPS.first()) }
-    var custom by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
-    var album by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now()) }
+    val recorded = existing?.title
+    var chip by remember(existing) {
+        mutableStateOf(
+            when {
+                recorded == null -> MILESTONE_CHIPS.first()
+                recorded in MILESTONE_CHIPS -> recorded
+                else -> "Other"
+            }
+        )
+    }
+    var custom by remember(existing) {
+        mutableStateOf(if (recorded != null && recorded !in MILESTONE_CHIPS) recorded else "")
+    }
+    var note by remember(existing) { mutableStateOf(existing?.subtitle.orEmpty()) }
+    var album by remember(existing) { mutableStateOf(existing?.albumUrl.orEmpty()) }
+    var date by remember(existing) { mutableStateOf(existing?.date ?: LocalDate.now()) }
 
-    SheetTitle("Add a moment")
+    SheetTitle(if (existing == null) "Add a moment" else "Edit this moment")
     FlowRow(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -124,9 +159,13 @@ fun ColumnScope.MilestoneSheet(
     SheetField("Google Photos album", album, "Paste a link") { album = it }
 
     val title = if (chip == "Other") custom.trim() else chip
-    PrimaryButton("Add to timeline", enabled = title.isNotBlank()) {
+    PrimaryButton(
+        if (existing == null) "Add to timeline" else "Save changes",
+        enabled = title.isNotBlank(),
+    ) {
         onSave(title, note.trim(), date, album.trim().ifBlank { null })
     }
+    if (onDelete != null) SheetDelete("Delete this moment", onDelete)
 }
 
 @Composable

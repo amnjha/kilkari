@@ -1,9 +1,11 @@
 package com.kilkari.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,7 +31,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kilkari.data.db.GrowthEntity
 import com.kilkari.data.db.LogEntryEntity
+import com.kilkari.data.db.MedicationEntity
 import com.kilkari.domain.BreastSide
 import com.kilkari.domain.DiaperKind
 import com.kilkari.domain.FeedType
@@ -45,11 +49,13 @@ import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.sheets.DiaperSheet
 import com.kilkari.ui.sheets.FeedSheet
 import com.kilkari.ui.sheets.GrowthSheet
+import com.kilkari.ui.sheets.MedicineDoseSheet
 import com.kilkari.ui.sheets.MedicineSheet
 import com.kilkari.ui.sheets.SleepSheet
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 /** Six quick-log tiles over the day's entries. Tapping a tile opens its sheet. */
@@ -64,9 +70,21 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
     val medications by vm.medications.collectAsStateWithLifecycle()
     val baby by vm.baby.collectAsStateWithLifecycle()
 
+    val recentLogs by vm.recentLogs.collectAsStateWithLifecycle()
+
     var sheet by remember { mutableStateOf<LogKind?>(null) }
 
+    /** Non-null while an entry already saved is open for correction. */
+    var editing by remember { mutableStateOf<LogEntryEntity?>(null) }
+
     val latestGrowth = growth.lastOrNull()
+    val today = LocalDate.now()
+    val earlier = recentLogs.filter { it.startAt.toLocalDate() != today }.take(EARLIER_SHOWN)
+
+    /** Teeth live on their own screen, so their rows point there rather than at a sheet. */
+    fun open(entry: LogEntryEntity) {
+        if (LogKind.of(entry.kind) == LogKind.TOOTH) go.push(Routes.TEETH) else editing = entry
+    }
 
     Box(Modifier.fillMaxSize()) {
         Column(
@@ -80,7 +98,7 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Log", style = ScreenTitle, color = KC.Ink)
                 Text(
-                    "Tap a tile to add an entry.",
+                    "Tap a tile to add an entry, or an entry below to change it.",
                     fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
                 )
             }
@@ -131,23 +149,19 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
                     )
                 }
                 todayLogs.forEachIndexed { i, entry ->
-                    val spec = tileSpec(LogKind.of(entry.kind))
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(KIcons[spec.icon], null, tint = spec.fg, modifier = Modifier.size(20.dp))
-                        Text(
-                            entryText(entry),
-                            modifier = Modifier.weight(1f),
-                            fontFamily = Sans, fontSize = 14.sp, color = KC.Ink,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(Fmt.time(entry.startAt), fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
-                    }
-                    if (i != todayLogs.lastIndex) {
-                        Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Divider))
+                    LogEntryRow(entry, Fmt.time(entry.startAt)) { open(entry) }
+                    if (i != todayLogs.lastIndex) RowDivider()
+                }
+            }
+
+            // Back-dated entries drop off "today" the moment the day rolls over, so they are
+            // listed here too rather than becoming impossible to correct.
+            if (earlier.isNotEmpty()) {
+                SectionLabel("Earlier", Modifier.padding(top = 4.dp))
+                KCard {
+                    earlier.forEachIndexed { i, entry ->
+                        LogEntryRow(entry, Fmt.date(entry.startAt.toLocalDate())) { open(entry) }
+                        if (i != earlier.lastIndex) RowDivider()
                     }
                 }
             }
@@ -182,7 +196,111 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
                 else -> Unit
             }
         }
+
+        val edit = editing
+        KSheet(edit != null, onDismiss = { editing = null }) {
+            if (edit != null) EditEntrySheet(vm, edit, baby?.dob, medications, growth) { editing = null }
+        }
     }
+}
+
+/**
+ * Reopens one saved entry in the sheet that created it. Growth is the odd one out: the parent
+ * saw a single action, but it wrote a measurement plus the journal row announcing it, and the
+ * two are paired back up by date here.
+ */
+@Composable
+private fun ColumnScope.EditEntrySheet(
+    vm: KilkariViewModel,
+    entry: LogEntryEntity,
+    dob: LocalDate?,
+    medications: List<MedicationEntity>,
+    growth: List<GrowthEntity>,
+    onClose: () -> Unit,
+) {
+    when (LogKind.of(entry.kind)) {
+        LogKind.FEED -> FeedSheet(
+            existing = entry,
+            onDelete = { vm.deleteLog(entry); onClose() },
+        ) { type: FeedType, side: BreastSide?, amount: Int, at: LocalDateTime ->
+            vm.updateLog(
+                entry.copy(feedType = type.key, side = side?.key, amount = amount, startAt = at)
+            )
+            onClose()
+        }
+        LogKind.SLEEP -> SleepSheet(
+            asleepSince = null,
+            existing = entry,
+            onDelete = { vm.deleteLog(entry); onClose() },
+            onStart = { place, from, to ->
+                vm.updateLog(entry.copy(place = place, startAt = from, endAt = to))
+                onClose()
+            },
+            onEnd = { onClose() },
+        )
+        LogKind.DIAPER -> DiaperSheet(
+            existing = entry,
+            onDelete = { vm.deleteLog(entry); onClose() },
+        ) { kind: DiaperKind, at: LocalDateTime ->
+            vm.updateLog(entry.copy(diaperKind = kind.key, startAt = at))
+            onClose()
+        }
+        LogKind.MEDICINE -> MedicineDoseSheet(
+            entry = entry,
+            earliest = medications.firstOrNull { it.id == entry.medicationId }?.startDate ?: dob,
+            onDelete = { vm.deleteLog(entry); onClose() },
+        ) { at ->
+            vm.updateLog(entry.copy(startAt = at))
+            onClose()
+        }
+        LogKind.GROWTH -> {
+            val measurement = growth.lastOrNull { it.date == entry.startAt.toLocalDate() }
+            val latest = growth.lastOrNull()
+            GrowthSheet(
+                weightHint = latest?.weightKg?.let(Fmt::trimNum) ?: "3.9",
+                lengthHint = latest?.lengthCm?.let(Fmt::trimNum) ?: "52",
+                headHint = latest?.headCm?.let(Fmt::trimNum) ?: "36",
+                earliest = dob,
+                existing = measurement,
+                onDelete = { vm.deleteGrowth(entry, measurement); onClose() },
+            ) { date, w, l, h ->
+                vm.updateGrowth(entry, measurement, date, w, l, h)
+                onClose()
+            }
+        }
+        LogKind.TOOTH -> Unit
+    }
+}
+
+/** How far back the "Earlier" list reaches — enough to correct a slip, not a whole history. */
+private const val EARLIER_SHOWN = 30
+
+/** One journal line. [trailing] carries the time for today's rows and the date for older ones. */
+@Composable
+private fun LogEntryRow(entry: LogEntryEntity, trailing: String, onClick: () -> Unit) {
+    val spec = tileSpec(LogKind.of(entry.kind))
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(KIcons[spec.icon], null, tint = spec.fg, modifier = Modifier.size(20.dp))
+        Text(
+            entryText(entry),
+            modifier = Modifier.weight(1f),
+            fontFamily = Sans, fontSize = 14.sp, color = KC.Ink,
+            maxLines = 2, overflow = TextOverflow.Ellipsis,
+        )
+        Text(trailing, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
+    }
+}
+
+@Composable
+private fun RowDivider() {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Divider))
 }
 
 @Composable

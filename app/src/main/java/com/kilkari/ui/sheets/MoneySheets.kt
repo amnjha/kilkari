@@ -1,5 +1,6 @@
 package com.kilkari.ui.sheets
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,12 +21,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kilkari.data.db.ContributionEntity
+import com.kilkari.data.db.FundTxnEntity
 import com.kilkari.domain.Currency
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.FundTxnKind
 import com.kilkari.domain.InvestmentKind
 import com.kilkari.domain.InvestmentSummary
 import com.kilkari.ui.components.KChip
@@ -66,24 +72,43 @@ private fun FromFundToggle(fundName: String, checked: Boolean, onToggle: () -> U
     }
 }
 
-/** Money in or out of the savings account, independent of any expense. */
+/**
+ * Money in or out of the savings account, independent of any expense. With [existing] the same
+ * form reopens a movement already recorded — including switching it between the two directions.
+ */
 @Composable
 fun ColumnScope.FundTxnSheet(
     currency: Currency,
     fundName: String,
     suggestedDeposit: Long,
+    existing: FundTxnEntity? = null,
+    onDelete: (() -> Unit)? = null,
     onSave: (deposit: Boolean, amount: Double, date: LocalDate, note: String?) -> Unit,
 ) {
-    var kindIndex by remember { mutableIntStateOf(0) }
-    var amount by remember {
-        mutableStateOf(if (suggestedDeposit > 0) Fmt.plain(suggestedDeposit, currency) else "")
+    var kindIndex by remember(existing) {
+        mutableIntStateOf(if (FundTxnKind.of(existing?.kind) == FundTxnKind.WITHDRAWAL) 1 else 0)
     }
-    var note by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now()) }
+    var amount by remember(existing) {
+        mutableStateOf(
+            when {
+                existing != null -> Fmt.plain(existing.amountInr, currency)
+                suggestedDeposit > 0 -> Fmt.plain(suggestedDeposit, currency)
+                else -> ""
+            }
+        )
+    }
+    var note by remember(existing) { mutableStateOf(existing?.note.orEmpty()) }
+    var date by remember(existing) { mutableStateOf(existing?.date ?: LocalDate.now()) }
 
     val deposit = kindIndex == 0
 
-    SheetTitle(if (deposit) "Add to $fundName" else "Take out of $fundName")
+    SheetTitle(
+        when {
+            existing != null -> if (deposit) "Edit deposit" else "Edit withdrawal"
+            deposit -> "Add to $fundName"
+            else -> "Take out of $fundName"
+        }
+    )
     KSegmented(listOf("Deposit", "Withdrawal"), kindIndex) { kindIndex = it }
     SheetField("Amount (${currency.symbol})", amount, "0", decimal, big = true) { amount = it }
     SheetField("Note", note, if (deposit) "Monthly top-up" else "What it was for") { note = it }
@@ -91,11 +116,49 @@ fun ColumnScope.FundTxnSheet(
 
     val value = amount.toDoubleOrNull()
     PrimaryButton(
-        if (deposit) "Record deposit" else "Record withdrawal",
+        when {
+            existing != null -> "Save changes"
+            deposit -> "Record deposit"
+            else -> "Record withdrawal"
+        },
         enabled = value != null && value > 0,
     ) {
         onSave(deposit, value!!, date, note.trim().ifBlank { null })
     }
+    if (onDelete != null) SheetDelete("Delete this entry", onDelete)
+}
+
+/**
+ * A contribution already recorded against a holding. Correcting one moves both the invested
+ * total and — where it came out of the fund — the fund balance, since neither is mirrored.
+ */
+@Composable
+fun ColumnScope.ContributionSheet(
+    contribution: ContributionEntity,
+    investmentName: String,
+    currency: Currency,
+    fundName: String,
+    earliest: LocalDate? = null,
+    onDelete: () -> Unit,
+    onSave: (amount: Double, date: LocalDate, paidFromFund: Boolean) -> Unit,
+) {
+    var amount by remember(contribution) {
+        mutableStateOf(Fmt.plain(contribution.amountInr, currency))
+    }
+    var date by remember(contribution) { mutableStateOf(contribution.date) }
+    var paidFromFund by remember(contribution) { mutableStateOf(contribution.paidFromFund) }
+
+    SheetTitle("Edit contribution")
+    SheetHint(investmentName)
+    SheetField("Amount (${currency.symbol})", amount, "0", decimal, big = true) { amount = it }
+    MovementDateField("Paid on", date, earliest = earliest) { date = it }
+    FromFundToggle(fundName, paidFromFund) { paidFromFund = !paidFromFund }
+
+    val value = amount.toDoubleOrNull()
+    PrimaryButton("Save changes", enabled = value != null && value > 0) {
+        onSave(value!!, date, paidFromFund)
+    }
+    SheetDelete("Delete this contribution", onDelete)
 }
 
 /** The standing monthly top-up: how much, on which day, and what to call the account. */
@@ -204,14 +267,20 @@ fun ColumnScope.InvestmentSheet(
     }
 }
 
-/** Actions on an existing holding: log an instalment, restate its value, or close it. */
+/**
+ * Actions on an existing holding: log an instalment, restate its value, or close it. The
+ * contribution ledger is listed because it *is* the invested total — a mistyped instalment is
+ * corrected by opening its row, not by restating the value on top of it.
+ */
 @Composable
 fun ColumnScope.InvestmentDetailSheet(
     investment: InvestmentSummary,
     currency: Currency,
     fundName: String,
+    contributions: List<ContributionEntity> = emptyList(),
     onContribute: (amount: Double, date: LocalDate, paidFromFund: Boolean) -> Unit,
     onUpdateValue: (value: Double, asOf: LocalDate) -> Unit,
+    onEditContribution: (ContributionEntity) -> Unit = {},
     onSetActive: (Boolean) -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -236,6 +305,17 @@ fun ColumnScope.InvestmentDetailSheet(
     investment.currentValueInr?.let { SheetStatic("Current value", Fmt.money(it, currency)) }
     investment.maturityValueInr?.let { SheetStatic("At maturity", Fmt.money(it, currency)) }
     investment.maturityDate?.let { SheetStatic("Matures", Fmt.dateFull(it)) }
+
+    if (contributions.isNotEmpty()) {
+        val shown = contributions.take(CONTRIBUTIONS_SHOWN)
+        SheetHint("Contributions — tap one to change it")
+        shown.forEach { row ->
+            ContributionRow(row, currency, fundName) { onEditContribution(row) }
+        }
+        if (contributions.size > shown.size) {
+            SheetHint("Showing the latest ${shown.size} of ${contributions.size}.")
+        }
+    }
 
     SheetField("Add contribution (${currency.symbol})", amount, "0", decimal, big = true) { amount = it }
     MovementDateField("Paid on", contributedOn, earliest = investment.startDate) { contributedOn = it }
@@ -267,6 +347,41 @@ fun ColumnScope.InvestmentDetailSheet(
                 .clickable(onClick = onDelete)
                 .padding(vertical = 8.dp),
             fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = KC.Danger,
+        )
+    }
+}
+
+/** How much of a long contribution ledger a sheet shows before it stops being readable. */
+private const val CONTRIBUTIONS_SHOWN = 12
+
+/** One line of a holding's contribution ledger; tapping it opens that entry for editing. */
+@Composable
+private fun ContributionRow(
+    contribution: ContributionEntity,
+    currency: Currency,
+    fundName: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(KC.Screen)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            listOfNotNull(
+                Fmt.date(contribution.date),
+                if (contribution.paidFromFund) fundName else null,
+            ).joinToString(" · "),
+            fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
+        )
+        Text(
+            Fmt.money(contribution.amountInr, currency),
+            fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = KC.Ink,
         )
     }
 }

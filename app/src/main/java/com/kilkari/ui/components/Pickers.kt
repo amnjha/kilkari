@@ -125,9 +125,13 @@ class MomentState(initial: LocalDateTime) {
     val value: LocalDateTime get() = date.atTime(minuteOfDay / 60, minuteOfDay % 60)
 }
 
+/**
+ * [key] re-seeds the state — pass the entry a sheet is editing so reopening it on a different
+ * row starts from that row's date and time rather than the previous one's.
+ */
 @Composable
-fun rememberMoment(initial: LocalDateTime = LocalDateTime.now()): MomentState =
-    remember { MomentState(initial) }
+fun rememberMoment(initial: LocalDateTime = LocalDateTime.now(), key: Any? = null): MomentState =
+    remember(key) { MomentState(initial) }
 
 /**
  * The date/time pair every logging sheet carries. Dates read back as "Today, 20 Aug" so a

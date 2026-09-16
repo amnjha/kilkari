@@ -1,13 +1,10 @@
 package com.kilkari.ui.sheets
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -119,15 +116,5 @@ fun ColumnScope.ReminderSheet(
         )
     }
 
-    if (onDelete != null) {
-        Row(
-            Modifier.fillMaxWidth().clickable(onClick = onDelete).padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                "Delete reminder",
-                fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = KC.Danger,
-            )
-        }
-    }
+    if (onDelete != null) SheetDelete("Delete reminder", onDelete)
 }

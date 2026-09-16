@@ -37,6 +37,17 @@ days late, so the chart was otherwise a record of when someone looked. A back-da
 not tick off a reminder whose occurrence it predates: last week's weigh-in does not clear this
 week's prompt.
 
+**Nothing is written in stone either.** Every journal entry and every money entry can be
+reopened from the list it appears in — a feed, a nap, a diaper, a dose, a measurement, an
+expense, a fund deposit or withdrawal, an investment contribution, a moment on the timeline —
+and corrected or removed in the same sheet that recorded it. The Log tab lists what was filed
+against an earlier day alongside today's entries, so a back-dated entry does not become
+uncorrectable once the day rolls over. On the Money tab a fund ledger line opens whatever
+produced it, whether that was a deposit, an expense or an instalment, and a holding lists its
+contributions so a mistyped one is fixed rather than papered over with a restated value.
+Because balances and totals are derived rather than mirrored, a corrected amount moves the fund
+balance and the invested total with it.
+
 **Vaccination schedules** are generated from the baby's date of birth against one of four
 published schedules — IAP (India private), UIP (India government), WHO, or CDC. Changing the
 schedule regenerates due dates; doses already recorded stay marked.
@@ -174,8 +185,9 @@ Nothing leaves the device unless you export it.
   metric-only, so switching it currently changes only the label.
 - Growth percentile curves. The design shows "55th pct" copy; the app charts raw weights
   without WHO reference data.
-- Editing existing entries — the child's details and custom reminders can be edited; most other
-  screens support add and delete only.
+- Editing existing entries — journal and money entries, the child's details, custom reminders
+  and recorded teeth can all be edited. Appointments, filed documents, photo albums, birthdays
+  and recorded vaccine doses still support add and delete only.
 - Catch-up runs at onboarding only. Individual entries can be back-dated from their own sheets,
   but there is no way to bulk-backfill a whole schedule later from Settings.
 - The fund assumes a single account. Multiple accounts, transfers between them, and reconciling

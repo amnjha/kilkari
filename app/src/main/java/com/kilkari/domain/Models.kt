@@ -161,6 +161,8 @@ enum class FundTxnKind(val key: String, val label: String) {
 /** One line in the fund ledger, whatever its origin. */
 data class FundLedgerRow(
     val id: String,
+    /** Row id of the deposit, expense or contribution behind the line, so it can be opened. */
+    val sourceId: Long,
     val date: LocalDate,
     val title: String,
     val subtitle: String,

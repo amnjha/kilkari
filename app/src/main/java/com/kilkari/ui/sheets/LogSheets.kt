@@ -20,6 +20,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kilkari.data.db.GrowthEntity
+import com.kilkari.data.db.LogEntryEntity
 import com.kilkari.data.db.MedicationEntity
 import com.kilkari.domain.BreastSide
 import com.kilkari.domain.DiaperKind
@@ -51,19 +53,48 @@ fun SheetHint(text: String) {
     Text(text, fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
 }
 
-/** Log a feed — breast (minutes + side), bottle (ml) or solids (g). */
+/** The destructive footer an editable sheet offers once it has opened an existing entry. */
 @Composable
-fun ColumnScope.FeedSheet(onSave: (FeedType, BreastSide?, Int, LocalDateTime) -> Unit) {
-    var typeIndex by remember { mutableIntStateOf(0) }
-    val moment = rememberMoment()
-    var side by remember { mutableStateOf(BreastSide.LEFT) }
-    var minutes by remember { mutableIntStateOf(15) }
-    var millilitres by remember { mutableIntStateOf(60) }
-    var grams by remember { mutableIntStateOf(15) }
+fun SheetDelete(label: String, onDelete: () -> Unit) {
+    Text(
+        label,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onDelete)
+            .padding(vertical = 8.dp),
+        fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
+        color = KC.Danger, textAlign = TextAlign.Center,
+    )
+}
+
+/**
+ * Log a feed — breast (minutes + side), bottle (ml) or solids (g). With [existing] the same
+ * form reopens the entry it was saved from, so a wrong amount or time can be corrected.
+ */
+@Composable
+fun ColumnScope.FeedSheet(
+    existing: LogEntryEntity? = null,
+    onDelete: (() -> Unit)? = null,
+    onSave: (FeedType, BreastSide?, Int, LocalDateTime) -> Unit,
+) {
+    val logged = FeedType.of(existing?.feedType)
+    var typeIndex by remember(existing) { mutableIntStateOf(FeedType.entries.indexOf(logged)) }
+    val moment = rememberMoment(existing?.startAt ?: LocalDateTime.now(), key = existing)
+    var side by remember(existing) {
+        mutableStateOf(BreastSide.entries.firstOrNull { it.key == existing?.side } ?: BreastSide.LEFT)
+    }
+    // One column holds the amount for all three kinds, so it seeds only the kind the entry was
+    // logged as — switching kind in the sheet still offers that kind's usual starting point.
+    fun seed(of: FeedType, fallback: Int) =
+        if (logged == of) (existing?.amount ?: fallback) else fallback
+
+    var minutes by remember(existing) { mutableIntStateOf(seed(FeedType.BREAST, 15)) }
+    var millilitres by remember(existing) { mutableIntStateOf(seed(FeedType.BOTTLE, 60)) }
+    var grams by remember(existing) { mutableIntStateOf(seed(FeedType.SOLID, 15)) }
 
     val type = FeedType.entries[typeIndex]
 
-    SheetTitle("Log a feed")
+    SheetTitle(if (existing == null) "Log a feed" else "Edit feed")
     KSegmented(FeedType.entries.map { it.label }, typeIndex) { typeIndex = it }
 
     if (type == FeedType.BREAST) {
@@ -81,7 +112,7 @@ fun ColumnScope.FeedSheet(onSave: (FeedType, BreastSide?, Int, LocalDateTime) ->
     }
 
     MomentFields(moment, timeLabel = "Started")
-    PrimaryButton("Save feed") {
+    PrimaryButton(if (existing == null) "Save feed" else "Save changes") {
         val amount = when (type) {
             FeedType.BREAST -> minutes
             FeedType.BOTTLE -> millilitres
@@ -89,30 +120,37 @@ fun ColumnScope.FeedSheet(onSave: (FeedType, BreastSide?, Int, LocalDateTime) ->
         }
         onSave(type, if (type == FeedType.BREAST) side else null, amount, moment.value)
     }
+    if (onDelete != null) SheetDelete("Delete this feed", onDelete)
 }
 
 /**
  * Start or end a nap. [asleepSince] is non-null while a sleep is in progress.
  *
  * A nap that is already over can be entered in one go: pick when it started and switch to
- * "Already woke up" to give the end, rather than having to be at the cot for both taps.
+ * "Already woke up" to give the end, rather than having to be at the cot for both taps. That
+ * same form edits [existing], which is how a nap whose ends were guessed gets corrected — so
+ * an entry being edited takes precedence over any nap currently running.
  */
 @Composable
 fun ColumnScope.SleepSheet(
     asleepSince: LocalDateTime?,
+    existing: LogEntryEntity? = null,
+    onDelete: (() -> Unit)? = null,
     onStart: (place: String?, from: LocalDateTime, to: LocalDateTime?) -> Unit,
     onEnd: (LocalDateTime) -> Unit,
 ) {
-    var place by remember { mutableStateOf("Bassinet") }
+    var place by remember(existing) { mutableStateOf(existing?.place ?: "Bassinet") }
 
-    if (asleepSince == null) {
-        val start = rememberMoment()
-        var endedIndex by remember { mutableIntStateOf(0) }
-        var endMinute by remember { mutableIntStateOf(start.minuteOfDay) }
+    if (existing != null || asleepSince == null) {
+        val start = rememberMoment(existing?.startAt ?: LocalDateTime.now(), key = existing)
+        var endedIndex by remember(existing) { mutableIntStateOf(if (existing?.endAt == null) 0 else 1) }
+        var endMinute by remember(existing) {
+            mutableIntStateOf(existing?.endAt?.let { it.hour * 60 + it.minute } ?: start.minuteOfDay)
+        }
         val ended = endedIndex == 1
         val endAt = endOfNap(start.value, endMinute)
 
-        SheetTitle("Log a nap")
+        SheetTitle(if (existing == null) "Log a nap" else "Edit nap")
         SheetField("Where", place, "Bassinet") { place = it }
         MomentFields(start, timeLabel = "Fell asleep")
         KSegmented(listOf("Still asleep", "Already woke up"), endedIndex) { endedIndex = it }
@@ -120,9 +158,16 @@ fun ColumnScope.SleepSheet(
             KTimeField("Woke up", endMinute) { endMinute = it }
             SheetStatic("Slept for", Fmt.elapsed(start.value, endAt))
         }
-        PrimaryButton(if (ended) "Save nap" else "Start sleep") {
+        PrimaryButton(
+            when {
+                existing != null -> "Save changes"
+                ended -> "Save nap"
+                else -> "Start sleep"
+            }
+        ) {
             onStart(place.ifBlank { null }, start.value, if (ended) endAt else null)
         }
+        if (onDelete != null) SheetDelete("Delete this nap", onDelete)
     } else {
         val woke = rememberMoment()
         val tooEarly = woke.value.isBefore(asleepSince)
@@ -143,14 +188,23 @@ private fun endOfNap(start: LocalDateTime, endMinute: Int): LocalDateTime {
 }
 
 @Composable
-fun ColumnScope.DiaperSheet(onSave: (DiaperKind, LocalDateTime) -> Unit) {
-    var kindIndex by remember { mutableIntStateOf(0) }
-    val moment = rememberMoment()
+fun ColumnScope.DiaperSheet(
+    existing: LogEntryEntity? = null,
+    onDelete: (() -> Unit)? = null,
+    onSave: (DiaperKind, LocalDateTime) -> Unit,
+) {
+    var kindIndex by remember(existing) {
+        mutableIntStateOf(DiaperKind.entries.indexOf(DiaperKind.of(existing?.diaperKind)))
+    }
+    val moment = rememberMoment(existing?.startAt ?: LocalDateTime.now(), key = existing)
 
-    SheetTitle("Log a diaper")
+    SheetTitle(if (existing == null) "Log a diaper" else "Edit diaper")
     KSegmented(DiaperKind.entries.map { it.label }, kindIndex) { kindIndex = it }
     MomentFields(moment)
-    PrimaryButton("Save diaper") { onSave(DiaperKind.entries[kindIndex], moment.value) }
+    PrimaryButton(if (existing == null) "Save diaper" else "Save changes") {
+        onSave(DiaperKind.entries[kindIndex], moment.value)
+    }
+    if (onDelete != null) SheetDelete("Delete this diaper", onDelete)
 }
 
 /** Tick off a scheduled medicine, or jump to Medications when none is set up yet. */
@@ -176,21 +230,44 @@ fun ColumnScope.MedicineSheet(
     PrimaryButton("Log ${med.name}") { onLog(med, moment.value) }
 }
 
+/**
+ * A dose already logged. Which medicine it was is left alone — what needs correcting after the
+ * fact is when it was given — and the whole entry can be dropped if it was never given at all.
+ */
+@Composable
+fun ColumnScope.MedicineDoseSheet(
+    entry: LogEntryEntity,
+    earliest: LocalDate? = null,
+    onDelete: () -> Unit,
+    onSave: (LocalDateTime) -> Unit,
+) {
+    val moment = rememberMoment(entry.startAt, key = entry)
+
+    SheetTitle("Edit dose")
+    SheetStatic("Medicine", entry.medicationName ?: "Medicine")
+    entry.dose?.let { SheetStatic("Dose", it) }
+    MomentFields(moment, earliest = earliest)
+    PrimaryButton("Save changes") { onSave(moment.value) }
+    SheetDelete("Delete this dose", onDelete)
+}
+
 @Composable
 fun ColumnScope.GrowthSheet(
     weightHint: String,
     lengthHint: String,
     headHint: String,
     earliest: LocalDate? = null,
+    existing: GrowthEntity? = null,
+    onDelete: (() -> Unit)? = null,
     onSave: (LocalDate, Double?, Double?, Double?) -> Unit,
 ) {
-    var weight by remember { mutableStateOf("") }
-    var length by remember { mutableStateOf("") }
-    var head by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now()) }
+    var weight by remember(existing) { mutableStateOf(existing?.weightKg?.let(Fmt::trimNum).orEmpty()) }
+    var length by remember(existing) { mutableStateOf(existing?.lengthCm?.let(Fmt::trimNum).orEmpty()) }
+    var head by remember(existing) { mutableStateOf(existing?.headCm?.let(Fmt::trimNum).orEmpty()) }
+    var date by remember(existing) { mutableStateOf(existing?.date ?: LocalDate.now()) }
     val decimal = KeyboardOptions(keyboardType = KeyboardType.Decimal)
 
-    SheetTitle("Add measurement")
+    SheetTitle(if (existing == null) "Add measurement" else "Edit measurement")
     SheetField("Weight (kg)", weight, weightHint, decimal) { weight = it }
     SheetField("Length (cm)", length, lengthHint, decimal) { length = it }
     SheetField("Head (cm)", head, headHint, decimal) { head = it }
@@ -199,11 +276,12 @@ fun ColumnScope.GrowthSheet(
         format = { Fmt.relativeDate(it) },
     ) { date = it }
     PrimaryButton(
-        "Save measurement",
+        if (existing == null) "Save measurement" else "Save changes",
         enabled = listOf(weight, length, head).any { it.toDoubleOrNull() != null },
     ) {
         onSave(date, weight.toDoubleOrNull(), length.toDoubleOrNull(), head.toDoubleOrNull())
     }
+    if (onDelete != null) SheetDelete("Delete this measurement", onDelete)
 }
 
 /**
@@ -227,15 +305,5 @@ fun ColumnScope.ToothSheet(
         format = { Fmt.relativeDate(it) },
     ) { date = it }
     PrimaryButton(if (recorded == null) "Save tooth" else "Save date") { onSave(date) }
-    if (recorded != null) {
-        Text(
-            "Remove this tooth",
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onRemove)
-                .padding(vertical = 8.dp),
-            fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
-            color = KC.Danger, textAlign = TextAlign.Center,
-        )
-    }
+    if (recorded != null) SheetDelete("Remove this tooth", onRemove)
 }
