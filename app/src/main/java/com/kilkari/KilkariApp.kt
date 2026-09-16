@@ -26,7 +26,7 @@ class KilkariApp : Application() {
         ReminderScheduler.ensureSafetyNet(this)
         scope.launch {
             repository.seedReminders()
-            ReminderScheduler.arm(this@KilkariApp, repository)
+            repository.rescheduleNotifications()
         }
     }
 

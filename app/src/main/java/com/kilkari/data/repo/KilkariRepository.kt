@@ -38,6 +38,7 @@ import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
 import com.kilkari.domain.ReminderDraft
 import com.kilkari.domain.RepeatRule
+import com.kilkari.work.MedicationAlarms
 import com.kilkari.work.ReminderScheduler
 import com.kilkari.domain.Sex
 import com.kilkari.domain.VaccineGroupState
@@ -85,7 +86,11 @@ class KilkariRepository(
      * itself when it fires, so a reminder set for five minutes from now would otherwise wait
      * for a run that was scheduled before it existed.
      */
-    suspend fun rescheduleNotifications() = ReminderScheduler.arm(appContext, this)
+    suspend fun rescheduleNotifications() {
+        ReminderScheduler.arm(appContext, this)
+        // Doses are exact alarms rather than batched work, and are rebuilt from scratch here.
+        MedicationAlarms.rescheduleAll(appContext, this)
+    }
 
     val settings: Flow<AppSettings> = settingsStore.settings
     val baby: Flow<BabyEntity?> = db.babyDao().observe()
@@ -434,7 +439,11 @@ class KilkariRepository(
     suspend fun setMedicationActive(med: MedicationEntity, active: Boolean) =
         db.medicationDao().update(med.copy(active = active, endDate = if (active) null else LocalDate.now()))
 
-    suspend fun deleteMedication(med: MedicationEntity) = db.medicationDao().delete(med)
+    suspend fun deleteMedication(med: MedicationEntity) {
+        // Before the row goes, while its id is still known.
+        MedicationAlarms.cancel(appContext, med.id)
+        db.medicationDao().delete(med)
+    }
 
     suspend fun setDoseTaken(medId: Long, date: LocalDate, taken: Boolean) {
         if (taken) db.medicationDao().upsertDose(MedicationDoseEntity(medId, date, LocalDateTime.now()))

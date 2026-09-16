@@ -52,7 +52,7 @@ class ReminderWorker(
         // it was ever broken, and must not post anything of its own.
         val minute = inputData.getInt(KEY_MINUTE, NO_MINUTE)
         if (minute != NO_MINUTE) {
-            notesFor(repo, LocalDate.now())
+            notesFor(applicationContext, repo, LocalDate.now())
                 .filter { it.minuteOfDay == minute }
                 .forEachIndexed { i, note -> notify(minute * 100 + i, note.title, note.body) }
         }
@@ -61,35 +61,40 @@ class ReminderWorker(
         return Result.success()
     }
 
-    private fun notify(id: Int, title: String, body: String) {
-        val ctx = applicationContext
-        if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED
-        ) return
-
-        val intent = PendingIntent.getActivity(
-            ctx, id,
-            Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-
-        val notification = NotificationCompat.Builder(ctx, KilkariApp.CHANNEL_REMINDERS)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setContentIntent(intent)
-            .setAutoCancel(true)
-            .build()
-
-        NotificationManagerCompat.from(ctx).notify(NOTIFICATION_BASE + id, notification)
-    }
+    private fun notify(id: Int, title: String, body: String) =
+        postReminderNotification(applicationContext, id, title, body)
 
     companion object {
         const val KEY_MINUTE = "minute_of_day"
         const val NO_MINUTE = -1
-        private const val NOTIFICATION_BASE = 4200
     }
+}
+
+/** Where reminder notification ids start, so they never collide with anything else. */
+internal const val NOTIFICATION_BASE = 4200
+
+/** One reminder notification, posted the same way whoever noticed it was due. */
+internal fun postReminderNotification(ctx: Context, id: Int, title: String, body: String) {
+    if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS)
+        != PackageManager.PERMISSION_GRANTED
+    ) return
+
+    val intent = PendingIntent.getActivity(
+        ctx, id,
+        Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    val notification = NotificationCompat.Builder(ctx, KilkariApp.CHANNEL_REMINDERS)
+        .setSmallIcon(R.drawable.ic_notification)
+        .setContentTitle(title)
+        .setContentText(body)
+        .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+        .setContentIntent(intent)
+        .setAutoCancel(true)
+        .build()
+
+    NotificationManagerCompat.from(ctx).notify(NOTIFICATION_BASE + id, notification)
 }
 
 /** Something to be said, and the minute of the day it should be said at. */
@@ -105,14 +110,20 @@ internal const val DIGEST_MINUTE = 8 * 60
 private val SELF_STANDING = setOf("album", "weigh")
 
 /** Everything wanting to be said on [day], each carrying the minute it is due at. */
-internal suspend fun notesFor(repo: KilkariRepository, day: LocalDate): List<Note> {
+internal suspend fun notesFor(
+    context: Context,
+    repo: KilkariRepository,
+    day: LocalDate,
+): List<Note> {
     val reminders = repo.reminders().first()
     val enabled = reminders.filter { it.enabled }.map { it.key }.toSet()
     val notes = mutableListOf<Note>()
 
-    if ("meds" in enabled) {
+    // Medicines are on exact alarms wherever the system allows them, and only fall back to
+    // this chain when it cannot. Without the check both would fire and every dose would be
+    // announced twice.
+    if ("meds" in enabled && !MedicationAlarms.available(context)) {
         repo.medications().first().filter { it.active }.forEach { med ->
-            // A dose set for the evening is announced in the evening.
             notes += Note(
                 med.reminderMinute ?: DIGEST_MINUTE,
                 "${med.name} · ${med.dose}",
@@ -203,7 +214,7 @@ object ReminderScheduler {
      */
     suspend fun arm(context: Context, repo: KilkariRepository) {
         val now = LocalDateTime.now()
-        val next = nextMoment(repo, now) ?: return
+        val next = nextMoment(context, repo, now) ?: return
 
         WorkManager.getInstance(context).enqueueUniqueWork(
             TICK_WORK,
@@ -240,6 +251,7 @@ object ReminderScheduler {
      * reminder further out than this is picked up by that safety net as the day approaches.
      */
     private suspend fun nextMoment(
+        context: Context,
         repo: KilkariRepository,
         now: LocalDateTime,
     ): Pair<LocalDateTime, Int>? {
@@ -248,7 +260,7 @@ object ReminderScheduler {
 
         for (offset in 0..SEARCH_DAYS) {
             val day = today.plusDays(offset.toLong())
-            val minutes = notesFor(repo, day).map { it.minuteOfDay }
+            val minutes = notesFor(context, repo, day).map { it.minuteOfDay }
             // On today, strictly after the current minute, so the run that just fired does not
             // re-arm itself for the same minute and notify twice.
             val next = if (offset == 0) minutes.filter { it > minuteNow } else minutes

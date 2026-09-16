@@ -1,6 +1,13 @@
 package com.kilkari.ui.screens
 
 import androidx.compose.foundation.background
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.compose.ui.platform.LocalContext
+import com.kilkari.work.MedicationAlarms
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +65,7 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
     /** The medicine being corrected, or null when adding a new one. */
     var editing by remember { mutableStateOf<MedicationEntity?>(null) }
 
+    val context = LocalContext.current
     val active = meds.filter { it.active }
     val past = meds.filterNot { it.active }
     val today = LocalDate.now()
@@ -77,6 +85,12 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
                     .padding(top = 10.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                // Only shown when the system is actually withholding exact alarms, so a phone
+                // that already allows them never sees a prompt about a setting it has met.
+                if (active.isNotEmpty() && !MedicationAlarms.available(context)) {
+                    ExactAlarmPrompt { openExactAlarmSettings(context) }
+                }
+
                 SectionLabel("Active")
                 if (active.isEmpty()) {
                     KCard {
@@ -251,4 +265,49 @@ private fun ActiveMedCard(
             }
         }
     }
+}
+
+/** Says why a dose might arrive late, and offers the one setting that fixes it. */
+@Composable
+private fun ExactAlarmPrompt(onOpenSettings: () -> Unit) {
+    KCard(corner = 16, background = KC.GoldBg, border = KC.GoldRing) {
+        Column(
+            Modifier.fillMaxWidth().padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                "Dose reminders may run late",
+                fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = KC.Ink,
+            )
+            Text(
+                "Android is batching this app's reminders to save battery, which can delay a " +
+                    "dose by several minutes. Allowing exact alarms makes them arrive on time.",
+                fontFamily = Sans, fontSize = 12.sp, lineHeight = 18.sp, color = KC.MutedStrong,
+            )
+            Text(
+                "Allow exact alarms",
+                modifier = Modifier
+                    .clip(RoundedCornerShape(999.dp))
+                    .clickable(onClick = onOpenSettings)
+                    .padding(vertical = 8.dp),
+                fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp,
+                color = KC.GoldDeep,
+            )
+        }
+    }
+}
+
+/** The system page for this one permission, falling back to the app's settings page. */
+private fun openExactAlarmSettings(context: Context) {
+    val exact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}"))
+    } else {
+        null
+    }
+    val fallback = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.parse("package:${context.packageName}"),
+    )
+    runCatching { context.startActivity(exact ?: fallback) }
+        .onFailure { runCatching { context.startActivity(fallback) } }
 }
