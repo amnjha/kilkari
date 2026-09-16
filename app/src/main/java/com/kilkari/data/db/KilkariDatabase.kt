@@ -32,7 +32,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         TaskStateEntity::class,
         DoctorEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -64,7 +64,7 @@ abstract class KilkariDatabase : RoomDatabase() {
                 context.applicationContext,
                 KilkariDatabase::class.java,
                 DB_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build().also { instance = it }
         }
 
         /** Drops the cached handle so a restore can swap the file underneath us. */
@@ -151,6 +151,25 @@ abstract class KilkariDatabase : RoomDatabase() {
                     "UPDATE reminder SET subtitle = 'Sundays', minuteOfDay = 540 WHERE key = 'weigh'"
                 )
                 db.execSQL("DELETE FROM checklist WHERE key IN ('album', 'weigh')")
+            }
+        }
+
+        /**
+         * Retires the last two hardcoded checklist rows.
+         *
+         * Tummy time and the bath were written into every single day and could not be reworded,
+         * switched off or removed. They become ordinary custom reminders, off by default like
+         * the weigh-in, so the Today list starts as the parent's own rather than the app's.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "INSERT OR IGNORE INTO reminder " +
+                        "(`key`, `title`, `subtitle`, `enabled`, `builtIn`, `repeatRule`) VALUES " +
+                        "('tummy', 'Tummy time', 'A few minutes of floor time', 0, 0, 'daily'), " +
+                        "('bath', 'Bath', 'Part of the evening routine', 0, 0, 'daily')"
+                )
+                db.execSQL("DELETE FROM checklist WHERE key IN ('bath', 'tummy')")
             }
         }
 

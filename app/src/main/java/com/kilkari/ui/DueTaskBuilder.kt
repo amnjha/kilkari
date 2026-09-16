@@ -230,6 +230,8 @@ object DueTaskBuilder {
         "album" -> "photo_camera"
         "weigh" -> "monitor_weight"
         "fund" -> "savings"
+        "bath" -> "bathtub"
+        "tummy" -> "child_care"
         else -> "notifications_active"
     }
 

@@ -691,10 +691,10 @@ class KilkariRepository(
             meds.forEach { m ->
                 add(ChecklistEntity(id, date, "med_${m.id}", "${m.name} · ${m.dose}", m.scheduleText, false))
             }
-            add(ChecklistEntity(id, date, "tummy", "Tummy time · 5 min", "anytime", false))
-            add(ChecklistEntity(id, date, "bath", "Bath", "anytime", false))
-            // The weekly weigh-in and photo check-in are reminders now, not checklist rows,
-            // so they survive past their day instead of disappearing at midnight.
+            // Everything else that used to be hardcoded here — the weigh-in, the photo
+            // check-in, tummy time and the bath — is a reminder now. That makes each one
+            // switchable and removable, and lets the less-than-daily ones survive past
+            // their day instead of disappearing at midnight.
         }
         db.checklistDao().upsertAll(rows)
     }
@@ -981,6 +981,17 @@ class KilkariRepository(
                 ReminderEntity(
                     "fund", "Monthly fund top-up", "On the day the deposit is due", true,
                     repeatRule = "monthly",
+                ),
+                // Two daily habits the design showed on the Today list. They are the parent's
+                // to keep, reword or delete rather than the app's to insist on, so they arrive
+                // as ordinary custom reminders — and switched off, since nobody asked for them.
+                ReminderEntity(
+                    "tummy", "Tummy time", "A few minutes of floor time", false,
+                    builtIn = false, repeatRule = "daily",
+                ),
+                ReminderEntity(
+                    "bath", "Bath", "Part of the evening routine", false,
+                    builtIn = false, repeatRule = "daily",
                 ),
             )
         )
