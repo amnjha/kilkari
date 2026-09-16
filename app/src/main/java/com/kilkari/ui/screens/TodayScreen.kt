@@ -151,9 +151,6 @@ private fun TodayAgenda(
         }
     }
 
-    SectionLabel("Today", Modifier.padding(top = 2.dp))
-    DueTaskList(vm, go, "Nothing due right now. 🎈")
-
     SectionLabel("Last logged", Modifier.padding(top = 2.dp))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(LogKind.FEED, LogKind.SLEEP, LogKind.DIAPER).forEach { kind ->
@@ -175,6 +172,9 @@ private fun TodayAgenda(
             }
         }
     }
+
+    SectionLabel("Today", Modifier.padding(top = 2.dp))
+    DueTaskList(vm, go, "Nothing due right now. 🎈")
 }
 
 // ── Variant B · Hero ────────────────────────────────────────────────────────

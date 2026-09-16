@@ -180,7 +180,7 @@ object DueTaskBuilder {
                     r.minuteOfDay?.let(::clock),
                 ).joinToString(" · "),
                 trailing = if (days == 0) "today" else Fmt.dueBadge(days),
-                icon = r.icon ?: iconFor(r.key),
+                icon = iconOf(r),
                 done = acted?.done == true,
                 // Weekly prompts that exist to capture something open that screen instead.
                 completable = r.key !in NEEDS_ENTRY,
@@ -226,10 +226,19 @@ object DueTaskBuilder {
             RepeatRule.NONE -> r.startDate?.takeIf { !it.isAfter(today) }
         }
 
-    /** Fallback for the built-ins, which have no icon of their own to carry. */
-    private fun iconFor(key: String) = when (key) {
-        "album" -> "photo_camera"
+    /**
+     * How a reminder is drawn, wherever it appears.
+     *
+     * A custom reminder carries the icon the parent chose. The built-ins have no icon of their
+     * own — they are defined in code, not picked — so they fall back to one per key rather than
+     * all sharing a bell.
+     */
+    fun iconOf(r: ReminderEntity): String = r.icon ?: when (r.key) {
+        "meds" -> "pill"
+        "vac" -> "vaccines"
+        "appt" -> "stethoscope"
         "weigh" -> "monitor_weight"
+        "album" -> "photo_camera"
         "fund" -> "savings"
         else -> "notifications_active"
     }

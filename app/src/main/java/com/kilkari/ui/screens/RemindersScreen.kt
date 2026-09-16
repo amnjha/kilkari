@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.db.ReminderEntity
 import com.kilkari.domain.RepeatRule
+import com.kilkari.ui.DueTaskBuilder
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconButton44
@@ -34,7 +35,6 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.KSwitch
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
-import com.kilkari.ui.sheets.DEFAULT_ICON
 import com.kilkari.ui.sheets.ReminderSheet
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -85,6 +85,7 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
                         KRow(
                             title = reminder.title,
                             subtitle = reminder.subtitle,
+                            icon = DueTaskBuilder.iconOf(reminder),
                             divider = i != builtIn.lastIndex,
                             onClick = {
                                 if (!reminder.enabled) ensurePermission()
@@ -109,7 +110,7 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
                         KRow(
                             title = reminder.title,
                             subtitle = describe(reminder),
-                            icon = reminder.icon ?: DEFAULT_ICON,
+                            icon = DueTaskBuilder.iconOf(reminder),
                             divider = i != custom.lastIndex,
                             onClick = { editing = reminder to true },
                         ) {
