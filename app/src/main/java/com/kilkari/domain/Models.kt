@@ -244,12 +244,12 @@ data class ReminderDraft(
     val startDate: LocalDate? = null,
 )
 
-enum class DueTaskKind { MEDICATION, APPOINTMENT, VACCINE, CHECKLIST, REMINDER, SLEEP }
+enum class DueTaskKind { MEDICATION, APPOINTMENT, VACCINE, REMINDER, SLEEP }
 
 /**
  * One thing outstanding today, whatever produced it — a medicine dose, an appointment, an
- * overdue vaccine group, a daily checklist item or a reminder. Every Today layout renders the
- * same list so they cannot drift apart.
+ * overdue vaccine group or a reminder. Every Today layout renders the same list so they cannot
+ * drift apart.
  */
 data class DueTask(
     val id: String,

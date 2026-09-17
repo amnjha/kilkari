@@ -53,11 +53,11 @@ published schedules — IAP (India private), UIP (India government), WHO, or CDC
 schedule regenerates due dates; doses already recorded stay marked.
 
 **One due-today list.** Everything outstanding — medicine doses, today's appointments, overdue
-vaccine groups, the fund top-up, the daily checklist, weekly prompts and anything you added
-yourself — is derived in one place and rendered identically by all three Today layouts, so they
-cannot drift apart. Daily items clear themselves overnight; anything less frequent (the Sunday
-photo check-in, a monthly reminder) stays put until it is ticked off or dismissed, rather than
-vanishing when the day rolls over.
+vaccine groups, the fund top-up, weekly prompts and anything you added yourself — is derived in
+one place and rendered identically by all three Today layouts, so they cannot drift apart. Each
+thing appears exactly once, from whichever source actually owns it. Daily items clear themselves
+overnight; anything less frequent (the Sunday photo check-in, a monthly reminder) stays put
+until it is ticked off or dismissed, rather than vanishing when the day rolls over.
 
 **Doctors** are kept in one directory. Appointments, vaccination records and prescriptions pick
 from it through a secondary bottom sheet, with "Add a doctor" opening a third — so a new name can

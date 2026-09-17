@@ -186,17 +186,6 @@ data class EventEntity(
     val annual: Boolean = false,
 )
 
-/** Daily checklist item. Rows are created lazily the first time a day is opened. */
-@Entity(tableName = "checklist", primaryKeys = ["babyId", "date", "key"])
-data class ChecklistEntity(
-    val babyId: Long,
-    val date: LocalDate,
-    val key: String,
-    val title: String,
-    val timeText: String,
-    val done: Boolean = false,
-)
-
 @Entity(tableName = "reminder")
 data class ReminderEntity(
     @PrimaryKey val key: String,

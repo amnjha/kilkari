@@ -1,7 +1,6 @@
 package com.kilkari.ui
 
 import com.kilkari.data.db.AppointmentEntity
-import com.kilkari.data.db.ChecklistEntity
 import com.kilkari.data.db.LogEntryEntity
 import com.kilkari.data.db.MedicationDoseEntity
 import com.kilkari.data.db.MedicationEntity
@@ -35,7 +34,6 @@ object DueTaskBuilder {
         appointments: List<AppointmentEntity>,
         vaccineGroups: List<VaccineGroupState>,
         reminders: List<ReminderEntity>,
-        checklist: List<ChecklistEntity>,
         taskStates: List<TaskStateEntity>,
         openSleep: LogEntryEntity?,
         fundDepositDue: LocalDate?,
@@ -144,24 +142,6 @@ object DueTaskBuilder {
                     route = Routes.MONEY,
                 )
             }
-        }
-
-        // The daily checklist.
-        checklist.forEach { row ->
-            tasks += DueTask(
-                id = "check:${row.key}",
-                kind = DueTaskKind.CHECKLIST,
-                title = row.title,
-                subtitle = "",
-                trailing = row.timeText,
-                icon = "check_circle",
-                done = row.done,
-                completable = true,
-                dismissible = false,
-                occurrence = row.date,
-                overdue = false,
-                route = null,
-            )
         }
 
         // Weekly prompts and anything the parent added themselves. These persist across days:
