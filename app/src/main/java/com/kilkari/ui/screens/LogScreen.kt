@@ -37,9 +37,11 @@ import com.kilkari.data.db.MedicationEntity
 import com.kilkari.domain.BreastSide
 import com.kilkari.domain.DiaperKind
 import com.kilkari.domain.FeedType
+import com.kilkari.domain.InsightReport
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
@@ -69,8 +71,7 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
     val growth by vm.growth.collectAsStateWithLifecycle()
     val medications by vm.medications.collectAsStateWithLifecycle()
     val baby by vm.baby.collectAsStateWithLifecycle()
-
-    val recentLogs by vm.recentLogs.collectAsStateWithLifecycle()
+    val insights by vm.insights.collectAsStateWithLifecycle()
 
     var sheet by remember { mutableStateOf<LogKind?>(null) }
 
@@ -79,7 +80,6 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
 
     val latestGrowth = growth.lastOrNull()
     val today = LocalDate.now()
-    val earlier = recentLogs.filter { it.startAt.toLocalDate() != today }.take(EARLIER_SHOWN)
 
     /** Teeth live on their own screen, so their rows point there rather than at a sheet. */
     fun open(entry: LogEntryEntity) {
@@ -139,6 +139,17 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
                 }
             }
 
+            // Above today's list rather than below it, where a busy day would bury them.
+            KCard {
+                LinkRow("calendar_month", "Daily log", "Any earlier day, with its totals") {
+                    val yesterday = today.minusDays(1)
+                    vm.showLogDay(baby?.dob?.let { maxOf(it, yesterday) } ?: yesterday)
+                    go.push(Routes.LOG_DAY)
+                }
+                RowDivider()
+                LinkRow("insights", "Insights", insightTeaser(insights)) { go.push(Routes.INSIGHTS) }
+            }
+
             SectionLabel("Today's entries", Modifier.padding(top = 4.dp))
             KCard {
                 if (todayLogs.isEmpty()) {
@@ -151,18 +162,6 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
                 todayLogs.forEachIndexed { i, entry ->
                     LogEntryRow(entry, Fmt.time(entry.startAt)) { open(entry) }
                     if (i != todayLogs.lastIndex) RowDivider()
-                }
-            }
-
-            // Back-dated entries drop off "today" the moment the day rolls over, so they are
-            // listed here too rather than becoming impossible to correct.
-            if (earlier.isNotEmpty()) {
-                SectionLabel("Earlier", Modifier.padding(top = 4.dp))
-                KCard {
-                    earlier.forEachIndexed { i, entry ->
-                        LogEntryRow(entry, Fmt.date(entry.startAt.toLocalDate())) { open(entry) }
-                        if (i != earlier.lastIndex) RowDivider()
-                    }
                 }
             }
         }
@@ -210,7 +209,7 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
  * two are paired back up by date here.
  */
 @Composable
-private fun ColumnScope.EditEntrySheet(
+internal fun ColumnScope.EditEntrySheet(
     vm: KilkariViewModel,
     entry: LogEntryEntity,
     dob: LocalDate?,
@@ -272,12 +271,47 @@ private fun ColumnScope.EditEntrySheet(
     }
 }
 
-/** How far back the "Earlier" list reaches — enough to correct a slip, not a whole history. */
-private const val EARLIER_SHOWN = 30
+/** A way into a nested Log screen. */
+@Composable
+private fun LinkRow(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconBadge(icon, KC.Coral, KC.CoralBg, size = 38, corner = 12, iconSize = 20)
+        Column(Modifier.weight(1f)) {
+            Text(title, fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = KC.Ink)
+            Text(
+                subtitle, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(KIcons["chevron_right"], null, tint = KC.Faint, modifier = Modifier.size(18.dp))
+    }
+}
+
+/**
+ * The two averages most often asked about, so the row says something before it is opened.
+ * Falls back to what the screen does while there is not a full day behind it yet.
+ */
+private fun insightTeaser(report: InsightReport?): String {
+    val feeds = report?.feeding?.feedsPerDay?.current
+    val sleep = report?.sleep?.totalMinutesPerDay?.current
+    if (report == null || (feeds == null && sleep == null)) return "Averages over 7 or 30 days"
+    val parts = listOfNotNull(
+        feeds?.let { "${oneDecimal(it)} feeds" },
+        sleep?.let { "${hoursMinutes(it)} sleep" },
+    )
+    return parts.joinToString(" · ") + " a day, last ${report.days} days"
+}
 
 /** One journal line. [trailing] carries the time for today's rows and the date for older ones. */
 @Composable
-private fun LogEntryRow(entry: LogEntryEntity, trailing: String, onClick: () -> Unit) {
+internal fun LogEntryRow(entry: LogEntryEntity, trailing: String, onClick: () -> Unit) {
     val spec = tileSpec(LogKind.of(entry.kind))
     Row(
         Modifier
@@ -299,7 +333,7 @@ private fun LogEntryRow(entry: LogEntryEntity, trailing: String, onClick: () -> 
 }
 
 @Composable
-private fun RowDivider() {
+internal fun RowDivider() {
     Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Divider))
 }
 

@@ -104,6 +104,11 @@ class KilkariRepository(
         db.logDao().observeBetween(id, date.atStartOfDay(), date.plusDays(1).atStartOfDay())
     }
 
+    /** Every entry starting in [from, to), for the insights and the daily log. */
+    fun logsBetween(from: LocalDate, to: LocalDate): Flow<List<LogEntryEntity>> = forBaby { id ->
+        db.logDao().observeBetween(id, from.atStartOfDay(), to.atStartOfDay())
+    }
+
     fun latestPerKind(): Flow<Map<LogKind, LogEntryEntity>> = forBaby { id ->
         db.logDao().observeLatestPerKind(id)
     }.map { rows -> rows.associateBy { LogKind.of(it.kind) } }
@@ -162,14 +167,6 @@ class KilkariRepository(
         if (medicationId != null) {
             db.medicationDao().upsertDose(MedicationDoseEntity(medicationId, at.toLocalDate(), at))
         }
-    }
-
-    /**
-     * Everything logged, newest first — the Log tab reads back beyond today through this so a
-     * back-dated entry does not become uncorrectable once the day rolls over.
-     */
-    fun recentLogs(limit: Int = 200): Flow<List<LogEntryEntity>> = forBaby { id ->
-        db.logDao().observeRecent(id, limit)
     }
 
     /**

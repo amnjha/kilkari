@@ -34,6 +34,9 @@ import com.kilkari.domain.Sex
 import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.FeedType
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.Insights
+import com.kilkari.domain.InsightReport
+import com.kilkari.domain.DaySummary
 import com.kilkari.domain.FundLedgerOrigin
 import com.kilkari.domain.FundLedgerRow
 import com.kilkari.domain.FundTxnKind
@@ -96,9 +99,6 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     val todayLogs: StateFlow<List<LogEntryEntity>> =
         today.flatMapLatest { repo.logsForDay(it) }.state(emptyList())
 
-    /** Everything logged, newest first, so entries filed against an earlier day stay reachable. */
-    val recentLogs: StateFlow<List<LogEntryEntity>> = repo.recentLogs().state(emptyList())
-
     val latestPerKind: StateFlow<Map<LogKind, LogEntryEntity>> =
         repo.latestPerKind().state(emptyMap())
 
@@ -127,6 +127,34 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     val growth: StateFlow<List<GrowthEntity>> = repo.growth().state(emptyList())
 
+    // ── Daily log ───────────────────────────────────────────────────────────
+
+    private val _logDay = MutableStateFlow(LocalDate.now())
+
+    /** The day the daily log is showing. */
+    val logDay: StateFlow<LocalDate> = _logDay.asStateFlow()
+
+    fun showLogDay(day: LocalDate) {
+        _logDay.value = minOf(day, today.value)
+    }
+
+    /**
+     * The chosen day's entries, plus the evening before it, so a night that started then can
+     * be counted towards this day's sleep. The list itself shows only this day's.
+     */
+    private val logDayWindow: StateFlow<List<LogEntryEntity>> =
+        _logDay.flatMapLatest { day -> repo.logsBetween(day.minusDays(1), day.plusDays(1)) }
+            .state(emptyList())
+
+    val logDayEntries: StateFlow<List<LogEntryEntity>> =
+        combine(_logDay, logDayWindow) { day, logs ->
+            logs.filter { it.startAt.toLocalDate() == day }.sortedBy { it.startAt }
+        }.state(emptyList())
+
+    val logDaySummary: StateFlow<DaySummary?> =
+        combine(_logDay, logDayWindow) { day, logs -> Insights.daySummary(logs, day) }.state(null)
+
+
     private val toothRows: StateFlow<List<ToothEntity>> = repo.toothRows().state(emptyList())
     val teeth: StateFlow<Set<String>> =
         toothRows.map { rows -> rows.map { it.code }.toSet() }.state(emptySet())
@@ -141,6 +169,32 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         medications.flatMapLatest { meds ->
             repo.medicationDoses(meds.map { it.id }, LocalDate.now().minusDays(30))
         }.state(emptyList())
+
+    // ── Insights ────────────────────────────────────────────────────────────
+
+    private val _insightDays = MutableStateFlow(7)
+
+    /** How far back the insights look: 7 or 30 days. */
+    val insightDays: StateFlow<Int> = _insightDays.asStateFlow()
+
+    fun setInsightDays(days: Int) { _insightDays.value = days }
+
+    /**
+     * Two of the longest windows, so the previous period can be compared against. Follows the
+     * day the app thinks it is, so a screen left open past midnight moves its window along.
+     */
+    private val insightLogs: StateFlow<List<LogEntryEntity>> =
+        today.flatMapLatest { day -> repo.logsBetween(day.minusDays(60), day.plusDays(1)) }
+            .state(emptyList())
+
+    private val insightWindow = combine(today, _insightDays, insightLogs, baby) { day, days, logs, child ->
+        InsightWindow(day, days, logs, child?.dob)
+    }
+
+    val insights: StateFlow<InsightReport?> =
+        combine(insightWindow, medications, medicationDoses, growth) { w, meds, doses, weights ->
+            Insights.report(w.today, w.days, w.logs, meds, doses, weights, born = w.born)
+        }.state(null)
 
     val appointments: StateFlow<List<AppointmentEntity>> = repo.appointments().state(emptyList())
 
@@ -818,3 +872,10 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             KilkariViewModel(repo) as T
     }
 }
+
+private data class InsightWindow(
+    val today: LocalDate,
+    val days: Int,
+    val logs: List<LogEntryEntity>,
+    val born: LocalDate?,
+)

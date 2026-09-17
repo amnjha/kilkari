@@ -2,6 +2,7 @@ package com.kilkari.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.filled.EventAvailable
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Medication
@@ -142,7 +144,9 @@ object KIcons {
         "delete" to Icons.Filled.Delete,
         "edit" to Icons.Filled.Edit,
         "expand_more" to Icons.Filled.ExpandMore,
+        "chevron_left" to Icons.Filled.ChevronLeft,
         "chevron_right" to Icons.Filled.ChevronRight,
+        "insights" to Icons.Filled.Insights,
         "check" to Icons.Filled.Check,
         "check_circle" to Icons.Filled.CheckCircle,
         "priority_high" to Icons.Filled.PriorityHigh,

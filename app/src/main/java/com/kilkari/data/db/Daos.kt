@@ -31,9 +31,6 @@ interface LogDao {
     @Query("SELECT * FROM log_entry WHERE babyId = :babyId AND startAt >= :from AND startAt < :to ORDER BY startAt DESC")
     fun observeBetween(babyId: Long, from: LocalDateTime, to: LocalDateTime): Flow<List<LogEntryEntity>>
 
-    @Query("SELECT * FROM log_entry WHERE babyId = :babyId ORDER BY startAt DESC LIMIT :limit")
-    fun observeRecent(babyId: Long, limit: Int = 200): Flow<List<LogEntryEntity>>
-
     /** Latest entry per kind — backs the "last logged" badge on every tile. */
     @Query(
         """

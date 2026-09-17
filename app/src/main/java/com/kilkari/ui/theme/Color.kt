@@ -68,6 +68,29 @@ object KC {
 
     // Danger — deeper and browner than coral, so lateness is never read as brand.
     val Danger = Color(0xFF8C2F22)
+
+    // ── Chart marks ─────────────────────────────────────────────────────────
+    //
+    // Validated with the dataviz palette validator (OKLCH band, chroma floor, CVD separation
+    // under protanopia and deuteranopia, normal-vision floor, 3:1 against the white card),
+    // not picked by eye. Two findings shaped these:
+    //  - Sea (#2F7B80) reads as grey in a chart, chroma 0.074 against a 0.10 floor. It cannot
+    //    get more saturated at its own lightness inside sRGB, so it was moved up the band to
+    //    the nearest passing step instead. The app's Sea is left alone; this is marks only.
+    //  - Coral, gold and clay are all warm and fail colour-blind separation against each
+    //    other in every adjacent pairing. Sea is the only cool hue, so it sits between them.
+    //
+    // Categorical theme, fixed order, assigned in sequence and never cycled:
+    val ChartCoral = Color(0xFFC94A30)
+    val ChartSea = Color(0xFF05959D)
+    val ChartGold = Color(0xFFB07C11)
+    val chartCategorical = listOf(ChartCoral, ChartSea, ChartGold)
+
+    /** The unfilled part of a meter: a light step of the fill's own ramp, not a grey track. */
+    val ChartSeaTrack = Color(0xFFD9EFF0)
+
+    /** Gridlines and axis rules: hairline, solid, one step off the card. */
+    val ChartGrid = Color(0xFFEFE4D8)
     val DangerLight = Color(0xFFB04234)
     val DangerDeep = Color(0xFF6E2118)
     val DangerBg = Color(0xFFFBE8E4)

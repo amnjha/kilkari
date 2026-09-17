@@ -20,6 +20,9 @@ object Routes {
     const val APPOINTMENTS = "appointments"
     const val DOCTORS = "doctors"
 
+    const val LOG_DAY = "logDay"
+    const val INSIGHTS = "insights"
+
     const val TIMELINE = "timeline"
     const val DOCUMENTS = "documents"
     const val DOCUMENT_DETAIL = "documentDetail"
@@ -41,6 +44,7 @@ object Routes {
     private val tabOf = mapOf(
         VACCINES to HEALTH, VACCINE_DETAIL to HEALTH, GROWTH to HEALTH,
         TEETH to HEALTH, MEDS to HEALTH, APPOINTMENTS to HEALTH, DOCTORS to HEALTH,
+        LOG_DAY to LOG, INSIGHTS to LOG,
         TIMELINE to MORE, DOCUMENTS to MORE, DOCUMENT_DETAIL to MORE, PHOTOS to MORE,
         EVENTS to MORE, REMINDERS to MORE, BACKUP to MORE, SETTINGS to MORE,
     )

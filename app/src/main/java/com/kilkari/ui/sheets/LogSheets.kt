@@ -74,12 +74,14 @@ fun SheetDelete(label: String, onDelete: () -> Unit) {
 @Composable
 fun ColumnScope.FeedSheet(
     existing: LogEntryEntity? = null,
+    /** Where a new entry starts, when it is being added to a day other than today. */
+    initialAt: LocalDateTime? = null,
     onDelete: (() -> Unit)? = null,
     onSave: (FeedType, BreastSide?, Int, LocalDateTime) -> Unit,
 ) {
     val logged = FeedType.of(existing?.feedType)
     var typeIndex by remember(existing) { mutableIntStateOf(FeedType.entries.indexOf(logged)) }
-    val moment = rememberMoment(existing?.startAt ?: LocalDateTime.now(), key = existing)
+    val moment = rememberMoment(existing?.startAt ?: initialAt ?: LocalDateTime.now(), key = existing)
     var side by remember(existing) {
         mutableStateOf(BreastSide.entries.firstOrNull { it.key == existing?.side } ?: BreastSide.LEFT)
     }
@@ -135,6 +137,7 @@ fun ColumnScope.FeedSheet(
 fun ColumnScope.SleepSheet(
     asleepSince: LocalDateTime?,
     existing: LogEntryEntity? = null,
+    initialAt: LocalDateTime? = null,
     onDelete: (() -> Unit)? = null,
     onStart: (place: String?, from: LocalDateTime, to: LocalDateTime?) -> Unit,
     onEnd: (LocalDateTime) -> Unit,
@@ -142,7 +145,7 @@ fun ColumnScope.SleepSheet(
     var place by remember(existing) { mutableStateOf(existing?.place ?: "Bassinet") }
 
     if (existing != null || asleepSince == null) {
-        val start = rememberMoment(existing?.startAt ?: LocalDateTime.now(), key = existing)
+        val start = rememberMoment(existing?.startAt ?: initialAt ?: LocalDateTime.now(), key = existing)
         var endedIndex by remember(existing) { mutableIntStateOf(if (existing?.endAt == null) 0 else 1) }
         var endMinute by remember(existing) {
             mutableIntStateOf(existing?.endAt?.let { it.hour * 60 + it.minute } ?: start.minuteOfDay)
@@ -190,13 +193,14 @@ private fun endOfNap(start: LocalDateTime, endMinute: Int): LocalDateTime {
 @Composable
 fun ColumnScope.DiaperSheet(
     existing: LogEntryEntity? = null,
+    initialAt: LocalDateTime? = null,
     onDelete: (() -> Unit)? = null,
     onSave: (DiaperKind, LocalDateTime) -> Unit,
 ) {
     var kindIndex by remember(existing) {
         mutableIntStateOf(DiaperKind.entries.indexOf(DiaperKind.of(existing?.diaperKind)))
     }
-    val moment = rememberMoment(existing?.startAt ?: LocalDateTime.now(), key = existing)
+    val moment = rememberMoment(existing?.startAt ?: initialAt ?: LocalDateTime.now(), key = existing)
 
     SheetTitle(if (existing == null) "Log a diaper" else "Edit diaper")
     KSegmented(DiaperKind.entries.map { it.label }, kindIndex) { kindIndex = it }
@@ -211,6 +215,7 @@ fun ColumnScope.DiaperSheet(
 @Composable
 fun ColumnScope.MedicineSheet(
     medications: List<MedicationEntity>,
+    initialAt: LocalDateTime? = null,
     onLog: (MedicationEntity, LocalDateTime) -> Unit,
     onManage: () -> Unit,
 ) {
@@ -221,7 +226,7 @@ fun ColumnScope.MedicineSheet(
         return
     }
     var selected by remember { mutableIntStateOf(0) }
-    val moment = rememberMoment()
+    val moment = rememberMoment(initialAt ?: LocalDateTime.now())
     KSegmented(medications.map { it.name }, selected) { selected = it }
     val med = medications[selected.coerceIn(medications.indices)]
     SheetStatic("Dose", med.dose)
