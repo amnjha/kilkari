@@ -37,11 +37,9 @@ import com.kilkari.data.db.MedicationEntity
 import com.kilkari.domain.BreastSide
 import com.kilkari.domain.DiaperKind
 import com.kilkari.domain.FeedType
-import com.kilkari.domain.InsightReport
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
 import com.kilkari.ui.KilkariViewModel
-import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
@@ -71,7 +69,6 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
     val growth by vm.growth.collectAsStateWithLifecycle()
     val medications by vm.medications.collectAsStateWithLifecycle()
     val baby by vm.baby.collectAsStateWithLifecycle()
-    val insights by vm.insights.collectAsStateWithLifecycle()
 
     var sheet by remember { mutableStateOf<LogKind?>(null) }
 
@@ -139,15 +136,15 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
                 }
             }
 
-            // Above today's list rather than below it, where a busy day would bury them.
-            KCard {
-                LinkRow("calendar_month", "Daily log", "Any earlier day, with its totals") {
+            // Above today's list rather than below it, where a busy day would bury them. White
+            // and compact like Today's quick actions, so they are not read as two more tiles.
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                LinkCard("calendar_month", "Daily log", Modifier.weight(1f)) {
                     val yesterday = today.minusDays(1)
                     vm.showLogDay(baby?.dob?.let { maxOf(it, yesterday) } ?: yesterday)
                     go.push(Routes.LOG_DAY)
                 }
-                RowDivider()
-                LinkRow("insights", "Insights", insightTeaser(insights)) { go.push(Routes.INSIGHTS) }
+                LinkCard("insights", "Insights", Modifier.weight(1f)) { go.push(Routes.INSIGHTS) }
             }
 
             SectionLabel("Today's entries", Modifier.padding(top = 4.dp))
@@ -271,42 +268,30 @@ internal fun ColumnScope.EditEntrySheet(
     }
 }
 
-/** A way into a nested Log screen. */
+/**
+ * A way into a nested Log screen: half a row, one line, a chevron for "goes somewhere". Kept
+ * to a card rather than a pill button, which in this app means an action inside a sheet.
+ */
 @Composable
-private fun LinkRow(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconBadge(icon, KC.Coral, KC.CoralBg, size = 38, corner = 12, iconSize = 20)
-        Column(Modifier.weight(1f)) {
-            Text(title, fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = KC.Ink)
+private fun LinkCard(icon: String, title: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    KCard(modifier, corner = 14, onClick = onClick) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp)
+                .padding(start = 12.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(KIcons[icon], null, tint = KC.Coral, modifier = Modifier.size(20.dp))
             Text(
-                subtitle, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                title, modifier = Modifier.weight(1f),
+                fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = KC.Ink,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
+            Icon(KIcons["chevron_right"], null, tint = KC.Faint, modifier = Modifier.size(18.dp))
         }
-        Icon(KIcons["chevron_right"], null, tint = KC.Faint, modifier = Modifier.size(18.dp))
     }
-}
-
-/**
- * The two averages most often asked about, so the row says something before it is opened.
- * Falls back to what the screen does while there is not a full day behind it yet.
- */
-private fun insightTeaser(report: InsightReport?): String {
-    val feeds = report?.feeding?.feedsPerDay?.current
-    val sleep = report?.sleep?.totalMinutesPerDay?.current
-    if (report == null || (feeds == null && sleep == null)) return "Averages over 7 or 30 days"
-    val parts = listOfNotNull(
-        feeds?.let { "${oneDecimal(it)} feeds" },
-        sleep?.let { "${hoursMinutes(it)} sleep" },
-    )
-    return parts.joinToString(" · ") + " a day, last ${report.days} days"
 }
 
 /** One journal line. [trailing] carries the time for today's rows and the date for older ones. */

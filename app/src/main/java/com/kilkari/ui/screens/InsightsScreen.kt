@@ -286,13 +286,13 @@ private fun SubHeading(text: String) {
     Text(text, fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = KC.MutedStrong)
 }
 
-internal fun oneDecimal(value: Double?): String {
+private fun oneDecimal(value: Double?): String {
     if (value == null) return ""
     val rounded = (value * 10).roundToInt() / 10.0
     return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else rounded.toString()
 }
 
-internal fun hoursMinutes(minutes: Double): String {
+private fun hoursMinutes(minutes: Double): String {
     val total = minutes.roundToInt()
     val h = total / 60
     val m = total % 60
