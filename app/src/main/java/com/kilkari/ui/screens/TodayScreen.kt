@@ -746,7 +746,6 @@ private fun taskSkin(task: DueTask): Pair<Color, Color> = when (task.kind) {
     DueTaskKind.APPOINTMENT -> KC.Coral to KC.CoralBg
     DueTaskKind.VACCINE -> KC.GoldDeep to KC.GoldBg
     DueTaskKind.SLEEP -> KC.CoralDeep to KC.CoralBg
-    DueTaskKind.CHECKLIST -> KC.Coral to KC.CoralBg
     DueTaskKind.REMINDER -> KC.SeaDeep to KC.SeaBg
 }
 

@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.kilkari.data.db.AlbumEntity
 import com.kilkari.data.db.AppointmentEntity
 import com.kilkari.data.db.BabyEntity
-import com.kilkari.data.db.ChecklistEntity
 import com.kilkari.data.db.ContributionEntity
 import com.kilkari.data.db.DoctorEntity
 import com.kilkari.data.db.DocumentEntity
@@ -106,9 +105,6 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     val diapersToday: StateFlow<Int> =
         today.flatMapLatest { repo.diaperCountToday(it) }.state(0)
-
-    val checklist: StateFlow<List<ChecklistEntity>> =
-        today.flatMapLatest { repo.checklist(it) }.state(emptyList())
 
     // ── Health ──────────────────────────────────────────────────────────────
 
@@ -344,8 +340,8 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         combine(medications, medicationDoses, appointments, vaccineGroups) { m, d, a, v ->
             listOf(m, d, a, v)
         },
-        combine(reminders, checklist, taskStates, openSleep) { r, c, t, s ->
-            listOf(r, c, t, s)
+        combine(reminders, taskStates, openSleep) { r, t, s ->
+            listOf(r, t, s)
         },
         settings,
         today,
@@ -359,9 +355,8 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             appointments = first[2] as List<AppointmentEntity>,
             vaccineGroups = first[3] as List<VaccineGroupState>,
             reminders = second[0] as List<ReminderEntity>,
-            checklist = second[1] as List<ChecklistEntity>,
-            taskStates = second[2] as List<TaskStateEntity>,
-            openSleep = second[3] as LogEntryEntity?,
+            taskStates = second[1] as List<TaskStateEntity>,
+            openSleep = second[2] as LogEntryEntity?,
             fundDepositDue = if (settings.fundMonthlyInr > 0) {
                 today.withDayOfMonth(settings.fundDepositDay.coerceIn(1, 28))
             } else {
@@ -400,11 +395,6 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             id.startsWith("med:") -> id.removePrefix("med:").toLongOrNull()?.let {
                 repo.setDoseTaken(it, LocalDate.now(), done)
             }
-            id.startsWith("check:") -> {
-                val key = id.removePrefix("check:")
-                checklist.value.firstOrNull { it.key == key }
-                    ?.let { repo.setChecklistDone(it, done) }
-            }
             id.startsWith("rem:") -> repo.setTaskDone(id.removePrefix("rem:"), task.occurrence, done)
         }
     }
@@ -435,7 +425,6 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun refreshToday() {
         today.value = LocalDate.now()
-        viewModelScope.launch { repo.ensureChecklist(LocalDate.now()) }
     }
 
     fun selectVaccineGroup(index: Int) { _selectedGroup.value = index }
@@ -783,9 +772,6 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         }
 
     fun deleteEvent(row: EventEntity) = viewModelScope.launch { repo.deleteEvent(row) }
-
-    fun setChecklistDone(row: ChecklistEntity, done: Boolean) =
-        viewModelScope.launch { repo.setChecklistDone(row, done) }
 
     fun saveDoctor(id: Long?, name: String, speciality: String?, clinic: String?, phone: String?) =
         viewModelScope.launch {

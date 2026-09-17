@@ -4,7 +4,6 @@ import android.content.Context
 import com.kilkari.data.db.AlbumEntity
 import com.kilkari.data.db.AppointmentEntity
 import com.kilkari.data.db.BabyEntity
-import com.kilkari.data.db.ChecklistEntity
 import com.kilkari.data.db.ContributionEntity
 import com.kilkari.data.db.DoctorEntity
 import com.kilkari.data.db.DocumentEntity
@@ -712,32 +711,6 @@ class KilkariRepository(
 
     suspend fun deleteEvent(row: EventEntity) = db.eventDao().delete(row)
 
-    // ── Checklist ───────────────────────────────────────────────────────────
-
-    fun checklist(date: LocalDate): Flow<List<ChecklistEntity>> = baby.flatMapLatest { b ->
-        if (b == null) flowOf(emptyList()) else db.checklistDao().observeForDay(b.id, date)
-    }
-
-    /** Creates the day's rows from the template the first time a date is opened. */
-    suspend fun ensureChecklist(date: LocalDate) {
-        val id = babyId() ?: return
-        if (db.checklistDao().countForDay(id, date) > 0) return
-        val meds = db.medicationDao().activeNow(id)
-        val rows = buildList {
-            meds.forEach { m ->
-                add(ChecklistEntity(id, date, "med_${m.id}", "${m.name} · ${m.dose}", m.scheduleText, false))
-            }
-            // Everything else that used to be hardcoded here — the weigh-in, the photo
-            // check-in, tummy time and the bath — is a reminder now. That makes each one
-            // switchable and removable, and lets the less-than-daily ones survive past
-            // their day instead of disappearing at midnight.
-        }
-        db.checklistDao().upsertAll(rows)
-    }
-
-    suspend fun setChecklistDone(row: ChecklistEntity, done: Boolean) =
-        db.checklistDao().upsert(row.copy(done = done))
-
     // ── Reminders ───────────────────────────────────────────────────────────
 
     fun reminders(): Flow<List<ReminderEntity>> = db.reminderDao().observeAll()
@@ -879,7 +852,6 @@ class KilkariRepository(
             )
         }
 
-        ensureChecklist(LocalDate.now())
         settingsStore.setOnboarded(true)
     }
 

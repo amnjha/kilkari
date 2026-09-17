@@ -141,9 +141,6 @@ interface MedicationDao {
     @Query("SELECT * FROM medication WHERE babyId = :babyId ORDER BY active DESC, startDate DESC")
     fun observeAll(babyId: Long): Flow<List<MedicationEntity>>
 
-    @Query("SELECT * FROM medication WHERE babyId = :babyId AND active = 1")
-    suspend fun activeNow(babyId: Long): List<MedicationEntity>
-
     @Insert
     suspend fun insert(row: MedicationEntity): Long
 
@@ -266,21 +263,6 @@ interface EventDao {
 
     @Delete
     suspend fun delete(row: EventEntity)
-}
-
-@Dao
-interface ChecklistDao {
-    @Query("SELECT * FROM checklist WHERE babyId = :babyId AND date = :date")
-    fun observeForDay(babyId: Long, date: LocalDate): Flow<List<ChecklistEntity>>
-
-    @Query("SELECT COUNT(*) FROM checklist WHERE babyId = :babyId AND date = :date")
-    suspend fun countForDay(babyId: Long, date: LocalDate): Int
-
-    @Upsert
-    suspend fun upsertAll(rows: List<ChecklistEntity>)
-
-    @Upsert
-    suspend fun upsert(row: ChecklistEntity)
 }
 
 @Dao
