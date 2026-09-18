@@ -30,8 +30,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ContributionEntity::class,
         TaskStateEntity::class,
         DoctorEntity::class,
+        PaperworkEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -53,6 +54,7 @@ abstract class KilkariDatabase : RoomDatabase() {
     abstract fun investmentDao(): InvestmentDao
     abstract fun taskStateDao(): TaskStateDao
     abstract fun doctorDao(): DoctorDao
+    abstract fun paperworkDao(): PaperworkDao
 
     companion object {
         @Volatile private var instance: KilkariDatabase? = null
@@ -62,7 +64,7 @@ abstract class KilkariDatabase : RoomDatabase() {
                 context.applicationContext,
                 KilkariDatabase::class.java,
                 DB_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11).build().also { instance = it }
         }
 
         /** Drops the cached handle so a restore can swap the file underneath us. */
@@ -216,6 +218,24 @@ abstract class KilkariDatabase : RoomDatabase() {
         val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("DROP TABLE IF EXISTS `checklist`")
+            }
+        }
+
+        /**
+         * Adds the paperwork chain — birth certificate, Aadhaar, passport, PAN — and the
+         * built-in reminder that switches it. The reminder arrives on: a parent who already
+         * has the four marks them obtained once, from the Paperwork screen.
+         */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `paperwork` (`babyId` INTEGER NOT NULL, `key` TEXT NOT NULL, `status` TEXT NOT NULL, `settledOn` TEXT, `targetDate` TEXT, `note` TEXT NOT NULL, `documentId` INTEGER, PRIMARY KEY(`babyId`, `key`))"
+                )
+                db.execSQL(
+                    "INSERT OR IGNORE INTO reminder " +
+                        "(`key`, `title`, `subtitle`, `enabled`, `builtIn`, `repeatRule`) VALUES " +
+                        "('docs', 'Paperwork', 'Birth certificate, Aadhaar, passport, PAN — one at a time', 1, 1, 'none')"
+                )
             }
         }
 

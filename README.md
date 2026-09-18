@@ -6,7 +6,7 @@ Built in Kotlin with Jetpack Compose and Room, from the Claude Design canvas in
 
 ## What's in it
 
-**Five tabs** — Today · Log · Health · Money · More, plus fourteen pushed screens.
+**Five tabs** — Today · Log · Health · Money · More, plus fifteen pushed screens.
 
 | Area | Screens |
 | --- | --- |
@@ -16,7 +16,7 @@ Built in Kotlin with Jetpack Compose and Room, from the Claude Design canvas in
 | Log | Six quick-log tiles (feed, sleep, diaper, medicine, growth, teeth) over the day's entries |
 | Health | Hub → Vaccines, Vaccine group detail, Growth, Teeth, Medications, Appointments, Doctors |
 | Money | Three views: **Spending** (monthly split, ledger), **Fund** (the savings account everything is paid from), **Invest** (FD, RD, SIP, PPF, Sukanya Samriddhi, gold) |
-| More | Timeline, Documents, Document detail, Photo albums, Birthdays & events, Reminders, Backup & export, Settings |
+| More | Timeline, Documents, Document detail, **Paperwork**, Photo albums, Birthdays & events, Reminders, Backup & export, Settings |
 
 **Starting late is the normal case.** Once onboarding knows the date of birth and the schedule,
 it works out which vaccine groups and which typical milestones are already behind you, and offers
@@ -53,7 +53,8 @@ published schedules — IAP (India private), UIP (India government), WHO, or CDC
 schedule regenerates due dates; doses already recorded stay marked.
 
 **One due-today list.** Everything outstanding — medicine doses, today's appointments, overdue
-vaccine groups, the fund top-up, weekly prompts and anything you added yourself — is derived in
+vaccine groups, the next identity document, the fund top-up, weekly prompts and anything you
+added yourself — is derived in
 one place and rendered identically by all three Today layouts, so they cannot drift apart. Each
 thing appears exactly once, from whichever source actually owns it. Daily items clear themselves
 overnight; anything less frequent (the Sunday photo check-in, a monthly reminder) stays put
@@ -66,7 +67,19 @@ phone number is saved, the row offers a call (which opens the dialler pre-filled
 placing the call) and a WhatsApp message. Records store the doctor's *name*, not a reference, so
 renaming someone later does not rewrite past appointments.
 
-**Reminders** are yours to define. The six built-in ones are switches over data the app already
+**Paperwork** is the chain of identity documents a newborn needs, in the order the offices
+themselves insist on: birth certificate, then Aadhaar, then passport, then PAN. Only one is ever
+"next". The birth certificate is due 45 days from birth; each of the others a set number of days
+after the one before it was obtained (30, 60 and 30). The one whose turn it is appears on Today a
+week before it is due, notifies a week before, the day before, on the day and then weekly while
+it waits, and stays put until it is recorded — there is nothing to dismiss, because an office
+visit that slips is still owed. Every step opens to what to carry, the suggested date (which can
+be replaced with your own), and a way to set it aside so the chain moves on without pretending.
+Filing a scan titled "Birth certificate" or "Aadhaar card" under Documents records that document
+as obtained, the same way a weigh-in clears the weigh-in prompt, and obtaining one writes a
+Timeline entry.
+
+**Reminders** are yours to define. The seven built-in ones are switches over data the app already
 has; beyond those you can add your own with a time, an optional cadence (once, daily, weekly on a
 chosen day, monthly on a chosen date), and a note. They feed both the notification worker and the
 Today list.

@@ -244,7 +244,7 @@ data class ReminderDraft(
     val startDate: LocalDate? = null,
 )
 
-enum class DueTaskKind { MEDICATION, APPOINTMENT, VACCINE, REMINDER, SLEEP }
+enum class DueTaskKind { MEDICATION, APPOINTMENT, VACCINE, PAPERWORK, REMINDER, SLEEP }
 
 /**
  * One thing outstanding today, whatever produced it — a medicine dose, an appointment, an

@@ -22,6 +22,7 @@ import com.kilkari.R
 import com.kilkari.data.db.ReminderEntity
 import com.kilkari.data.repo.KilkariRepository
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.PaperworkStatus
 import com.kilkari.domain.RepeatRule
 import kotlinx.coroutines.flow.first
 import java.time.Duration
@@ -142,6 +143,29 @@ internal suspend fun notesFor(
                     else -> "due in ${it.inDays} days"
                 }
                 notes += Note(DIGEST_MINUTE, "${it.label} vaccines $whenText", it.names)
+            }
+    }
+
+    // The identity document whose turn it is: a week out, the day before, the day itself,
+    // and then once a week for as long as it stays outstanding — an office visit slips.
+    if ("docs" in enabled) {
+        repo.paperwork(day).first()
+            .firstOrNull { it.status == PaperworkStatus.ACTIVE }
+            ?.let { step ->
+                val days = step.inDays ?: return@let
+                val announce = days == 7 || days == 1 || days == 0 || (days < 0 && days % 7 == 0)
+                if (!announce) return@let
+                val whenText = when {
+                    days == 0 -> "due today"
+                    days == 1 -> "due tomorrow"
+                    days > 0 -> "due in $days days"
+                    else -> "${-days} days overdue"
+                }
+                notes += Note(
+                    DIGEST_MINUTE,
+                    "${step.kind.title} $whenText",
+                    "${step.kind.leadText} · ${step.kind.needs.first()}",
+                )
             }
     }
 

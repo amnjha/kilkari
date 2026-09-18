@@ -26,6 +26,7 @@ object Routes {
     const val TIMELINE = "timeline"
     const val DOCUMENTS = "documents"
     const val DOCUMENT_DETAIL = "documentDetail"
+    const val PAPERWORK = "paperwork"
     const val PHOTOS = "photos"
     const val EVENTS = "events"
     const val REMINDERS = "reminders"
@@ -45,7 +46,7 @@ object Routes {
         VACCINES to HEALTH, VACCINE_DETAIL to HEALTH, GROWTH to HEALTH,
         TEETH to HEALTH, MEDS to HEALTH, APPOINTMENTS to HEALTH, DOCTORS to HEALTH,
         LOG_DAY to LOG, INSIGHTS to LOG,
-        TIMELINE to MORE, DOCUMENTS to MORE, DOCUMENT_DETAIL to MORE, PHOTOS to MORE,
+        TIMELINE to MORE, DOCUMENTS to MORE, DOCUMENT_DETAIL to MORE, PAPERWORK to MORE, PHOTOS to MORE,
         EVENTS to MORE, REMINDERS to MORE, BACKUP to MORE, SETTINGS to MORE,
     )
 

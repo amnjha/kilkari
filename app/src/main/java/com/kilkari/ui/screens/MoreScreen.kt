@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.seed.VaccineSchedules
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.PaperworkStatus
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
@@ -44,7 +45,7 @@ import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
 
-/** Baby card plus the seven destinations that do not live in a tab. */
+/** Baby card plus the eight destinations that do not live in a tab. */
 @Composable
 fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
     val baby by vm.baby.collectAsStateWithLifecycle()
@@ -52,8 +53,12 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
     val documents by vm.documents.collectAsStateWithLifecycle()
     val albums by vm.albums.collectAsStateWithLifecycle()
     val reminders by vm.reminders.collectAsStateWithLifecycle()
+    val paperwork by vm.paperwork.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf(false) }
     val b = baby ?: return
+
+    val nextDocument = paperwork.firstOrNull { it.status == PaperworkStatus.ACTIVE }
+    val documentsObtained = paperwork.count { it.status == PaperworkStatus.OBTAINED }
 
     val birthdayDays = Fmt.daysUntil(Fmt.nextBirthday(b.dob))
     val remindersOn = reminders.count { it.enabled }
@@ -99,6 +104,17 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
                     if (documents.isEmpty()) "Scan certificates and prescriptions"
                     else "${documents.size} ${Fmt.plural(documents.size.toLong(), "scan")} filed",
                     KC.GoldDeep, KC.GoldBg,
+                ),
+                MoreItem(
+                    Routes.PAPERWORK, "badge", "Paperwork",
+                    when {
+                        nextDocument != null ->
+                            "${nextDocument.kind.title} ${Fmt.dueText(nextDocument.inDays ?: 0)}"
+                        documentsObtained == paperwork.size && paperwork.isNotEmpty() ->
+                            "Birth certificate, Aadhaar, passport, PAN — all in hand"
+                        else -> "$documentsObtained of ${paperwork.size} obtained"
+                    },
+                    KC.ClayDeep, KC.ClayBg,
                 ),
                 MoreItem(
                     Routes.PHOTOS, "photo_library", "Photo albums",

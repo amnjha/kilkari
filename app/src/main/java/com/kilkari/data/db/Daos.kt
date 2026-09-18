@@ -376,6 +376,21 @@ interface TaskStateDao {
 
 
 @Dao
+interface PaperworkDao {
+    @Query("SELECT * FROM paperwork WHERE babyId = :babyId")
+    fun observeAll(babyId: Long): Flow<List<PaperworkEntity>>
+
+    @Query("SELECT * FROM paperwork WHERE babyId = :babyId AND `key` = :key")
+    suspend fun byKey(babyId: Long, key: String): PaperworkEntity?
+
+    @Upsert
+    suspend fun upsert(row: PaperworkEntity)
+
+    @Query("UPDATE paperwork SET documentId = NULL WHERE documentId = :documentId")
+    suspend fun unlinkDocument(documentId: Long)
+}
+
+@Dao
 interface DoctorDao {
     @Query("SELECT * FROM doctor WHERE babyId = :babyId ORDER BY name COLLATE NOCASE")
     fun observeAll(babyId: Long): Flow<List<DoctorEntity>>

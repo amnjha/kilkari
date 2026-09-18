@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.domain.DueTask
 import com.kilkari.domain.DueTaskKind
+import com.kilkari.domain.PaperworkStatus
+import com.kilkari.ui.DueTaskBuilder
 import com.kilkari.data.db.BabyEntity
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.ChildAvatar
@@ -485,6 +487,7 @@ private fun TodayChecklist(vm: KilkariViewModel, go: NavActions, dob: LocalDate)
     val nextVac by vm.nextVaccine.collectAsStateWithLifecycle()
     val appointments by vm.appointments.collectAsStateWithLifecycle()
     val events by vm.events.collectAsStateWithLifecycle()
+    val paperwork by vm.paperwork.collectAsStateWithLifecycle()
 
     val today = LocalDate.now()
     val doneCount = tasks.count { it.done }
@@ -519,6 +522,17 @@ private fun TodayChecklist(vm: KilkariViewModel, go: NavActions, dob: LocalDate)
             trailing = Fmt.dueBadge(g.inDays),
         ) { go.push(Routes.VACCINES) }
     }
+
+    paperwork.firstOrNull { it.status == PaperworkStatus.ACTIVE }
+        ?.takeIf { (it.inDays ?: 0) > DueTaskBuilder.PAPERWORK_LEAD_DAYS }
+        ?.let { step ->
+            UpcomingRow(
+                icon = step.kind.icon, tint = KC.ClayDeep, background = KC.Surface, border = KC.Border,
+                title = step.kind.title,
+                subtitle = listOfNotNull(step.dueDate?.let { Fmt.dayAndDate(it) }, step.kind.leadText).joinToString(" · "),
+                trailing = Fmt.dueBadge(step.inDays ?: 0),
+            ) { go.push(Routes.PAPERWORK) }
+        }
 
     appointments.firstOrNull { it.startAt.toLocalDate().isAfter(today) }?.let { appt ->
         UpcomingRow(
@@ -745,6 +759,7 @@ private fun taskSkin(task: DueTask): Pair<Color, Color> = when (task.kind) {
     DueTaskKind.MEDICATION -> KC.DangerDeep to KC.DangerBg2
     DueTaskKind.APPOINTMENT -> KC.Coral to KC.CoralBg
     DueTaskKind.VACCINE -> KC.GoldDeep to KC.GoldBg
+    DueTaskKind.PAPERWORK -> KC.ClayDeep to KC.ClayBg
     DueTaskKind.SLEEP -> KC.CoralDeep to KC.CoralBg
     DueTaskKind.REMINDER -> KC.SeaDeep to KC.SeaBg
 }
