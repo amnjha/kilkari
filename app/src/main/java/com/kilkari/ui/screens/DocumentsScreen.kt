@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,12 +43,16 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.Paperwork
+import com.kilkari.domain.PaperworkStatus
+import com.kilkari.domain.PaperworkStep
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.rememberImageSource
 import com.kilkari.ui.components.rememberFileSource
 import com.kilkari.ui.sheets.SheetTitle
 import com.kilkari.ui.sheets.SheetHint
 import com.kilkari.ui.components.DetailBar
+import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.SourceRow
 import com.kilkari.ui.components.KFab
@@ -77,6 +82,21 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
 
     // Opened by the + button; the three ways in all end at the same sheet.
     var chooserOpen by remember { mutableStateOf(false) }
+
+    // The Paperwork screen can send someone here to scan a named document. The title is
+    // filled in for them, and filing it records that document as obtained.
+    val paperwork by vm.paperwork.collectAsStateWithLifecycle()
+    var suggestedTitle by remember { mutableStateOf("") }
+    val pendingEntry by vm.pendingEntry.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingEntry) {
+        val entry = pendingEntry ?: return@LaunchedEffect
+        if (entry.startsWith("scan:")) {
+            suggestedTitle = Paperwork.byKey(entry.removePrefix("scan:"))?.title.orEmpty()
+            pages.clear()
+            chooserOpen = true
+            vm.consumeEntry()
+        }
+    }
 
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (ok) pendingUri?.let { pages += it.toString() }
@@ -117,6 +137,8 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
                     "Scans, photos and files, kept on this phone and filed by date.",
                     fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
                 )
+
+                PaperworkBanner(paperwork) { go.push(Routes.PAPERWORK) }
 
                 if (documents.isEmpty()) {
                     KCard {
@@ -184,10 +206,11 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
             }
         }
 
-        KSheet(sheetOpen, onDismiss = { sheetOpen = false; pages.clear() }) {
-            DocumentSheet(pages.size) { title, tags, filedOn ->
+        KSheet(sheetOpen, onDismiss = { sheetOpen = false; pages.clear(); suggestedTitle = "" }) {
+            DocumentSheet(pages.size, initialTitle = suggestedTitle) { title, tags, filedOn ->
                 vm.addDocument(title, tags, pages.toList(), filedOn)
                 pages.clear()
+                suggestedTitle = ""
                 sheetOpen = false
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -195,6 +218,41 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
                 AddMore("Image", Modifier.weight(1f)) { sheetOpen = false; gallery.gallery() }
                 AddMore("File", Modifier.weight(1f)) { sheetOpen = false; files() }
             }
+        }
+    }
+}
+
+/**
+ * The identity-document chain, in one line: which document is next and how the four stand.
+ * Documents is where a parent comes to file a certificate, so the reminder for the next one
+ * belongs here as much as under More.
+ */
+@Composable
+private fun PaperworkBanner(steps: List<PaperworkStep>, onClick: () -> Unit) {
+    if (steps.isEmpty()) return
+    val next = steps.firstOrNull { it.status == PaperworkStatus.ACTIVE }
+    val obtained = steps.count { it.status == PaperworkStatus.OBTAINED }
+    KCard(corner = 16, background = KC.ClayBg, border = KC.ClayBg2, onClick = onClick) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconBadge(next?.kind?.icon ?: "badge", KC.ClayDeep, KC.Surface, size = 36, corner = 10, iconSize = 20)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    if (next != null) "${next.kind.title} ${Fmt.dueText(next.inDays ?: 0)}"
+                    else "Paperwork all in hand",
+                    fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
+                    color = if (next?.overdue == true) KC.Danger else KC.Ink,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    "Paperwork · $obtained of ${steps.size} obtained",
+                    fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                )
+            }
+            Icon(KIcons["chevron_right"], null, tint = KC.ClayDeep, modifier = Modifier.size(20.dp))
         }
     }
 }

@@ -42,6 +42,8 @@ import com.kilkari.domain.FundTxnKind
 import com.kilkari.domain.InvestmentKind
 import com.kilkari.domain.InvestmentSummary
 import com.kilkari.domain.LogKind
+import com.kilkari.domain.PaperworkStatus
+import com.kilkari.domain.PaperworkStep
 import com.kilkari.domain.VaccineGroupState
 import com.kilkari.domain.VaccineItemState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -323,6 +325,13 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     val reminders: StateFlow<List<ReminderEntity>> = repo.reminders().state(emptyList())
     val doctors: StateFlow<List<DoctorEntity>> = repo.doctors().state(emptyList())
 
+    /**
+     * The identity documents in the order they are applied for, with the one whose turn it
+     * is carrying a due date. Re-keyed on the date so a step's lateness moves overnight.
+     */
+    val paperwork: StateFlow<List<PaperworkStep>> =
+        today.flatMapLatest { repo.paperwork(it) }.state(emptyList())
+
     private val _selectedDocument = MutableStateFlow<Long?>(null)
     val selectedDocument: StateFlow<DocumentEntity?> =
         combine(documents, _selectedDocument) { docs, id -> docs.firstOrNull { it.id == id } }
@@ -340,8 +349,8 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         combine(medications, medicationDoses, appointments, vaccineGroups) { m, d, a, v ->
             listOf(m, d, a, v)
         },
-        combine(reminders, taskStates, openSleep) { r, t, s ->
-            listOf(r, t, s)
+        combine(reminders, taskStates, openSleep, paperwork) { r, t, s, p ->
+            listOf(r, t, s, p)
         },
         settings,
         today,
@@ -362,6 +371,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             } else {
                 null
             },
+            paperwork = second[3] as List<PaperworkStep>,
         )
     }.state(emptyList())
 
@@ -756,6 +766,38 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         }
 
     fun deleteDocument(row: DocumentEntity) = viewModelScope.launch { repo.deleteDocument(row) }
+
+    /**
+     * Records where an identity document stands. Obtaining one moves the chain on, so the
+     * confirmation names what comes next rather than just what was done.
+     */
+    fun savePaperwork(
+        step: PaperworkStep,
+        status: PaperworkStatus,
+        settledOn: LocalDate?,
+        targetDate: LocalDate?,
+        note: String,
+    ) = viewModelScope.launch {
+        repo.savePaperwork(step.kind.key, status, settledOn, targetDate, note)
+        repo.rescheduleNotifications()
+        val next = paperwork.value.drop(step.index + 1)
+            .firstOrNull { it.status == PaperworkStatus.WAITING || it.status == PaperworkStatus.ACTIVE }
+        toast(
+            when (status) {
+                PaperworkStatus.OBTAINED ->
+                    if (next != null) "${step.kind.title} done · ${next.kind.title} is next"
+                    else "${step.kind.title} done · that's all four"
+                PaperworkStatus.SKIPPED ->
+                    if (next != null) "${step.kind.title} set aside · ${next.kind.title} is next"
+                    else "${step.kind.title} set aside"
+                else -> "${step.kind.title} updated"
+            }
+        )
+    }
+
+    /** The one-tap path from the hero card: obtained today, nothing else changed. */
+    fun markPaperworkObtained(step: PaperworkStep) =
+        savePaperwork(step, PaperworkStatus.OBTAINED, LocalDate.now(), step.dueDate?.takeIf { step.customDate }, step.note)
 
     fun addAlbum(title: String, subtitle: String, url: String) = viewModelScope.launch {
         repo.addAlbum(title, subtitle, url)

@@ -9,6 +9,8 @@ import com.kilkari.data.db.TaskStateEntity
 import com.kilkari.domain.DueTask
 import com.kilkari.domain.DueTaskKind
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.PaperworkStatus
+import com.kilkari.domain.PaperworkStep
 import com.kilkari.domain.RepeatRule
 import com.kilkari.domain.VaccineGroupState
 import com.kilkari.ui.nav.Routes
@@ -37,6 +39,7 @@ object DueTaskBuilder {
         taskStates: List<TaskStateEntity>,
         openSleep: LogEntryEntity?,
         fundDepositDue: LocalDate?,
+        paperwork: List<PaperworkStep> = emptyList(),
     ): List<DueTask> {
         val on = reminders.filter { it.enabled }.associateBy { it.key }
         val state = taskStates.associateBy { it.taskKey to it.occurrenceDate }
@@ -122,6 +125,31 @@ object DueTaskBuilder {
             }
         }
 
+        // The identity document whose turn it is, from a week before it is due. One at a time:
+        // the chain only ever has one active step, so this is at most one row.
+        if (on.containsKey("docs")) {
+            paperwork.firstOrNull { it.status == PaperworkStatus.ACTIVE }?.let { step ->
+                val due = step.dueDate ?: return@let
+                val days = step.inDays ?: return@let
+                if (days > PAPERWORK_LEAD_DAYS) return@let
+                tasks += DueTask(
+                    id = "docs:${step.kind.key}",
+                    kind = DueTaskKind.PAPERWORK,
+                    title = step.kind.title,
+                    subtitle = "${Fmt.dayAndDate(due, today)} · ${step.kind.leadText}",
+                    trailing = Fmt.dueBadge(days),
+                    icon = step.kind.icon,
+                    done = false,
+                    completable = false,
+                    requiresEntry = true,
+                    dismissible = false,
+                    occurrence = due,
+                    overdue = days < 0,
+                    route = Routes.PAPERWORK,
+                )
+            }
+        }
+
         // The savings account top-up, once its day has come round.
         if (on.containsKey("fund") && fundDepositDue != null && !fundDepositDue.isAfter(today)) {
             val acted = state["fund" to fundDepositDue]
@@ -179,6 +207,9 @@ object DueTaskBuilder {
         )
     }
 
+    /** How many days before an identity document is due it appears on Today. */
+    const val PAPERWORK_LEAD_DAYS = 7
+
     /** Built-in reminders that are a task in their own right rather than a switch. */
     private val SELF_STANDING = setOf("weigh", "album")
 
@@ -220,6 +251,7 @@ object DueTaskBuilder {
         "weigh" -> "monitor_weight"
         "album" -> "photo_camera"
         "fund" -> "savings"
+        "docs" -> "badge"
         else -> "notifications_active"
     }
 

@@ -204,8 +204,13 @@ fun ColumnScope.EventSheet(onSave: (String, String, LocalDate, Boolean) -> Unit)
 }
 
 @Composable
-fun ColumnScope.DocumentSheet(pageCount: Int, onSave: (String, String, LocalDate) -> Unit) {
-    var title by remember { mutableStateOf("") }
+fun ColumnScope.DocumentSheet(
+    pageCount: Int,
+    /** Filled in when the scan was asked for by name — the Paperwork screen's "Scan it". */
+    initialTitle: String = "",
+    onSave: (String, String, LocalDate) -> Unit,
+) {
+    var title by remember(initialTitle) { mutableStateOf(initialTitle) }
     var tags by remember { mutableStateOf("") }
     var filed by remember { mutableStateOf(LocalDate.now()) }
 

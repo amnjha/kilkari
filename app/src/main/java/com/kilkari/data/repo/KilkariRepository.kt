@@ -16,6 +16,7 @@ import com.kilkari.data.db.KilkariDatabase
 import com.kilkari.data.db.LogEntryEntity
 import com.kilkari.data.db.MedicationDoseEntity
 import com.kilkari.data.db.MedicationEntity
+import com.kilkari.data.db.PaperworkEntity
 import com.kilkari.data.db.ReminderEntity
 import com.kilkari.data.db.TaskStateEntity
 import com.kilkari.data.db.TimelineEntity
@@ -33,8 +34,13 @@ import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.FeedType
 import com.kilkari.domain.FundTxnKind
 import com.kilkari.domain.InvestmentKind
+import com.kilkari.domain.FiledDocument
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
+import com.kilkari.domain.Paperwork
+import com.kilkari.domain.PaperworkRecord
+import com.kilkari.domain.PaperworkStatus
+import com.kilkari.domain.PaperworkStep
 import com.kilkari.domain.ReminderDraft
 import com.kilkari.domain.RepeatRule
 import com.kilkari.work.MedicationAlarms
@@ -681,17 +687,119 @@ class KilkariRepository(
     fun documents(): Flow<List<DocumentEntity>> = forBaby { db.documentDao().observeAll(it) }
     fun document(id: Long): Flow<DocumentEntity?> = db.documentDao().observeById(id)
 
+    /**
+     * Files a scan. A scan whose title names one of the identity documents — "Birth
+     * certificate", "Aadhaar card" — is the document, so filing it also records that document
+     * as obtained on the day it was filed; the same way a weigh-in clears the weigh-in prompt.
+     */
     suspend fun addDocument(title: String, filedOn: LocalDate, tags: String, pageUris: List<String>): Long {
         val id = babyId() ?: return 0
-        return db.documentDao().insert(
+        val documentId = db.documentDao().insert(
             DocumentEntity(
                 babyId = id, title = title, filedOn = filedOn, tags = tags,
                 pageCount = pageUris.size.coerceAtLeast(1), pageUris = pageUris.joinToString(","),
             )
         )
+        Paperwork.matching(title)?.let { kind ->
+            val existing = db.paperworkDao().byKey(id, kind.key)
+            if (existing != null && existing.status == PaperworkStatus.OBTAINED.key) {
+                // Already recorded by hand: just attach the scan, keeping the date it was obtained.
+                if (existing.documentId == null) {
+                    db.paperworkDao().upsert(existing.copy(documentId = documentId))
+                }
+            } else {
+                recordPaperwork(
+                    id, kind.key, PaperworkStatus.OBTAINED, filedOn,
+                    targetDate = existing?.targetDate, note = existing?.note.orEmpty(),
+                    documentId = documentId,
+                )
+            }
+        }
+        return documentId
     }
 
-    suspend fun deleteDocument(row: DocumentEntity) = db.documentDao().delete(row)
+    /** The scan goes; whatever it was a scan of stays obtained, just without a scan attached. */
+    suspend fun deleteDocument(row: DocumentEntity) {
+        db.paperworkDao().unlinkDocument(row.id)
+        db.documentDao().delete(row)
+    }
+
+    // ── Paperwork ───────────────────────────────────────────────────────────
+
+    /**
+     * The four identity documents, in order, worked out against [today]: which is obtained,
+     * which is next and when it is due. Re-emits as records or filed scans change.
+     */
+    fun paperwork(today: LocalDate = LocalDate.now()): Flow<List<PaperworkStep>> =
+        baby.flatMapLatest { b ->
+            if (b == null) flowOf(emptyList()) else {
+                combine(
+                    db.paperworkDao().observeAll(b.id),
+                    db.documentDao().observeAll(b.id),
+                ) { rows, docs ->
+                    Paperwork.plan(
+                        dob = b.dob,
+                        records = rows.map {
+                            PaperworkRecord(it.key, it.status, it.settledOn, it.targetDate, it.note, it.documentId)
+                        },
+                        documents = docs.map { FiledDocument(it.id, it.title, it.filedOn) },
+                        today = today,
+                    )
+                }
+            }
+        }
+
+    /**
+     * Records where a document stands. [settledOn] is the day it was obtained or set aside;
+     * it is dropped when the document goes back to pending, so the next one's clock stops.
+     */
+    suspend fun savePaperwork(
+        key: String,
+        status: PaperworkStatus,
+        settledOn: LocalDate?,
+        targetDate: LocalDate?,
+        note: String,
+    ) {
+        val id = babyId() ?: return
+        val existing = db.paperworkDao().byKey(id, key)
+        recordPaperwork(id, key, status, settledOn, targetDate, note, existing?.documentId)
+    }
+
+    /**
+     * Newly obtaining a document is a moment worth a timeline entry, the way a vaccination
+     * is; going back to pending, or setting aside, is not.
+     */
+    private suspend fun recordPaperwork(
+        babyId: Long,
+        key: String,
+        status: PaperworkStatus,
+        settledOn: LocalDate?,
+        targetDate: LocalDate?,
+        note: String,
+        documentId: Long?,
+    ) {
+        val kind = Paperwork.byKey(key) ?: return
+        val before = db.paperworkDao().byKey(babyId, key)
+        val pending = status != PaperworkStatus.OBTAINED && status != PaperworkStatus.SKIPPED
+        db.paperworkDao().upsert(
+            PaperworkEntity(
+                babyId = babyId, key = key, status = status.key,
+                settledOn = if (pending) null else settledOn ?: LocalDate.now(),
+                targetDate = targetDate, note = note, documentId = documentId,
+            )
+        )
+        val newlyObtained = status == PaperworkStatus.OBTAINED && before?.status != PaperworkStatus.OBTAINED.key
+        if (newlyObtained) {
+            db.timelineDao().insert(
+                TimelineEntity(
+                    babyId = babyId, date = settledOn ?: LocalDate.now(),
+                    title = "${kind.title} obtained",
+                    subtitle = note.ifBlank { "Paperwork" },
+                    icon = kind.icon,
+                )
+            )
+        }
+    }
 
     fun albums(): Flow<List<AlbumEntity>> = forBaby { db.albumDao().observeAll(it) }
 
@@ -1011,6 +1119,9 @@ class KilkariRepository(
                 ReminderEntity(
                     "fund", "Monthly fund top-up", "On the day the deposit is due", true,
                     repeatRule = "monthly",
+                ),
+                ReminderEntity(
+                    "docs", "Paperwork", "Birth certificate, Aadhaar, passport, PAN — one at a time", true,
                 ),
                 // Two daily habits the design showed on the Today list. They are the parent's
                 // to keep, reword or delete rather than the app's to insist on, so they arrive

@@ -2,6 +2,11 @@ package com.kilkari.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Article
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.automirrored.filled.Message
@@ -161,6 +166,12 @@ object KIcons {
         "add_link" to Icons.Filled.AddLink,
         "folder_open" to Icons.Filled.FolderOpen,
         "photo_library" to Icons.Filled.PhotoLibrary,
+        // Paperwork: the four identity documents, and the chain itself.
+        "badge" to Icons.Filled.Badge,
+        "article" to Icons.AutoMirrored.Filled.Article,
+        "fingerprint" to Icons.Filled.Fingerprint,
+        "flight" to Icons.Filled.Flight,
+        "credit_card" to Icons.Filled.CreditCard,
         "table_view" to Icons.Filled.TableView,
         // More
         "timeline" to Icons.Filled.Timeline,

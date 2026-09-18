@@ -226,6 +226,25 @@ data class TaskStateEntity(
 )
 
 /**
+ * Where one of the child's identity documents stands — birth certificate, Aadhaar, passport,
+ * PAN. One row per document once it has been touched; a document with no row is simply
+ * pending. [status] is pending | obtained | skipped, and [settledOn] is the day it was either
+ * obtained or set aside, since the next document's clock starts from there either way.
+ */
+@Entity(tableName = "paperwork", primaryKeys = ["babyId", "key"])
+data class PaperworkEntity(
+    val babyId: Long,
+    val key: String,
+    val status: String = "pending",
+    val settledOn: LocalDate? = null,
+    /** A date of the parent's own, overriding the suggested one. */
+    val targetDate: LocalDate? = null,
+    val note: String = "",
+    /** The filed scan of it, where there is one. */
+    val documentId: Long? = null,
+)
+
+/**
  * A deposit into, or withdrawal from, the savings account the child's costs are paid from.
  * Expenses and investment contributions are *not* mirrored here — the balance subtracts them
  * directly, so deleting an expense restores the balance with no rows to keep in sync.
