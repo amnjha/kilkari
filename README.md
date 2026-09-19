@@ -4,16 +4,36 @@ An offline-first Android baby tracker. Everything lives on the phone — no acco
 Built in Kotlin with Jetpack Compose and Room, from the Claude Design canvas in
 [`design/Kilkari Baby Tracker.dc.html`](design/Kilkari%20Baby%20Tracker.dc.html).
 
+## What it looks like
+
+Screens from a debug build with sample data — a four-week-old with a month of feeds, sleeps and
+diapers behind her.
+
+| Today | Log | Daily log |
+| --- | --- | --- |
+| <img src="docs/screenshots/01-today.png" alt="Today tab: next-up card, quick actions and the due-today list" width="240"> | <img src="docs/screenshots/02-log.png" alt="Log tab: six quick-log tiles over today's entries" width="240"> | <img src="docs/screenshots/03-dailylog.png" alt="Daily log: a week strip, the day's totals and its entries" width="240"> |
+| The next thing due, the three most-used actions with when they last happened, and everything outstanding today. | Six tiles to log from, then the day's entries — tap one to correct it. | Any earlier day: its totals, its entries, and a way to file something that was missed. |
+
+| Insights · feeding | Insights · sleep | Growth |
+| --- | --- | --- |
+| <img src="docs/screenshots/04-insights.png" alt="Insights: feeding averages over the last seven days with a per-day chart" width="240"> | <img src="docs/screenshots/05-insights-sleep.png" alt="Insights: sleep averages, hours asleep per day, and the day/night split" width="240"> | <img src="docs/screenshots/07-growth.png" alt="Growth: weight over time against the WHO median" width="240"> |
+| Averages over 7 or 30 days, per logged day, with what changed against the period before. | Sleep split at midnight between the days it touches, and day against night. | Weigh-ins against the WHO median for a child of that age and sex. |
+
+| Health | Vaccinations | Money |
+| --- | --- | --- |
+| <img src="docs/screenshots/06-health.png" alt="Health hub: vaccinations, growth, teeth, medications, appointments and doctors" width="240"> | <img src="docs/screenshots/08-vaccines.png" alt="Vaccination schedule generated from the date of birth" width="240"> | <img src="docs/screenshots/09-money.png" alt="Money: this month's spending split by category, with the ledger and previous months" width="240"> |
+| One way into each health area, over what was recorded recently. | Generated from the date of birth against the chosen schedule. | What went out this month, split medical against general, with earlier months folded away. |
+
 ## What's in it
 
-**Five tabs** — Today · Log · Health · Money · More, plus fifteen pushed screens.
+**Five tabs** — Today · Log · Health · Money · More, plus eighteen pushed screens.
 
 | Area | Screens |
 | --- | --- |
 | Launch | System splash hands over to a branded Compose splash that covers the database read |
 | Onboarding | A short wizard: welcome → baby → measurements → schedule → currency → **catch-up** → summary |
 | Today | Three interchangeable layouts: **Agenda** (default), **Hero**, **Checklist**, all rendering the same due-today list. Switch in Settings. |
-| Log | Six quick-log tiles (feed, sleep, diaper, medicine, growth, teeth) over the day's entries |
+| Log | Six quick-log tiles (feed, sleep, diaper, medicine, growth, teeth) over the day's entries, plus **Daily log** (any earlier day) and **Insights** (7- and 30-day averages) |
 | Health | Hub → Vaccines, Vaccine group detail, Growth, Teeth, Medications, Appointments, Doctors |
 | Money | Three views: **Spending** (monthly split, ledger), **Fund** (the savings account everything is paid from), **Invest** (FD, RD, SIP, PPF, Sukanya Samriddhi, gold) |
 | More | Timeline, Documents, Document detail, **Paperwork**, Photo albums, Birthdays & events, Reminders, Backup & export, Settings |
@@ -40,9 +60,10 @@ week's prompt.
 **Nothing is written in stone either.** Every journal entry and every money entry can be
 reopened from the list it appears in — a feed, a nap, a diaper, a dose, a measurement, an
 expense, a fund deposit or withdrawal, an investment contribution, a moment on the timeline —
-and corrected or removed in the same sheet that recorded it. The Log tab lists what was filed
-against an earlier day alongside today's entries, so a back-dated entry does not become
-uncorrectable once the day rolls over. On the Money tab a fund ledger line opens whatever
+and corrected or removed in the same sheet that recorded it. The Log tab's **Daily log** opens
+any earlier day — its totals and its entries — so a back-dated entry does not become
+uncorrectable once the day rolls over, and something missed can still be filed against the day
+it belongs to. On the Money tab a fund ledger line opens whatever
 produced it, whether that was a deposit, an expense or an instalment, and a holding lists its
 contributions so a mistyped one is fixed rather than papered over with a restated value.
 Because balances and totals are derived rather than mirrored, a corrected amount moves the fund
@@ -209,8 +230,9 @@ Nothing leaves the device unless you export it.
 - Multi-baby support — the schema has a `babyId` throughout but the UI assumes one baby.
 - Unit conversion. Settings exposes a kg·cm / lb·in toggle; the display formatters are still
   metric-only, so switching it currently changes only the label.
-- Growth percentile curves. The design shows "55th pct" copy; the app charts raw weights
-  without WHO reference data.
+- Growth percentile bands. Weight is charted against the WHO median for the child's age and
+  sex, but the app does not draw the percentile envelope or state which percentile a reading
+  sits on — the design's "55th pct" copy is not implemented.
 - Editing existing entries — journal and money entries, the child's details, custom reminders
   and recorded teeth can all be edited. Appointments, filed documents, photo albums, birthdays
   and recorded vaccine doses still support add and delete only.
@@ -221,4 +243,5 @@ Nothing leaves the device unless you export it.
 - Investment values are whatever you last entered. There is no price feed, no XIRR, and no
   maturity projection — an FD's maturity value is a field you fill in from the bank, not a
   calculation.
-- No tests yet.
+- Tests cover the insights arithmetic only (`app/src/test`, 18 JUnit cases). There are no UI
+  tests and no tests around the database, scheduling or money.
