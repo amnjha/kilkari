@@ -8,20 +8,33 @@
   ],
   "appointments" : [
     {
-      "startAt" : "2026-10-15T15:17:40Z",
+      "startAt" : "2026-10-15T15:52:57Z",
       "title" : "Six-week check",
       "who" : "Dr Nair"
     }
   ],
   "baby" : {
-    "dob" : "2026-09-03T15:17:40Z",
+    "dob" : "2026-09-03T15:52:57Z",
     "name" : "Ira",
     "sex" : "girl"
   },
   "deposits" : [
     {
+      "amount" : 3000,
+      "date" : "2026-09-14T15:52:57Z",
+      "kind" : "deposit",
+      "note" : "From SBI savings"
+    },
+    {
+      "amount" : 3000,
+      "date" : "2026-09-14T15:52:57Z",
+      "kind" : "withdrawal",
+      "note" : "To Cash at home"
+    },
+    {
       "amount" : 15000,
-      "date" : "2026-09-08T15:17:40Z",
+      "date" : "2026-09-08T15:52:57Z",
+      "kind" : "deposit",
       "note" : "Monthly transfer"
     }
   ],
@@ -35,19 +48,19 @@
   ],
   "doses" : [
     {
-      "givenOn" : "2026-09-04T15:17:40Z",
+      "givenOn" : "2026-09-04T15:52:57Z",
       "group" : "Birth",
-      "vaccine" : "OPV-0"
+      "vaccine" : "BCG"
     },
     {
-      "givenOn" : "2026-09-04T15:17:40Z",
+      "givenOn" : "2026-09-04T15:52:57Z",
       "group" : "Birth",
       "vaccine" : "Hep B-1"
     },
     {
-      "givenOn" : "2026-09-04T15:17:40Z",
+      "givenOn" : "2026-09-04T15:52:57Z",
       "group" : "Birth",
-      "vaccine" : "BCG"
+      "vaccine" : "OPV-0"
     }
   ],
   "events" : [
@@ -62,31 +75,31 @@
     {
       "amount" : 1450,
       "category" : "general",
-      "date" : "2026-09-15T15:17:40Z",
+      "date" : "2026-09-15T15:52:57Z",
       "paidFromFund" : true,
       "title" : "Baby clothes",
       "vendor" : "Market"
     },
     {
-      "amount" : 1899,
-      "category" : "general",
-      "date" : "2026-09-09T15:17:40Z",
-      "paidFromFund" : true,
-      "title" : "Nappies, pack of 72",
-      "vendor" : "Local pharmacy"
-    },
-    {
       "amount" : 1200,
       "category" : "medical",
-      "date" : "2026-09-18T15:17:40Z",
+      "date" : "2026-09-18T15:52:57Z",
       "paidFromFund" : true,
       "title" : "Birth vaccines",
       "vendor" : "Rainbow Clinic"
     },
     {
+      "amount" : 1899,
+      "category" : "general",
+      "date" : "2026-09-09T15:52:57Z",
+      "paidFromFund" : true,
+      "title" : "Nappies, pack of 72",
+      "vendor" : "Local pharmacy"
+    },
+    {
       "amount" : 800,
       "category" : "medical",
-      "date" : "2026-09-11T15:17:40Z",
+      "date" : "2026-09-11T15:52:57Z",
       "paidFromFund" : true,
       "title" : "Paediatric visit",
       "vendor" : "Rainbow Clinic"
@@ -95,25 +108,36 @@
   "format" : "kilkari-backup",
   "growth" : [
     {
-      "date" : "2026-09-11T15:17:40Z",
+      "date" : "2026-09-11T15:52:57Z",
       "headCm" : null,
       "lengthCm" : 49.700000000000003,
       "weightKg" : 3.4100000000000001
     },
     {
-      "date" : "2026-09-04T15:17:40Z",
-      "headCm" : null,
-      "lengthCm" : 49,
-      "weightKg" : 3.2400000000000002
-    },
-    {
-      "date" : "2026-09-18T15:17:40Z",
+      "date" : "2026-09-18T15:52:57Z",
       "headCm" : null,
       "lengthCm" : 50.399999999999999,
       "weightKg" : 3.6800000000000002
+    },
+    {
+      "date" : "2026-09-04T15:52:57Z",
+      "headCm" : null,
+      "lengthCm" : 49,
+      "weightKg" : 3.2400000000000002
     }
   ],
   "investments" : [
+    {
+      "invested" : 100000,
+      "kind" : "fd",
+      "maturesOn" : "2030-09-20T15:52:57Z",
+      "monthly" : null,
+      "name" : "SBI fixed deposit",
+      "rate" : 7.0999999999999996,
+      "startedOn" : "2025-07-20T15:52:57Z",
+      "value" : 108400,
+      "valuedOn" : "2026-09-14T15:52:57Z"
+    },
     {
       "invested" : 0,
       "kind" : "sip",
@@ -121,52 +145,21 @@
       "monthly" : 5000,
       "name" : "Index fund SIP",
       "rate" : 12,
-      "startedOn" : "2025-11-20T15:17:40Z",
+      "startedOn" : "2025-11-20T15:52:57Z",
       "value" : 58900,
-      "valuedOn" : "2026-09-14T15:17:40Z"
-    },
-    {
-      "invested" : 100000,
-      "kind" : "fd",
-      "maturesOn" : "2030-09-20T15:17:40Z",
-      "monthly" : null,
-      "name" : "SBI fixed deposit",
-      "rate" : 7.0999999999999996,
-      "startedOn" : "2025-07-20T15:17:40Z",
-      "value" : 108400,
-      "valuedOn" : "2026-09-14T15:17:40Z"
+      "valuedOn" : "2026-09-14T15:52:57Z"
     }
   ],
   "logEntries" : [
     {
       "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-15T18:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-17T03:17:40Z"
-    },
-    {
-      "amount" : null,
       "diaperKind" : null,
-      "endAt" : "2026-09-15T11:17:40Z",
+      "endAt" : "2026-09-14T04:52:57Z",
       "feedType" : null,
       "kind" : "sleep",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-15T09:17:40Z"
+      "startAt" : "2026-09-14T02:52:57Z"
     },
     {
       "amount" : 17,
@@ -176,27 +169,7 @@
       "kind" : "feed",
       "note" : null,
       "side" : "R",
-      "startAt" : "2026-09-17T22:17:40Z"
-    },
-    {
-      "amount" : 13,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-14T10:17:40Z"
-    },
-    {
-      "amount" : 17,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-19T22:17:40Z"
+      "startAt" : "2026-09-17T22:52:57Z"
     },
     {
       "amount" : 14,
@@ -206,127 +179,7 @@
       "kind" : "feed",
       "note" : null,
       "side" : "L",
-      "startAt" : "2026-09-15T07:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-17T11:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-17T09:17:40Z"
-    },
-    {
-      "amount" : 17,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-14T22:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-16T23:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-16T16:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-14T18:17:40Z"
-    },
-    {
-      "amount" : 15,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-18T04:17:40Z"
-    },
-    {
-      "amount" : 12,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-14T13:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-16T04:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-16T02:17:40Z"
-    },
-    {
-      "amount" : 90,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "bottle",
-      "kind" : "feed",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-17T19:17:40Z"
-    },
-    {
-      "amount" : 90,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "bottle",
-      "kind" : "feed",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-15T19:17:40Z"
-    },
-    {
-      "amount" : 13,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-15T10:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-19T18:17:40Z"
-    },
-    {
-      "amount" : 15,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-14T04:17:40Z"
+      "startAt" : "2026-09-17T07:52:57Z"
     },
     {
       "amount" : null,
@@ -336,17 +189,397 @@
       "kind" : "diaper",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-14T23:17:40Z"
+      "startAt" : "2026-09-15T23:52:57Z"
     },
     {
-      "amount" : 17,
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-18T12:52:57Z"
+    },
+    {
+      "amount" : 90,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "bottle",
+      "kind" : "feed",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-16T19:52:57Z"
+    },
+    {
+      "amount" : 13,
       "diaperKind" : null,
       "endAt" : null,
       "feedType" : "breast",
       "kind" : "feed",
       "note" : null,
       "side" : "R",
-      "startAt" : "2026-09-13T22:17:40Z"
+      "startAt" : "2026-09-14T10:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-20T12:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-19T23:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-19T16:52:57Z"
+    },
+    {
+      "amount" : 16,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-15T01:52:57Z"
+    },
+    {
+      "amount" : 13,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-16T10:52:57Z"
+    },
+    {
+      "amount" : 13,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-15T10:52:57Z"
+    },
+    {
+      "amount" : 16,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-20T01:52:57Z"
+    },
+    {
+      "amount" : 12,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-20T13:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-16T04:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-16T02:52:57Z"
+    },
+    {
+      "amount" : 14,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-16T07:52:57Z"
+    },
+    {
+      "amount" : 16,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-14T01:52:57Z"
+    },
+    {
+      "amount" : 13,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-18T10:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-19T08:52:57Z"
+    },
+    {
+      "amount" : 14,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-15T07:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-15T04:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-15T02:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-20T11:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-20T09:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "wet",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-18T03:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-19T18:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-14T23:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-14T16:52:57Z"
+    },
+    {
+      "amount" : 13,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-19T10:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-15T11:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-15T09:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-14T12:52:57Z"
+    },
+    {
+      "amount" : 90,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "bottle",
+      "kind" : "feed",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-15T19:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-13T23:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-13T16:52:57Z"
+    },
+    {
+      "amount" : 90,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "bottle",
+      "kind" : "feed",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-14T19:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-17T08:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-16T08:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "wet",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-17T23:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-15T12:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-17T04:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-17T02:52:57Z"
+    },
+    {
+      "amount" : 12,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-15T13:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-18T23:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-18T16:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-18T08:52:57Z"
+    },
+    {
+      "amount" : 90,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "bottle",
+      "kind" : "feed",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-19T19:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-18T18:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "wet",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-16T03:52:57Z"
+    },
+    {
+      "amount" : 15,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-18T04:52:57Z"
     },
     {
       "amount" : null,
@@ -356,17 +589,7 @@
       "kind" : "medicine",
       "note" : "Vitamin D drops · 1 drop",
       "side" : null,
-      "startAt" : "2026-09-20T06:17:40Z"
-    },
-    {
-      "amount" : 17,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-18T22:17:40Z"
+      "startAt" : "2026-09-20T06:52:57Z"
     },
     {
       "amount" : 15,
@@ -376,7 +599,87 @@
       "kind" : "feed",
       "note" : null,
       "side" : "R",
-      "startAt" : "2026-09-17T04:17:40Z"
+      "startAt" : "2026-09-20T04:52:57Z"
+    },
+    {
+      "amount" : 90,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "bottle",
+      "kind" : "feed",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-17T19:52:57Z"
+    },
+    {
+      "amount" : 12,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-14T13:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-14T18:52:57Z"
+    },
+    {
+      "amount" : 15,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-14T04:52:57Z"
+    },
+    {
+      "amount" : 12,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-16T13:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-14T08:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "wet",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-18T23:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-16T11:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-16T09:52:57Z"
     },
     {
       "amount" : 17,
@@ -386,7 +689,7 @@
       "kind" : "feed",
       "note" : null,
       "side" : "R",
-      "startAt" : "2026-09-16T22:17:40Z"
+      "startAt" : "2026-09-16T22:52:57Z"
     },
     {
       "amount" : null,
@@ -396,47 +699,17 @@
       "kind" : "diaper",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-20T12:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-16T08:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-16T18:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-15T08:17:40Z"
+      "startAt" : "2026-09-17T12:52:57Z"
     },
     {
       "amount" : null,
       "diaperKind" : null,
-      "endAt" : "2026-09-18T23:17:40Z",
+      "endAt" : "2026-09-19T11:52:57Z",
       "feedType" : null,
       "kind" : "sleep",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-18T16:17:40Z"
+      "startAt" : "2026-09-19T09:52:57Z"
     },
     {
       "amount" : null,
@@ -446,7 +719,47 @@
       "kind" : "diaper",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-14T08:17:40Z"
+      "startAt" : "2026-09-17T18:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "wet",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-13T23:52:57Z"
+    },
+    {
+      "amount" : 15,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-19T04:52:57Z"
+    },
+    {
+      "amount" : 15,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-17T04:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-18T04:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-18T02:52:57Z"
     },
     {
       "amount" : 16,
@@ -456,7 +769,47 @@
       "kind" : "feed",
       "note" : null,
       "side" : "L",
-      "startAt" : "2026-09-16T01:17:40Z"
+      "startAt" : "2026-09-19T01:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-17T11:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-17T09:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "wet",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-16T23:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-16T23:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-16T16:52:57Z"
+    },
+    {
+      "amount" : 12,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-18T13:52:57Z"
     },
     {
       "amount" : null,
@@ -466,37 +819,27 @@
       "kind" : "tooth",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-18T15:17:40Z"
+      "startAt" : "2026-09-18T15:52:57Z"
     },
     {
-      "amount" : 15,
+      "amount" : 16,
       "diaperKind" : null,
       "endAt" : null,
       "feedType" : "breast",
       "kind" : "feed",
       "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-20T04:17:40Z"
-    },
-    {
-      "amount" : 90,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "bottle",
-      "kind" : "feed",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-19T19:17:40Z"
+      "side" : "L",
+      "startAt" : "2026-09-16T01:52:57Z"
     },
     {
       "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-15T04:17:40Z",
+      "diaperKind" : "wet",
+      "endAt" : null,
       "feedType" : null,
-      "kind" : "sleep",
+      "kind" : "diaper",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-15T02:17:40Z"
+      "startAt" : "2026-09-19T03:52:57Z"
     },
     {
       "amount" : null,
@@ -506,87 +849,7 @@
       "kind" : "diaper",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-17T12:17:40Z"
-    },
-    {
-      "amount" : 12,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-18T13:17:40Z"
-    },
-    {
-      "amount" : 12,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-19T13:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-20T03:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-19T23:17:40Z"
-    },
-    {
-      "amount" : 13,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-17T10:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-14T11:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-14T09:17:40Z"
-    },
-    {
-      "amount" : 90,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "bottle",
-      "kind" : "feed",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-18T19:17:40Z"
-    },
-    {
-      "amount" : 13,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-18T10:17:40Z"
+      "startAt" : "2026-09-16T12:52:57Z"
     },
     {
       "amount" : 17,
@@ -596,157 +859,7 @@
       "kind" : "feed",
       "note" : null,
       "side" : "R",
-      "startAt" : "2026-09-15T22:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-19T04:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-19T02:17:40Z"
-    },
-    {
-      "amount" : 16,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-14T01:17:40Z"
-    },
-    {
-      "amount" : 14,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-17T07:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-18T18:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-20T04:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-20T02:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-17T23:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-17T16:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-13T23:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-13T23:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-13T16:17:40Z"
-    },
-    {
-      "amount" : 12,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-16T13:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-16T11:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-16T09:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-20T08:17:40Z"
-    },
-    {
-      "amount" : 14,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-16T07:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-16T23:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-18T12:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-17T18:17:40Z"
+      "startAt" : "2026-09-18T22:52:57Z"
     },
     {
       "amount" : 15,
@@ -756,37 +869,37 @@
       "kind" : "feed",
       "note" : null,
       "side" : "R",
-      "startAt" : "2026-09-15T04:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-15T23:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-18T03:17:40Z"
+      "startAt" : "2026-09-16T04:52:57Z"
     },
     {
       "amount" : null,
       "diaperKind" : null,
-      "endAt" : "2026-09-14T23:17:40Z",
+      "endAt" : "2026-09-15T23:52:57Z",
       "feedType" : null,
       "kind" : "sleep",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-14T16:17:40Z"
+      "startAt" : "2026-09-15T16:52:57Z"
+    },
+    {
+      "amount" : 90,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "bottle",
+      "kind" : "feed",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-13T19:52:57Z"
+    },
+    {
+      "amount" : 17,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-14T22:52:57Z"
     },
     {
       "amount" : 12,
@@ -796,7 +909,57 @@
       "kind" : "feed",
       "note" : null,
       "side" : "L",
-      "startAt" : "2026-09-17T13:17:40Z"
+      "startAt" : "2026-09-17T13:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "wet",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-15T03:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-15T18:52:57Z"
+    },
+    {
+      "amount" : 12,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-19T13:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "wet",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-17T03:52:57Z"
+    },
+    {
+      "amount" : 16,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-18T01:52:57Z"
     },
     {
       "amount" : 14,
@@ -806,17 +969,97 @@
       "kind" : "feed",
       "note" : null,
       "side" : "L",
-      "startAt" : "2026-09-19T07:17:40Z"
+      "startAt" : "2026-09-19T07:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "wet",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-19T23:52:57Z"
+    },
+    {
+      "amount" : 13,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-20T10:52:57Z"
     },
     {
       "amount" : null,
       "diaperKind" : null,
-      "endAt" : "2026-09-14T04:17:40Z",
+      "endAt" : "2026-09-20T04:52:57Z",
       "feedType" : null,
       "kind" : "sleep",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-14T02:17:40Z"
+      "startAt" : "2026-09-20T02:52:57Z"
+    },
+    {
+      "amount" : 14,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "L",
+      "startAt" : "2026-09-18T07:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-16T18:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "both",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-13T18:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : null,
+      "endAt" : "2026-09-18T11:52:57Z",
+      "feedType" : null,
+      "kind" : "sleep",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-18T09:52:57Z"
+    },
+    {
+      "amount" : null,
+      "diaperKind" : "wet",
+      "endAt" : null,
+      "feedType" : null,
+      "kind" : "diaper",
+      "note" : null,
+      "side" : null,
+      "startAt" : "2026-09-14T23:52:57Z"
+    },
+    {
+      "amount" : 17,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-19T22:52:57Z"
     },
     {
       "amount" : 15,
@@ -826,77 +1069,27 @@
       "kind" : "feed",
       "note" : null,
       "side" : "R",
-      "startAt" : "2026-09-16T04:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-18T23:17:40Z"
-    },
-    {
-      "amount" : 13,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-16T10:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-13T18:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-19T03:17:40Z"
+      "startAt" : "2026-09-15T04:52:57Z"
     },
     {
       "amount" : null,
       "diaperKind" : null,
-      "endAt" : "2026-09-19T23:17:40Z",
+      "endAt" : "2026-09-14T11:52:57Z",
       "feedType" : null,
       "kind" : "sleep",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-19T16:17:40Z"
+      "startAt" : "2026-09-14T09:52:57Z"
     },
     {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-14T12:17:40Z"
-    },
-    {
-      "amount" : 12,
+      "amount" : 16,
       "diaperKind" : null,
       "endAt" : null,
       "feedType" : "breast",
       "kind" : "feed",
       "note" : null,
       "side" : "L",
-      "startAt" : "2026-09-20T13:17:40Z"
+      "startAt" : "2026-09-17T01:52:57Z"
     },
     {
       "amount" : null,
@@ -906,27 +1099,47 @@
       "kind" : "diaper",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-19T12:17:40Z"
+      "startAt" : "2026-09-15T08:52:57Z"
+    },
+    {
+      "amount" : 17,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-13T22:52:57Z"
     },
     {
       "amount" : null,
       "diaperKind" : null,
-      "endAt" : "2026-09-18T11:17:40Z",
+      "endAt" : "2026-09-19T04:52:57Z",
       "feedType" : null,
       "kind" : "sleep",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-18T09:17:40Z"
+      "startAt" : "2026-09-19T02:52:57Z"
     },
     {
       "amount" : null,
       "diaperKind" : null,
-      "endAt" : "2026-09-20T11:17:40Z",
+      "endAt" : "2026-09-17T23:52:57Z",
       "feedType" : null,
       "kind" : "sleep",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-20T09:17:40Z"
+      "startAt" : "2026-09-17T16:52:57Z"
+    },
+    {
+      "amount" : 17,
+      "diaperKind" : null,
+      "endAt" : null,
+      "feedType" : "breast",
+      "kind" : "feed",
+      "note" : null,
+      "side" : "R",
+      "startAt" : "2026-09-15T22:52:57Z"
     },
     {
       "amount" : 90,
@@ -936,67 +1149,7 @@
       "kind" : "feed",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-13T19:17:40Z"
-    },
-    {
-      "amount" : 16,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-20T01:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-19T11:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-19T09:17:40Z"
-    },
-    {
-      "amount" : 16,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-17T01:17:40Z"
-    },
-    {
-      "amount" : 90,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "bottle",
-      "kind" : "feed",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-14T19:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-15T12:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-18T04:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-18T02:17:40Z"
+      "startAt" : "2026-09-18T19:52:57Z"
     },
     {
       "amount" : 14,
@@ -1006,17 +1159,7 @@
       "kind" : "feed",
       "note" : null,
       "side" : "L",
-      "startAt" : "2026-09-18T07:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-15T03:17:40Z"
+      "startAt" : "2026-09-20T07:52:57Z"
     },
     {
       "amount" : null,
@@ -1026,17 +1169,7 @@
       "kind" : "diaper",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-17T08:17:40Z"
-    },
-    {
-      "amount" : 90,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "bottle",
-      "kind" : "feed",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-16T19:17:40Z"
+      "startAt" : "2026-09-20T08:52:57Z"
     },
     {
       "amount" : 13,
@@ -1046,97 +1179,7 @@
       "kind" : "feed",
       "note" : null,
       "side" : "R",
-      "startAt" : "2026-09-19T10:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-18T08:17:40Z"
-    },
-    {
-      "amount" : 16,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-18T01:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-17T04:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-17T02:17:40Z"
-    },
-    {
-      "amount" : 13,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-20T10:17:40Z"
-    },
-    {
-      "amount" : 15,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "R",
-      "startAt" : "2026-09-19T04:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : null,
-      "endAt" : "2026-09-15T23:17:40Z",
-      "feedType" : null,
-      "kind" : "sleep",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-15T16:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "both",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-16T12:17:40Z"
-    },
-    {
-      "amount" : 16,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-15T01:17:40Z"
-    },
-    {
-      "amount" : 12,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-15T13:17:40Z"
+      "startAt" : "2026-09-17T10:52:57Z"
     },
     {
       "amount" : null,
@@ -1146,27 +1189,7 @@
       "kind" : "diaper",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-16T03:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-14T03:17:40Z"
-    },
-    {
-      "amount" : null,
-      "diaperKind" : "wet",
-      "endAt" : null,
-      "feedType" : null,
-      "kind" : "diaper",
-      "note" : null,
-      "side" : null,
-      "startAt" : "2026-09-17T23:17:40Z"
+      "startAt" : "2026-09-14T03:52:57Z"
     },
     {
       "amount" : 14,
@@ -1176,7 +1199,7 @@
       "kind" : "feed",
       "note" : null,
       "side" : "L",
-      "startAt" : "2026-09-14T07:17:40Z"
+      "startAt" : "2026-09-14T07:52:57Z"
     },
     {
       "amount" : null,
@@ -1186,32 +1209,22 @@
       "kind" : "diaper",
       "note" : null,
       "side" : null,
-      "startAt" : "2026-09-19T08:17:40Z"
+      "startAt" : "2026-09-19T12:52:57Z"
     },
     {
-      "amount" : 14,
-      "diaperKind" : null,
+      "amount" : null,
+      "diaperKind" : "wet",
       "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
+      "feedType" : null,
+      "kind" : "diaper",
       "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-20T07:17:40Z"
-    },
-    {
-      "amount" : 16,
-      "diaperKind" : null,
-      "endAt" : null,
-      "feedType" : "breast",
-      "kind" : "feed",
-      "note" : null,
-      "side" : "L",
-      "startAt" : "2026-09-19T01:17:40Z"
+      "side" : null,
+      "startAt" : "2026-09-20T03:52:57Z"
     }
   ],
   "milestones" : [
     {
-      "date" : "2026-09-17T15:17:40Z",
+      "date" : "2026-09-17T15:52:57Z",
       "note" : "At the ceiling fan, of course",
       "title" : "First smile"
     }
@@ -1221,17 +1234,17 @@
   ],
   "reminders" : [
     {
-      "cadence" : "daily",
-      "enabled" : true,
-      "minuteOfDay" : 480,
-      "title" : "Vitamin D drops",
-      "weekday" : 1
-    },
-    {
       "cadence" : "weekly",
       "enabled" : false,
       "minuteOfDay" : 1050,
       "title" : "Tummy time",
+      "weekday" : 1
+    },
+    {
+      "cadence" : "daily",
+      "enabled" : true,
+      "minuteOfDay" : 480,
+      "title" : "Vitamin D drops",
       "weekday" : 1
     }
   ],
@@ -1241,6 +1254,6 @@
     "scheduleId" : "iap"
   },
   "version" : 1,
-  "writtenAt" : "2026-09-20T15:17:40Z",
+  "writtenAt" : "2026-09-20T15:52:57Z",
   "writtenBy" : "ios"
 }

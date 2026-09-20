@@ -179,8 +179,24 @@ enum SampleData {
                                         lengthCm: 49 + Double(16 + days) * 0.1))
         }
 
+        // Two accounts, so the sample shows what the screen looks like once money is in more
+        // than one place — including a transfer between them.
+        let savings = FundAccount(name: "SBI savings", note: "The main one", sortOrder: 0)
+        let cash = FundAccount(name: "Cash at home", sortOrder: 1)
+        context.insert(savings)
+        context.insert(cash)
+        let savingsId = savings.uuid
+        let cashId = cash.uuid
+
         context.insert(FundDeposit(note: "Monthly transfer", amount: 15_000,
-                                   date: cal.date(byAdding: .day, value: -12, to: .now)!))
+                                   date: cal.date(byAdding: .day, value: -12, to: .now)!,
+                                   accountId: savingsId))
+        let moved = UUID().uuidString
+        let movedOn = cal.date(byAdding: .day, value: -6, to: .now)!
+        context.insert(FundDeposit(note: "To Cash at home", amount: -3_000, date: movedOn,
+                                   accountId: savingsId, transferGroup: moved))
+        context.insert(FundDeposit(note: "From SBI savings", amount: 3_000, date: movedOn,
+                                   accountId: cashId, transferGroup: moved))
         [
             ("Nappies, pack of 72", "Local pharmacy", ExpenseCategory.general, 1_899, -11),
             ("Paediatric visit", "Rainbow Clinic", ExpenseCategory.medical, 800, -9),
@@ -189,7 +205,8 @@ enum SampleData {
         ].forEach { title, vendor, category, amount, days in
             context.insert(Expense(title: title, vendor: vendor, category: category,
                                    amount: amount,
-                                   date: cal.date(byAdding: .day, value: days, to: .now)!))
+                                   date: cal.date(byAdding: .day, value: days, to: .now)!,
+                                   accountId: category == .medical ? cashId : savingsId))
         }
 
         context.insert(Appointment(title: "Six-week check", who: "Dr Nair",

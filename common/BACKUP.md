@@ -68,7 +68,7 @@ reader can tell "not recorded" from "this version did not write that field".
 | `doses` | `group` (the label in the schedule), `vaccine`, `givenOn` |
 | `growth` | `date`, `weightKg`, `lengthCm`, `headCm` |
 | `expenses` | `title`, `vendor`, `category` (medical/general), `amount`, `date`, `paidFromFund` |
-| `deposits` | `note`, `amount`, `date` |
+| `deposits` | `note`, `kind` (deposit/withdrawal), `amount` (always positive), `date` |
 | `investments` | `name`, `kind`, `invested`, `monthly`, `rate`, `startedOn`, `maturesOn`, `value`, `valuedOn` |
 | `appointments` | `title`, `who`, `startAt` |
 | `milestones` | `title`, `note`, `date` |

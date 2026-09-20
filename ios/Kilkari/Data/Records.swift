@@ -62,6 +62,8 @@ final class Expense {
     var amount: Int
     var date: Date
     var paidFromFund: Bool
+    /// Which account it came out of. Nil means paid from somewhere that is not the fund.
+    var accountId: String?
 
     init(
         title: String,
@@ -69,7 +71,8 @@ final class Expense {
         category: ExpenseCategory,
         amount: Int,
         date: Date = .now,
-        paidFromFund: Bool = true
+        paidFromFund: Bool = true,
+        accountId: String? = nil
     ) {
         self.title = title
         self.vendor = vendor
@@ -77,22 +80,34 @@ final class Expense {
         self.amount = amount
         self.date = date
         self.paidFromFund = paidFromFund
+        self.accountId = accountId
     }
 
     var category: ExpenseCategory { ExpenseCategory(rawValue: categoryRaw) ?? .general }
 }
 
-/// Money in. Deposits build the fund an expense is paid out of.
+/// Money moving through the fund: in, out, or across.
+///
+/// A transfer is two ordinary movements sharing a group — one account down, another up by the
+/// same amount — so the total is unchanged without the arithmetic needing a special case, and
+/// undoing it is one delete of a pair.
 @Model
 final class FundDeposit {
     var note: String?
+    /// Positive in, negative out. A withdrawal is not a separate kind of thing.
     var amount: Int
     var date: Date
+    var accountId: String?
+    /// Pairs the two halves of a transfer.
+    var transferGroup: String?
 
-    init(note: String? = nil, amount: Int, date: Date = .now) {
+    init(note: String? = nil, amount: Int, date: Date = .now,
+         accountId: String? = nil, transferGroup: String? = nil) {
         self.note = note
         self.amount = amount
         self.date = date
+        self.accountId = accountId
+        self.transferGroup = transferGroup
     }
 }
 
@@ -137,5 +152,31 @@ final class Doctor {
         self.speciality = speciality
         self.clinic = clinic
         self.phone = phone
+    }
+}
+
+/// One place the fund's money actually sits: a bank account, a cash envelope, a wallet.
+///
+/// The fund started as a single balance, which was fine until a parent kept some in a savings
+/// account and some as cash and could not say which the nappies came out of. Accounts exist so
+/// a balance can be checked against a statement.
+@Model
+final class FundAccount {
+    /// An id of its own rather than the row's `persistentModelID`: that one identifies the
+    /// store, and is not there at all until the insert is saved — a movement filed against a
+    /// brand-new account would point at nothing.
+    var uuid: String
+    var name: String
+    var note: String?
+    var sortOrder: Int
+    var archived: Bool
+
+    init(name: String, note: String? = nil, sortOrder: Int = 0, archived: Bool = false,
+         uuid: String = UUID().uuidString) {
+        self.uuid = uuid
+        self.name = name
+        self.note = note
+        self.sortOrder = sortOrder
+        self.archived = archived
     }
 }

@@ -203,8 +203,8 @@ object SharedBackup {
             db.fundDao().insert(
                 FundTxnEntity(
                     babyId = babyId,
-                    kind = FundTxnKind.DEPOSIT.key,
-                    amountInr = row.optLong("amount"),
+                    kind = FundTxnKind.of(row.text("kind")).key,
+                    amountInr = kotlin.math.abs(row.optLong("amount")),
                     date = date(row, "date") ?: LocalDate.now(),
                     note = row.text("note"),
                 )
@@ -324,7 +324,7 @@ object SharedBackup {
         val doses = db.vaccineDao().allForExport(id)
         val growth = db.growthDao().allForExport(id)
         val expenses = db.expenseDao().allForExport(id)
-        val deposits = db.fundDao().allForExport(id).filter { it.kind == FundTxnKind.DEPOSIT.key }
+        val deposits = db.fundDao().allForExport(id)
         val investments = db.investmentDao().allForExport(id)
         val appointments = db.appointmentDao().observeAll(id).first()
         val milestones = db.timelineDao().allForExport(id)
@@ -391,6 +391,9 @@ object SharedBackup {
             })
             put("deposits", rows(deposits) { t ->
                 put("note", t.note ?: JSONObject.NULL)
+                // Always positive, with the direction in its own field: a reader that predates
+                // the field still gets a deposit, which is what every row used to be.
+                put("kind", t.kind)
                 put("amount", t.amountInr)
                 put("date", iso(t.date))
             })

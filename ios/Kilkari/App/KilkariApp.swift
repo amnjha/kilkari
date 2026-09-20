@@ -8,7 +8,8 @@ struct KilkariApp: App {
         for: Baby.self, LogEntry.self, VaccineDose.self, GrowthRecord.self,
         Expense.self, FundDeposit.self, Appointment.self, Milestone.self, Doctor.self,
         Reminder.self, Investment.self,
-        PaperworkRecord.self, ScannedDocument.self, Album.self, CalendarEvent.self
+        PaperworkRecord.self, ScannedDocument.self, Album.self, CalendarEvent.self,
+        FundAccount.self
     )
 
     var body: some Scene {

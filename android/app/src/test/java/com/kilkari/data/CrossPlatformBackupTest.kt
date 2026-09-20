@@ -61,6 +61,19 @@ class CrossPlatformBackupTest {
         assertEquals("every expense", 4, db.expenseDao().allForExport(baby.id).size)
         assertEquals("the currency it was kept in", Currency.INR, settings.currency)
 
+        // The direction of a movement, which the format spells out because this app keeps it
+        // as a kind and the other one as a sign. A withdrawal read as a deposit would leave
+        // the row count right and the balance out by twice the amount.
+        val fund = db.fundDao().allForExport(baby.id)
+        assertEquals("every movement", 3, fund.size)
+        assertEquals(
+            "the money that went out went out",
+            listOf(3_000L to "withdrawal"),
+            fund.filter { it.kind == "withdrawal" }.map { it.amountInr to it.kind },
+        )
+        assertEquals("what the fund holds", 15_000L,
+            fund.sumOf { if (it.kind == "withdrawal") -it.amountInr else it.amountInr })
+
         // A value, not just a count: the comma in this title is the one thing most likely to
         // survive a JSON round trip and not a CSV one.
         assertTrue(

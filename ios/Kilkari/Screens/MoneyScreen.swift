@@ -12,11 +12,14 @@ struct MoneyScreen: View {
 
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
     @Query(sort: \FundDeposit.date, order: .reverse) private var deposits: [FundDeposit]
+    @Query(sort: \FundAccount.sortOrder) private var accounts: [FundAccount]
 
     @State private var tab = SampleData.moneySegment
     @State private var filter: ExpenseCategory?
     @State private var addingExpense = false
     @State private var addingDeposit = false
+    @State private var addingAccount = false
+    @State private var transferring = false
 
     private var thisMonth: [Expense] {
         let cal = Calendar.current
@@ -29,11 +32,6 @@ struct MoneyScreen: View {
     }
 
     private func total(_ items: [Expense]) -> Int { items.reduce(0) { $0 + $1.amount } }
-
-    /// Deposits in, less everything paid out of the fund.
-    private var fundBalance: Int {
-        deposits.reduce(0) { $0 + $1.amount } - expenses.filter(\.paidFromFund).reduce(0) { $0 + $1.amount }
-    }
 
     var body: some View {
         ScrollView {
@@ -70,14 +68,35 @@ struct MoneyScreen: View {
             }
         }
         .sheet(isPresented: $addingExpense) {
-            AddExpenseSheet { context.insert($0); addingExpense = false }
+            AddExpenseSheet(accounts: accounts) { context.insert($0); addingExpense = false }
                 .presentationDetents([.medium, .large])
                 .environment(\.accent, accent)
         }
         .sheet(isPresented: $addingDeposit) {
-            AddDepositSheet { context.insert($0); addingDeposit = false }
+            AddDepositSheet(accounts: accounts) { context.insert($0); addingDeposit = false }
+                .presentationDetents([.medium, .large])
+                .environment(\.accent, accent)
+        }
+        .sheet(isPresented: $addingAccount) {
+            AddAccountSheet(order: accounts.count) { context.insert($0); addingAccount = false }
                 .presentationDetents([.medium])
                 .environment(\.accent, accent)
+        }
+        .sheet(isPresented: $transferring) {
+            TransferSheet(accounts: accounts) { from, to, amount, date in
+                // Two movements, one group: the total does not change, and the pair can be
+                // recognised — and undone — as one thing later.
+                let group = UUID().uuidString
+                context.insert(FundDeposit(note: "To \(to.name)", amount: -amount, date: date,
+                                           accountId: from.uuid,
+                                           transferGroup: group))
+                context.insert(FundDeposit(note: "From \(from.name)", amount: amount, date: date,
+                                           accountId: to.uuid,
+                                           transferGroup: group))
+                transferring = false
+            }
+            .presentationDetents([.medium])
+            .environment(\.accent, accent)
         }
     }
 
@@ -150,39 +169,133 @@ struct MoneyScreen: View {
         }
     }
 
+    /// Deposits in, less everything paid out of the fund.
+    private var fundBalanceTotal: Int {
+        deposits.reduce(0) { $0 + $1.amount }
+            - expenses.filter(\.paidFromFund).reduce(0) { $0 + $1.amount }
+    }
+
+    /// The same sum per account. A transfer falls out of this without a special case: one
+    /// account is down and the other up by the same amount, and the total does not move.
+    private func balance(of account: FundAccount) -> Int {
+        let id = account.uuid
+        return deposits.filter { $0.accountId == id }.reduce(0) { $0 + $1.amount }
+            - expenses.filter { $0.paidFromFund && $0.accountId == id }.reduce(0) { $0 + $1.amount }
+    }
+
+    /// Money in the fund that predates any account, or was never assigned to one.
+    private var unassigned: Int {
+        let ids = Set(accounts.map(\.uuid))
+        return deposits.filter { $0.accountId.map { !ids.contains($0) } ?? true }
+                .reduce(0) { $0 + $1.amount }
+            - expenses.filter { $0.paidFromFund && ($0.accountId.map { !ids.contains($0) } ?? true) }
+                .reduce(0) { $0 + $1.amount }
+    }
+
     @ViewBuilder private var fund: some View {
         GradientCard(colors: [KC.goldDeep, KC.gold]) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("IN THE FUND")
                     .font(KFont.sans(12, .semibold)).tracking(0.5)
                     .foregroundStyle(.white.opacity(0.85))
-                Text(prefs.money(fundBalance))
+                Text(prefs.money(fundBalanceTotal))
                     .font(KFont.number(34)).foregroundStyle(.white)
-                Text("Deposits in, less everything paid out of it.")
+                Text(accounts.isEmpty
+                     ? "Deposits in, less everything paid out of it."
+                     : "Across \(accounts.count) \(Fmt.plural(accounts.count, "account")).")
                     .font(KFont.sans(13)).foregroundStyle(.white.opacity(0.9))
             }
         }
 
-        SectionLabel("Deposits")
+        if !accounts.isEmpty {
+            SectionLabel("Accounts")
+            KCard {
+                VStack(spacing: 0) {
+                    ForEach(Array(accounts.enumerated()), id: \.element.persistentModelID) { i, account in
+                        HStack(spacing: 12) {
+                            IconBadge(symbol: "building.columns.fill", tint: KC.goldDeep,
+                                      background: KC.goldBg, size: 36, corner: 10, iconSize: 16)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(account.name)
+                                    .font(KFont.sans(14, .semibold)).foregroundStyle(KC.ink)
+                                if let note = account.note, !note.isEmpty {
+                                    Text(note).font(KFont.sans(12)).foregroundStyle(KC.muted)
+                                }
+                            }
+                            Spacer()
+                            Text(prefs.money(balance(of: account)))
+                                .font(KFont.sans(14, .bold)).foregroundStyle(KC.ink)
+                        }
+                        .padding(.horizontal, 14).padding(.vertical, 11)
+                        .swipeActions {
+                            Button("Delete", role: .destructive) { context.delete(account) }
+                        }
+                        if i != accounts.count - 1 { Rectangle().fill(KC.divider).frame(height: 1) }
+                    }
+                    if unassigned != 0 {
+                        Rectangle().fill(KC.divider).frame(height: 1)
+                        HStack {
+                            Text("Not in an account")
+                                .font(KFont.sans(14)).foregroundStyle(KC.mutedStrong)
+                            Spacer()
+                            Text(prefs.money(unassigned))
+                                .font(KFont.sans(14, .semibold)).foregroundStyle(KC.mutedStrong)
+                        }
+                        .padding(.horizontal, 14).padding(.vertical, 11)
+                    }
+                }
+            }
+        }
+
+        HStack(spacing: 8) {
+            Button { addingAccount = true } label: {
+                Label("Add an account", systemImage: "plus")
+                    .font(KFont.sans(13, .semibold)).foregroundStyle(accent.deep)
+                    .frame(maxWidth: .infinity).frame(height: 42)
+                    .background(KC.surface).clipShape(Capsule())
+                    .overlay(Capsule().strokeBorder(accent.ring, lineWidth: 1))
+            }
+            if accounts.count >= 2 {
+                Button { transferring = true } label: {
+                    Label("Transfer", systemImage: "arrow.left.arrow.right")
+                        .font(KFont.sans(13, .semibold)).foregroundStyle(accent.deep)
+                        .frame(maxWidth: .infinity).frame(height: 42)
+                        .background(KC.surface).clipShape(Capsule())
+                        .overlay(Capsule().strokeBorder(accent.ring, lineWidth: 1))
+                }
+            }
+        }
+        .buttonStyle(SpringPress())
+
+        SectionLabel("Movements")
         KCard {
             if deposits.isEmpty {
                 Text("Nothing put in yet.")
                     .font(KFont.sans(13)).foregroundStyle(KC.muted).padding(14)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(deposits.enumerated()), id: \.element.persistentModelID) { i, deposit in
+                    ForEach(Array(deposits.enumerated()), id: \.element.persistentModelID) { i, movement in
+                        let out = movement.amount < 0
                         HStack {
-                            IconBadge(symbol: "arrow.down.circle.fill", tint: KC.goldDeep,
-                                      background: KC.goldBg, size: 36, corner: 10, iconSize: 16)
+                            IconBadge(
+                                symbol: movement.transferGroup != nil
+                                    ? "arrow.left.arrow.right"
+                                    : (out ? "arrow.up.circle.fill" : "arrow.down.circle.fill"),
+                                tint: out ? KC.clayDeep : KC.goldDeep,
+                                background: out ? KC.clayBg : KC.goldBg,
+                                size: 36, corner: 10, iconSize: 16
+                            )
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(deposit.note ?? "Deposit")
+                                Text(movement.note ?? (out ? "Withdrawal" : "Deposit"))
                                     .font(KFont.sans(14, .semibold)).foregroundStyle(KC.ink)
-                                Text(Fmt.date(deposit.date))
+                                Text([Fmt.date(movement.date), accountName(movement.accountId)]
+                                    .compactMap { $0 }.joined(separator: " · "))
                                     .font(KFont.sans(12)).foregroundStyle(KC.muted)
                             }
                             Spacer()
-                            Text("+" + prefs.money(deposit.amount))
-                                .font(KFont.sans(14, .semibold)).foregroundStyle(KC.leafDeep)
+                            Text((out ? "−" : "+") + prefs.money(abs(movement.amount)))
+                                .font(KFont.sans(14, .semibold))
+                                .foregroundStyle(out ? KC.clayDeep : KC.leafDeep)
                         }
                         .padding(.horizontal, 14).padding(.vertical, 11)
                         if i != deposits.count - 1 { Rectangle().fill(KC.divider).frame(height: 1) }
@@ -190,6 +303,11 @@ struct MoneyScreen: View {
                 }
             }
         }
+    }
+
+    private func accountName(_ id: String?) -> String? {
+        guard let id else { return nil }
+        return accounts.first { $0.uuid == id }?.name
     }
 
     private func amountLegend(_ colour: Color, _ label: String, _ amount: Int) -> some View {
@@ -202,6 +320,7 @@ struct MoneyScreen: View {
 }
 
 struct AddExpenseSheet: View {
+    let accounts: [FundAccount]
     let onSave: (Expense) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -213,6 +332,7 @@ struct AddExpenseSheet: View {
     @State private var vendor = ""
     @State private var date = Date.now
     @State private var fromFund = true
+    @State private var account: FundAccount?
 
     var body: some View {
         NavigationStack {
@@ -232,6 +352,10 @@ struct AddExpenseSheet: View {
                             .labelsHidden().tint(accent.main)
                     }
 
+                    if fromFund && !accounts.isEmpty {
+                        accountRow($account, accounts, accent)
+                    }
+
                     sheetRow("Paid from the fund") {
                         Button { fromFund.toggle() } label: {
                             KToggle(on: fromFund, tint: accent.main)
@@ -248,7 +372,10 @@ struct AddExpenseSheet: View {
                             category: category,
                             amount: Int(amount) ?? 0,
                             date: date,
-                            paidFromFund: fromFund
+                            paidFromFund: fromFund,
+                            accountId: fromFund
+                                ? (account ?? accounts.first)?.uuid
+                                : nil
                         ))
                         dismiss()
                     }
@@ -269,6 +396,7 @@ struct AddExpenseSheet: View {
 }
 
 struct AddDepositSheet: View {
+    let accounts: [FundAccount]
     let onSave: (FundDeposit) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -277,13 +405,19 @@ struct AddDepositSheet: View {
     @State private var amount = ""
     @State private var note = ""
     @State private var date = Date.now
+    @State private var account: FundAccount?
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    sheetField("Amount (\(Preferences.shared.currency.symbol))", $amount, "0", numeric: true)
+                VStack(alignment: .leading, spacing: 12) {
+                    sheetTitle("Add to the fund")
+                    sheetField("Amount (\(Preferences.shared.currency.symbol))", $amount, "0",
+                               numeric: true, big: true)
                     sheetField("Note", $note, "e.g. Monthly transfer")
+                    if !accounts.isEmpty {
+                        accountRow($account, accounts, accent)
+                    }
                     sheetRow("Date") {
                         DatePicker("", selection: $date, in: ...Date.now, displayedComponents: .date)
                             .labelsHidden().tint(accent.main)
@@ -292,7 +426,8 @@ struct AddDepositSheet: View {
                         onSave(FundDeposit(
                             note: note.trimmingCharacters(in: .whitespaces).isEmpty ? nil : note,
                             amount: Int(amount) ?? 0,
-                            date: date
+                            date: date,
+                            accountId: (account ?? accounts.first)?.uuid
                         ))
                         dismiss()
                     }
@@ -301,7 +436,6 @@ struct AddDepositSheet: View {
                 .padding(20)
             }
             .background(KC.surface)
-            .navigationTitle("Add to the fund")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -379,4 +513,145 @@ func sheetHint(_ text: String) -> some View {
         .foregroundStyle(KC.muted)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
+}
+
+
+/// Which account a movement belongs to, in the same row style as everything else.
+@ViewBuilder
+func accountRow(_ selection: Binding<FundAccount?>, _ accounts: [FundAccount], _ accent: Accent) -> some View {
+    sheetRow("Account") {
+        Menu {
+            ForEach(accounts) { account in
+                Button(account.name) { selection.wrappedValue = account }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text((selection.wrappedValue ?? accounts.first)?.name ?? "None")
+                    .font(KFont.sans(14, .bold)).foregroundStyle(KC.ink)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(accent.deep)
+            }
+        }
+    }
+}
+
+struct AddAccountSheet: View {
+    let order: Int
+    let onSave: (FundAccount) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.accent) private var accent
+
+    @State private var name = ""
+    @State private var note = ""
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    sheetTitle("Add an account")
+                    sheetHint("Somewhere the fund's money actually sits — a bank account, an envelope, a wallet.")
+                    sheetField("Name", $name, "e.g. SBI savings")
+                    sheetField("Note", $note, "Optional")
+                    PrimaryButton(label: "Save account",
+                                  enabled: !name.trimmingCharacters(in: .whitespaces).isEmpty) {
+                        let n = note.trimmingCharacters(in: .whitespaces)
+                        onSave(FundAccount(name: name.trimmingCharacters(in: .whitespaces),
+                                           note: n.isEmpty ? nil : n, sortOrder: order))
+                        dismiss()
+                    }
+                    .padding(.top, 2)
+                }
+                .padding(20)
+            }
+            .background(KC.surface)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }.tint(accent.deep)
+                }
+            }
+        }
+    }
+}
+
+/// Moving money between two accounts. Not a deposit and not a withdrawal: the fund's total
+/// does not change, and the screen should not pretend it did.
+struct TransferSheet: View {
+    let accounts: [FundAccount]
+    let onTransfer: (FundAccount, FundAccount, Int, Date) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.accent) private var accent
+
+    @State private var from: FundAccount?
+    @State private var to: FundAccount?
+    @State private var amount = ""
+    @State private var date = Date.now
+
+    private var resolvedFrom: FundAccount? { from ?? accounts.first }
+    private var resolvedTo: FundAccount? { to ?? accounts.dropFirst().first }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    sheetTitle("Move money")
+                    sheetField("Amount (\(Preferences.shared.currency.symbol))", $amount, "0",
+                               numeric: true, big: true)
+                    picker("From", $from, resolvedFrom)
+                    picker("To", $to, resolvedTo)
+                    sheetRow("Date") {
+                        DatePicker("", selection: $date, in: ...Date.now, displayedComponents: .date)
+                            .labelsHidden().tint(accent.main)
+                    }
+
+                    if resolvedFrom?.persistentModelID == resolvedTo?.persistentModelID {
+                        Text("Pick two different accounts.")
+                            .font(KFont.sans(12)).foregroundStyle(KC.danger)
+                    }
+
+                    PrimaryButton(label: "Move it", enabled: valid) {
+                        if let f = resolvedFrom, let t = resolvedTo, let value = Int(amount) {
+                            onTransfer(f, t, value, date)
+                        }
+                        dismiss()
+                    }
+                    .padding(.top, 2)
+                }
+                .padding(20)
+            }
+            .background(KC.surface)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }.tint(accent.deep)
+                }
+            }
+        }
+    }
+
+    private var valid: Bool {
+        (Int(amount) ?? 0) > 0
+            && resolvedFrom != nil && resolvedTo != nil
+            && resolvedFrom?.persistentModelID != resolvedTo?.persistentModelID
+    }
+
+    private func picker(_ label: String, _ binding: Binding<FundAccount?>,
+                        _ resolved: FundAccount?) -> some View {
+        sheetRow(label) {
+            Menu {
+                ForEach(accounts) { account in
+                    Button(account.name) { binding.wrappedValue = account }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(resolved?.name ?? "Choose")
+                        .font(KFont.sans(14, .bold)).foregroundStyle(KC.ink)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(accent.deep)
+                }
+            }
+        }
+    }
 }

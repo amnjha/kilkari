@@ -60,7 +60,10 @@ enum Backup {
                  "amount": $0.amount, "date": day($0.date), "paidFromFund": $0.paidFromFund]
             },
             "deposits": all(FundDeposit.self).map {
-                ["note": j($0.note), "amount": $0.amount, "date": day($0.date)]
+                // The sign is this app's business; the format spells the direction out and
+                // keeps the amount positive, the way the other one has always written it.
+                ["note": j($0.note), "kind": $0.amount < 0 ? "withdrawal" : "deposit",
+                 "amount": abs($0.amount), "date": day($0.date)]
             },
             "investments": all(Investment.self).map {
                 ["name": $0.name, "kind": $0.kindRaw, "invested": $0.investedAmount,
@@ -250,7 +253,8 @@ extension Backup {
             ((try? context.fetch(FetchDescriptor<T>())) ?? []).forEach(context.delete)
         }
         wipe(Baby.self); wipe(LogEntry.self); wipe(VaccineDose.self); wipe(GrowthRecord.self)
-        wipe(Expense.self); wipe(FundDeposit.self); wipe(Investment.self); wipe(Appointment.self)
+        wipe(Expense.self); wipe(FundDeposit.self); wipe(FundAccount.self)
+        wipe(Investment.self); wipe(Appointment.self)
         wipe(Milestone.self); wipe(CalendarEvent.self); wipe(Album.self); wipe(Doctor.self)
         wipe(Reminder.self); wipe(PaperworkRecord.self)
 
@@ -300,7 +304,11 @@ extension Backup {
         }
         for row in rows("deposits") {
             guard let amount = row["amount"] as? Int, let on = date(row["date"]) else { continue }
-            context.insert(FundDeposit(note: row["note"] as? String, amount: amount, date: on))
+            // A file written before the field existed holds only deposits, which is what the
+            // absent value means.
+            let out = row["kind"] as? String == "withdrawal"
+            context.insert(FundDeposit(note: row["note"] as? String,
+                                       amount: out ? -abs(amount) : abs(amount), date: on))
         }
         for row in rows("investments") {
             guard let name = row["name"] as? String, let started = date(row["startedOn"]) else { continue }
@@ -387,7 +395,12 @@ extension Backup {
             ]
         }
 
+        func fundIn() -> Int {
+            ((try? context.fetch(FetchDescriptor<FundDeposit>())) ?? []).reduce(0) { $0 + $1.amount }
+        }
+
         let before = census()
+        let fundBefore = fundIn()
         guard let exported = json(context: context),
               let (_, root) = try? preview(exported) else { return }
 
@@ -400,11 +413,15 @@ extension Backup {
         let result: [String: Any] = [
             "before": before,
             "after": after,
-            "identical": before == after,
+            "identical": before == after && fundBefore == fundIn(),
             "babyName": baby?.name ?? "",
             "babySex": baby?.sexRaw ?? "",
             "firstExpense": ((try? context.fetch(FetchDescriptor<Expense>())) ?? [])
                 .sorted { $0.date < $1.date }.first.map { ["title": $0.title, "amount": $0.amount] } ?? [:],
+            // The fund is signed, and the format is not: a withdrawal that came back as a
+            // deposit would keep the row count and double the balance.
+            "fundIn": fundIn(),
+            "fundInBefore": fundBefore,
         ]
         let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys])

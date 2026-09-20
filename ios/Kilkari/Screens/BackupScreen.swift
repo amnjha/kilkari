@@ -86,7 +86,7 @@ struct BackupScreen: View {
                 }
                 .buttonStyle(.plain)
 
-                Text("Photographs and scanned pages are not included. They are large, and they already live in the photo library and in the app's own storage.")
+                Text("Photographs and scanned pages are not included. They are large, and they already live in the photo library and in the app's own storage. Which fund account a movement belongs to is not carried either — the amounts are, and they land as one fund.")
                     .font(KFont.sans(12)).foregroundStyle(KC.muted)
                     .padding(.horizontal, 4)
                     .fixedSize(horizontal: false, vertical: true)
