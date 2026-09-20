@@ -26,15 +26,15 @@ or it will fight the screen it lands on.
 
 | Family | Main | Deep | Wash (the ground it sits on) |
 |---|---|---|---|
-| Coral (brand, clinical) | `#C94A30` | `#A93A24` | `#F3BFB4` |
-| Clay (medicines) | `#C4703A` | `#9C5526` | `#F1C4A7` |
-| Gold (money, events) | `#B07C11` | `#8A5F09` | `#EED196` |
-| Leaf (growth) | `#487F3C` | `#35622C` | `#C3F4B9` |
-| Teal (health) | `#347A73` | `#26605A` | `#B9F4EE` |
-| Sea (records) | `#2F7B80` | `#235F63` | `#B9F0F4` |
-| Sky (the day) | `#2A72B8` | `#1F568D` | `#B9D7F4` |
-| Lilac (quiet, photos) | `#6C57D6` | `#4F3DAE` | `#C4BBF4` |
-| Rose (keepsakes) | `#B93B6B` | `#96294F` | `#F4B9CF` |
+| Coral (brand, clinical) | `#C94A30` | `#A93A24` | `#F4C9BE` |
+| Clay (medicines) | `#C4703A` | `#9C5526` | `#F3CDB3` |
+| Gold (money) | `#B07C11` | `#8A5F09` | `#F0D7A5` |
+| Leaf (growth) | `#487F3C` | `#35622C` | `#CDF4C2` |
+| Teal (health) | `#347A73` | `#26605A` | `#C5F4EE` |
+| Sea (records) | `#2F7B80` | `#235F63` | `#C5F1F3` |
+| Sky (the day) | `#2A72B8` | `#1F568D` | `#C5DCF3` |
+| Lilac (reminders, settings) | `#6C57D6` | `#4F3DAE` | `#CEC5F3` |
+| Rose (keepsakes, photos, events) | `#B93B6B` | `#96294F` | `#F5C4D4` |
 | Ink / cream | `#332420` | | `#FBF5EC` |
 
 ## Start with these five
@@ -68,11 +68,11 @@ Shown at 132dp, centred, above a headline and a line of help text.
 | File name | Colour | Screen | What it should show |
 |---|---|---|---|
 | `art_empty_timeline.png` | Rose | Timeline | A blank frame, or a thread with nothing on it yet |
-| `art_empty_photos.png` | Lilac | Photo albums | A stack of photos, or an album cover |
+| `art_empty_photos.png` | Rose | Photo albums | A stack of photos, or an album cover |
 | `art_empty_documents.png` | Sea | Documents | A folder with a certificate half out of it |
 | `art_empty_appointments.png` | Coral | Appointments | A calendar page with a stethoscope |
 | `art_empty_doctors.png` | Sky | Doctors | A doctor's card, or a name plate |
-| `art_empty_events.png` | Gold | Birthdays & events | A cake with one candle, or bunting |
+| `art_empty_events.png` | Rose | Birthdays & events | A cake with one candle, or bunting |
 | `art_empty_medicines.png` | Clay | Medications | A medicine bottle with a dropper |
 | `art_empty_reminders.png` | Lilac | Reminders | A small bell, or an alarm clock |
 | `art_empty_growth.png` | Leaf | Growth | A plant and a ruler, or a rising line |

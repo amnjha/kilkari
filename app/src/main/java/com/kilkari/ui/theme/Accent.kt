@@ -112,9 +112,10 @@ fun Modifier.headerWash(
     accent: Accent = LocalAccent.current,
     height: Dp = 230.dp,
 ): Modifier {
-    // Half strength: [Accent.wash] is mixed for a tile the size of a thumb, and a band of it
-    // across the whole top of the screen at full strength shouts.
-    val tint = accent.wash.copy(alpha = 0.55f)
+    // A third strength. [Accent.wash] is mixed for a tile the size of a thumb; the band is the
+    // largest piece of colour on any screen, and at anything like full strength the screen
+    // becomes the colour rather than wearing it.
+    val tint = accent.wash.copy(alpha = 0.32f)
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val total = height + statusBar
     return this.drawBehind {

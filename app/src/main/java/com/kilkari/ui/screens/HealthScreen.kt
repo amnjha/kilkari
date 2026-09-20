@@ -138,7 +138,7 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
                 Modifier.weight(1f).fillMaxHeight(),
             ) { go.push(Routes.GROWTH) }
             HealthTile(
-                "dentistry", KC.SeaDeep, KC.SeaWash, "Teeth",
+                "dentistry", KC.LeafDeep, KC.LeafWash, "Teeth",
                 // Points at the tooth actually due next rather than repeating the first one
                 // forever, which stopped being true the moment it came through.
                 ToothChart.nextExpected(teeth).let { next ->
@@ -153,7 +153,7 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             HealthTile(
-                "pill", KC.ClayDeep, KC.ClayWash, "Medications",
+                "pill", KC.CoralDeep, KC.CoralWash, "Medications",
                 if (activeMeds.isEmpty()) "None active"
                 else "${activeMeds.size} active · ${activeMeds.first().name}",
                 Modifier.weight(1f).fillMaxHeight(),
@@ -238,6 +238,10 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
  * One of the five things health is made of, drawn the way the log tiles are: the card itself
  * wears the colour and the icon sits in a white disc on top of it. Five white cards with five
  * small coloured dots is a settings list; five coloured cards is a place.
+ *
+ * Three hues across the five, a row at a time: green for what grows, coral for what asks
+ * something of you, blue for the people you keep on file. Five different colours was a grid
+ * that took longer to read than one colour did.
  */
 @Composable
 private fun HealthTile(

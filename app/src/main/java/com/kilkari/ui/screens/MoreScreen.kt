@@ -100,10 +100,25 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
             Icon(KIcons["edit"], null, tint = KC.CoralDeep, modifier = Modifier.size(22.dp))
         }
 
+        // Three colours, not eight: the keepsakes, the records, and the app talking about
+        // itself. A tile per hue turned the drawer into a paint chart and made the grid
+        // harder to scan, not easier — grouping means the colour now tells you what kind of
+        // thing you are about to open.
         val items = listOf(
             MoreItem(
                 Routes.TIMELINE, "timeline", "Timeline",
                 "Milestones and moments",
+                KC.RoseDeep, KC.RoseWash,
+            ),
+            MoreItem(
+                Routes.PHOTOS, "photo_library", "Photo albums",
+                if (albums.isEmpty()) "Link a Google Photos album"
+                else "${albums.size} ${Fmt.plural(albums.size.toLong(), "album")} linked",
+                KC.RoseDeep, KC.RoseWash,
+            ),
+            MoreItem(
+                Routes.EVENTS, "cake", "Birthdays & events",
+                "First birthday in $birthdayDays days",
                 KC.RoseDeep, KC.RoseWash,
             ),
             MoreItem(
@@ -121,31 +136,23 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
                         "All four in hand"
                     else -> "$documentsObtained of ${paperwork.size} obtained"
                 },
-                KC.ClayDeep, KC.ClayWash,
-            ),
-            MoreItem(
-                Routes.PHOTOS, "photo_library", "Photo albums",
-                if (albums.isEmpty()) "Link a Google Photos album"
-                else "${albums.size} ${Fmt.plural(albums.size.toLong(), "album")} linked",
-                KC.LilacDeep, KC.LilacWash,
-            ),
-            MoreItem(
-                Routes.EVENTS, "cake", "Birthdays & events",
-                "First birthday in $birthdayDays days", KC.GoldDeep, KC.GoldWash,
-            ),
-            MoreItem(
-                Routes.REMINDERS, "notifications_active", "Reminders",
-                "$remindersOn on", KC.CoralDeep, KC.CoralWash,
+                KC.SeaDeep, KC.SeaWash,
             ),
             MoreItem(
                 Routes.BACKUP, "backup", "Backup & export",
-                "Everything stays on this phone", KC.TealDeep, KC.TealWash,
+                "Everything stays on this phone",
+                KC.SeaDeep, KC.SeaWash,
+            ),
+            MoreItem(
+                Routes.REMINDERS, "notifications_active", "Reminders",
+                "$remindersOn on",
+                KC.LilacDeep, KC.LilacWash,
             ),
             MoreItem(
                 Routes.SETTINGS, "settings", "Settings",
                 "${settings.currency.symbol} ${settings.currency.code} · " +
                     "${VaccineSchedules.byId(settings.scheduleId).shortName} schedule",
-                KC.Stone, KC.StoneWash,
+                KC.LilacDeep, KC.LilacWash,
             ),
         )
 

@@ -126,19 +126,23 @@ object KC {
      *
      * The warm three are darker than the cool six on purpose. The ground is warm cream, so a
      * pale coral, clay or gold is the ground; a pale teal or lilac is already a different
-     * colour. Lightness was lowered on those three until each cleared 1.35:1 against the
-     * cream, which is where a tile stops looking like a shadow and starts looking painted.
+     * colour. Lightness was lowered on those three until each cleared roughly 1.3:1 against
+     * the cream, which is where a tile stops looking like a shadow and starts looking painted.
+     *
+     * They were mixed back a fifth of the way towards the cream after the first pass, which
+     * was loud: a grid of these is most of what a screen is, and the colour should say which
+     * tile is which, not be the thing you look at.
      */
-    val CoralWash = Color(0xFFF3BFB4)
-    val ClayWash = Color(0xFFF1C4A7)
-    val GoldWash = Color(0xFFEED196)
-    val LeafWash = Color(0xFFC3F4B9)
-    val TealWash = Color(0xFFB9F4EE)
-    val SeaWash = Color(0xFFB9F0F4)
-    val SkyWash = Color(0xFFB9D7F4)
-    val LilacWash = Color(0xFFC4BBF4)
-    val RoseWash = Color(0xFFF4B9CF)
-    val StoneWash = Color(0xFFE2C9BB)
+    val CoralWash = Color(0xFFF4C9BE)
+    val ClayWash = Color(0xFFF3CDB3)
+    val GoldWash = Color(0xFFF0D7A5)
+    val LeafWash = Color(0xFFCDF4C2)
+    val TealWash = Color(0xFFC5F4EE)
+    val SeaWash = Color(0xFFC5F1F3)
+    val SkyWash = Color(0xFFC5DCF3)
+    val LilacWash = Color(0xFFCEC5F3)
+    val RoseWash = Color(0xFFF5C4D4)
+    val StoneWash = Color(0xFFE6D1C4)
 
     // Danger — deeper and browner than coral, so lateness is never read as brand.
     val Danger = Color(0xFF8C2F22)

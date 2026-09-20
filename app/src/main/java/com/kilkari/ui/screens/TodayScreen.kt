@@ -71,6 +71,7 @@ import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
+import com.kilkari.ui.theme.LocalAccent
 import com.kilkari.ui.theme.onCream
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
@@ -203,7 +204,8 @@ private fun TodayAgenda(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ChildAvatar(photoUri, name, Modifier.size(52.dp), ring = KC.CoralRing, onClick = onEditPhoto)
+        val accent = LocalAccent.current
+        ChildAvatar(photoUri, name, Modifier.size(52.dp), ring = accent.ring, onClick = onEditPhoto)
         Column(Modifier.weight(1f)) {
             Text(greeting(), fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
             Text(
@@ -219,7 +221,9 @@ private fun TodayAgenda(
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
-        RoundIconButton("notifications", KC.LilacDeep, KC.LilacBg, "Reminders") { go.push(Routes.REMINDERS) }
+        // White rather than a tinted ground: the header is already a wash of the screen's
+        // colour, and a second circle of a near-identical tint on top of it reads as a smudge.
+        RoundIconButton("notifications", accent.deep, KC.Surface, "Reminders") { go.push(Routes.REMINDERS) }
     }
 
     // What is happening now outranks what is due later. A nap started ten minutes ago wants
