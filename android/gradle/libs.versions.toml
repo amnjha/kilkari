@@ -16,6 +16,7 @@ junit = "4.13.2"
 androidxJunit = "1.2.1"
 robolectric = "4.14.1"
 androidxTestCore = "1.6.1"
+orgJson = "20240303"
 
 [libraries]
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
@@ -49,6 +50,8 @@ androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx"
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+# Test-only: used to read common/data and prove the compiled tables still match it.
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
 
 [plugins]

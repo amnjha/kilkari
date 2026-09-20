@@ -1,4 +1,5 @@
 import javax.inject.Inject
+import org.gradle.api.tasks.PathSensitivity
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -129,6 +130,15 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// SharedDataTest reads common/data and fails if the compiled tables have drifted from it.
+// Without declaring that folder as an input Gradle calls the test task up to date when only
+// the JSON changed, and the one check that catches drift is the one that never runs.
+tasks.withType<Test>().configureEach {
+    inputs.dir(rootProject.file("../common/data"))
+        .withPropertyName("commonData")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
@@ -161,5 +171,6 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.room.testing)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.org.json)
     androidTestImplementation(libs.androidx.junit)
 }

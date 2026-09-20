@@ -1,0 +1,304 @@
+{
+  "note": "Vaccination schedules. Due dates are derived per baby by offsetting each group's dayOffset from the date of birth.",
+  "schedules": [
+    {
+      "id": "iap",
+      "name": "IAP · India (private)",
+      "description": "Indian Academy of Pediatrics 2024",
+      "groups": [
+        {
+          "label": "Birth",
+          "dayOffset": 0,
+          "vaccines": [
+            { "name": "BCG", "description": "Tuberculosis" },
+            { "name": "OPV-0", "description": "Polio, oral" },
+            { "name": "Hep B-1", "description": "Hepatitis B" }
+          ]
+        },
+        {
+          "label": "6 weeks",
+          "dayOffset": 42,
+          "vaccines": [
+            { "name": "DTwP/DTaP-1", "description": "Diphtheria, tetanus, pertussis" },
+            { "name": "IPV-1", "description": "Polio, injectable" },
+            { "name": "Hep B-2", "description": "Hepatitis B" },
+            { "name": "Hib-1", "description": "H. influenzae b" },
+            { "name": "Rotavirus-1", "description": "Oral" },
+            { "name": "PCV-1", "description": "Pneumococcal" }
+          ]
+        },
+        {
+          "label": "10 weeks",
+          "dayOffset": 70,
+          "vaccines": [
+            { "name": "DTwP/DTaP-2", "description": "" },
+            { "name": "IPV-2", "description": "" },
+            { "name": "Hib-2", "description": "" },
+            { "name": "Rotavirus-2", "description": "" },
+            { "name": "PCV-2", "description": "" }
+          ]
+        },
+        {
+          "label": "14 weeks",
+          "dayOffset": 98,
+          "vaccines": [
+            { "name": "DTwP/DTaP-3", "description": "" },
+            { "name": "IPV-3", "description": "" },
+            { "name": "Hep B-3", "description": "" },
+            { "name": "Hib-3", "description": "" },
+            { "name": "Rotavirus-3", "description": "" },
+            { "name": "PCV-3", "description": "" }
+          ]
+        },
+        {
+          "label": "6 months",
+          "dayOffset": 182,
+          "vaccines": [
+            { "name": "Influenza-1", "description": "Yearly after 2 doses" },
+            { "name": "Typhoid conjugate", "description": "" }
+          ]
+        },
+        {
+          "label": "7 months",
+          "dayOffset": 212,
+          "vaccines": [
+            { "name": "Influenza-2", "description": "" }
+          ]
+        },
+        {
+          "label": "9 months",
+          "dayOffset": 274,
+          "vaccines": [
+            { "name": "MMR-1", "description": "Measles, mumps, rubella" }
+          ]
+        },
+        {
+          "label": "12 months",
+          "dayOffset": 365,
+          "vaccines": [
+            { "name": "Hep A-1", "description": "" },
+            { "name": "PCV booster", "description": "" }
+          ]
+        },
+        {
+          "label": "15 months",
+          "dayOffset": 456,
+          "vaccines": [
+            { "name": "MMR-2", "description": "" },
+            { "name": "Varicella-1", "description": "Chickenpox" }
+          ]
+        },
+        {
+          "label": "18 months",
+          "dayOffset": 547,
+          "vaccines": [
+            { "name": "DTwP booster-1", "description": "" },
+            { "name": "IPV booster", "description": "" },
+            { "name": "Hib booster", "description": "" },
+            { "name": "Hep A-2", "description": "" },
+            { "name": "Varicella-2", "description": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uip",
+      "name": "UIP · India (government)",
+      "description": "National Immunisation Schedule",
+      "groups": [
+        {
+          "label": "Birth",
+          "dayOffset": 0,
+          "vaccines": [
+            { "name": "BCG", "description": "" },
+            { "name": "OPV-0", "description": "" },
+            { "name": "Hep B birth dose", "description": "" }
+          ]
+        },
+        {
+          "label": "6 weeks",
+          "dayOffset": 42,
+          "vaccines": [
+            { "name": "OPV-1", "description": "" },
+            { "name": "Pentavalent-1", "description": "DPT + Hep B + Hib" },
+            { "name": "Rotavirus-1", "description": "" },
+            { "name": "fIPV-1", "description": "" },
+            { "name": "PCV-1", "description": "" }
+          ]
+        },
+        {
+          "label": "10 weeks",
+          "dayOffset": 70,
+          "vaccines": [
+            { "name": "OPV-2", "description": "" },
+            { "name": "Pentavalent-2", "description": "" },
+            { "name": "Rotavirus-2", "description": "" }
+          ]
+        },
+        {
+          "label": "14 weeks",
+          "dayOffset": 98,
+          "vaccines": [
+            { "name": "OPV-3", "description": "" },
+            { "name": "Pentavalent-3", "description": "" },
+            { "name": "Rotavirus-3", "description": "" },
+            { "name": "fIPV-2", "description": "" },
+            { "name": "PCV-2", "description": "" }
+          ]
+        },
+        {
+          "label": "9 months",
+          "dayOffset": 274,
+          "vaccines": [
+            { "name": "MR-1", "description": "Measles, rubella" },
+            { "name": "JE-1", "description": "Japanese encephalitis" },
+            { "name": "PCV booster", "description": "" },
+            { "name": "Vitamin A-1", "description": "" }
+          ]
+        },
+        {
+          "label": "16–24 months",
+          "dayOffset": 487,
+          "vaccines": [
+            { "name": "MR-2", "description": "" },
+            { "name": "JE-2", "description": "" },
+            { "name": "DPT booster-1", "description": "" },
+            { "name": "OPV booster", "description": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "who",
+      "name": "WHO · global",
+      "description": "WHO recommended routine schedule",
+      "groups": [
+        {
+          "label": "Birth",
+          "dayOffset": 0,
+          "vaccines": [
+            { "name": "BCG", "description": "" },
+            { "name": "Hep B", "description": "" },
+            { "name": "OPV-0", "description": "" }
+          ]
+        },
+        {
+          "label": "6 weeks",
+          "dayOffset": 42,
+          "vaccines": [
+            { "name": "DTP-1", "description": "" },
+            { "name": "Hep B-2", "description": "" },
+            { "name": "Hib-1", "description": "" },
+            { "name": "IPV-1", "description": "" },
+            { "name": "PCV-1", "description": "" },
+            { "name": "Rotavirus-1", "description": "" }
+          ]
+        },
+        {
+          "label": "10 weeks",
+          "dayOffset": 70,
+          "vaccines": [
+            { "name": "DTP-2", "description": "" },
+            { "name": "Hib-2", "description": "" },
+            { "name": "OPV-2", "description": "" },
+            { "name": "PCV-2", "description": "" },
+            { "name": "Rotavirus-2", "description": "" }
+          ]
+        },
+        {
+          "label": "14 weeks",
+          "dayOffset": 98,
+          "vaccines": [
+            { "name": "DTP-3", "description": "" },
+            { "name": "Hep B-3", "description": "" },
+            { "name": "Hib-3", "description": "" },
+            { "name": "IPV-2", "description": "" },
+            { "name": "PCV-3", "description": "" }
+          ]
+        },
+        {
+          "label": "9 months",
+          "dayOffset": 274,
+          "vaccines": [
+            { "name": "Measles-1", "description": "" },
+            { "name": "Rubella", "description": "" }
+          ]
+        },
+        {
+          "label": "15–18 months",
+          "dayOffset": 487,
+          "vaccines": [
+            { "name": "Measles-2", "description": "" },
+            { "name": "DTP booster", "description": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cdc",
+      "name": "CDC · United States",
+      "description": "ACIP child schedule",
+      "groups": [
+        {
+          "label": "Birth",
+          "dayOffset": 0,
+          "vaccines": [
+            { "name": "Hep B-1", "description": "" }
+          ]
+        },
+        {
+          "label": "2 months",
+          "dayOffset": 61,
+          "vaccines": [
+            { "name": "DTaP-1", "description": "" },
+            { "name": "IPV-1", "description": "" },
+            { "name": "Hib-1", "description": "" },
+            { "name": "PCV-1", "description": "" },
+            { "name": "Rotavirus-1", "description": "" },
+            { "name": "Hep B-2", "description": "" }
+          ]
+        },
+        {
+          "label": "4 months",
+          "dayOffset": 122,
+          "vaccines": [
+            { "name": "DTaP-2", "description": "" },
+            { "name": "IPV-2", "description": "" },
+            { "name": "Hib-2", "description": "" },
+            { "name": "PCV-2", "description": "" },
+            { "name": "Rotavirus-2", "description": "" }
+          ]
+        },
+        {
+          "label": "6 months",
+          "dayOffset": 182,
+          "vaccines": [
+            { "name": "DTaP-3", "description": "" },
+            { "name": "IPV-3", "description": "" },
+            { "name": "PCV-3", "description": "" },
+            { "name": "Hep B-3", "description": "" },
+            { "name": "Influenza", "description": "Yearly" }
+          ]
+        },
+        {
+          "label": "12 months",
+          "dayOffset": 365,
+          "vaccines": [
+            { "name": "MMR-1", "description": "" },
+            { "name": "Varicella-1", "description": "" },
+            { "name": "Hep A-1", "description": "" },
+            { "name": "PCV-4", "description": "" },
+            { "name": "Hib booster", "description": "" }
+          ]
+        },
+        {
+          "label": "15 months",
+          "dayOffset": 456,
+          "vaccines": [
+            { "name": "DTaP-4", "description": "" }
+          ]
+        }
+      ]
+    }
+  ]
+}

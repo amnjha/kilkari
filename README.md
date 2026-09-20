@@ -169,8 +169,8 @@ The repo carries one product on two platforms:
 
 ```
 android/    The Android app. Gradle project root — run gradlew from in here.
-ios/        The iOS app.
-common/     What both platforms share: the brand, the artwork, the design source.
+ios/        The iOS app. See ios/README.md for how far it has got.
+common/     What both platforms share: the brand, the artwork, the reference data.
 docs/       Screenshots and cross-platform notes.
 release/    Build output, gitignored.
 ```
@@ -178,6 +178,13 @@ release/    Build output, gitignored.
 `common/illustrations/` is the one copy of the artwork. Android's build syncs it into a
 generated `drawable-nodpi` folder at compile time (see `syncIllustrations` in
 `android/app/build.gradle.kts`) rather than the tree holding a second set.
+
+`common/data/` is the one copy of the reference data — the WHO weight-for-age tables and the
+four vaccination schedules. iOS parses those files directly. Android compiles the same values
+into Kotlin, because a device needs no JSON parser for data that never changes at runtime, and
+`SharedDataTest` fails the build if the two ever stop agreeing. A schedule that differs by a
+week between two phones is the kind of bug nobody notices until a parent compares them at a
+clinic.
 
 ## Running it
 
