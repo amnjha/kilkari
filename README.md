@@ -2,7 +2,7 @@
 
 An offline-first Android baby tracker. Everything lives on the phone — no account, no server.
 Built in Kotlin with Jetpack Compose and Room, from the Claude Design canvas in
-[`design/Kilkari Baby Tracker.dc.html`](design/Kilkari%20Baby%20Tracker.dc.html).
+[`common/design/Kilkari Baby Tracker.dc.html`](common/design/Kilkari%20Baby%20Tracker.dc.html).
 
 ## What it looks like
 
@@ -163,25 +163,41 @@ and 94% of children — and says which percentile the last weigh-in sits on. The
 are the WHO 2006 weight-for-age LMS parameters, and the percentile maths is checked against
 WHO's own published percentile tables in `GrowthStandardsTest`.
 
+## Repository layout
+
+The repo carries one product on two platforms:
+
+```
+android/    The Android app. Gradle project root — run gradlew from in here.
+ios/        The iOS app.
+common/     What both platforms share: the brand, the artwork, the design source.
+docs/       Screenshots and cross-platform notes.
+release/    Build output, gitignored.
+```
+
+`common/illustrations/` is the one copy of the artwork. Android's build syncs it into a
+generated `drawable-nodpi` folder at compile time (see `syncIllustrations` in
+`android/app/build.gradle.kts`) rather than the tree holding a second set.
+
 ## Running it
 
 Requires JDK 17 and the Android SDK (compileSdk 35, minSdk 26).
 
 ```bash
-./gradlew :app:installDebug
+cd android && ./gradlew :app:installDebug
 ```
 
-Or open the project in Android Studio and hit Run. `local.properties` is generated locally and
+Or open `android/` in Android Studio and hit Run. `local.properties` is generated locally and
 is not committed — Android Studio writes it for you, or:
 
 ```bash
-echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties
+echo "sdk.dir=$HOME/Library/Android/sdk" > android/local.properties
 ```
 
 Build every shippable artifact in one command:
 
 ```bash
-./tools/build-artifacts.sh
+./android/tools/build-artifacts.sh
 ```
 
 That runs `bundleRelease`, `assembleRelease` and `assembleDebug`, then collects the results in
@@ -193,7 +209,7 @@ You get the **.aab** Google Play requires for new apps, a universal **.apk** for
 **debug APK** (installs alongside the release as `com.kilkari.debug`), and the R8 **mapping.txt**
 you need to read Play crash reports for a minified build.
 
-The release artifacts are unsigned unless you add a `keystore.properties` at the repo root — the
+The release artifacts are unsigned unless you add a `keystore.properties` in `android/` — the
 script picks it up automatically and drops `-unsigned` from the filenames. Copy
 `keystore.properties.example` and create the key:
 
@@ -208,10 +224,10 @@ Without a keystore the script also emits a copy of the release APK signed with t
 debug key, so the minified build can still be installed and smoke-tested. It is marked
 `DEBUGSIGNED-testing-only` and must never be published.
 
-## Layout
+## Android source layout
 
 ```
-app/src/main/java/com/kilkari/
+android/app/src/main/java/com/kilkari/
 ├── data/
 │   ├── db/         Room entities, DAOs, database, type converters
 │   ├── prefs/      DataStore settings (currency, schedule, units, Today variant)
@@ -229,7 +245,8 @@ app/src/main/java/com/kilkari/
 
 ### A few decisions worth knowing
 
-- **App icon.** Built from `design/icon-source.jpg` by `tools/make_icons.py` (needs Pillow).
+- **App icon.** Built from `common/design/icon-source.jpg` by `android/tools/make_icons.py`
+  (needs Pillow).
   The artwork is a finished square badge, so the adaptive foreground carries it at 85% of the
   108dp canvas — measured against the Pixel launcher's mask with a ringed calibration icon, since
   the documented 66dp "safe zone" is far smaller than what launchers actually reveal. Below that
@@ -251,7 +268,7 @@ app/src/main/java/com/kilkari/
 ## Tests
 
 ```bash
-./gradlew :app:testDebugUnitTest
+cd android && ./gradlew :app:testDebugUnitTest
 ```
 
 77 JUnit cases, all on the JVM — Robolectric supplies SQLite for the ones that need a real
@@ -289,5 +306,5 @@ Nothing leaves the device unless you export it.
 - Investment values are whatever you last entered. The app is offline by design, so there is no
   price feed: a holding's return is only as current as the value last written down, and the
   screen says so.
-- No UI tests. The 77 JUnit cases in `app/src/test` cover the arithmetic, the database and its
+- No UI tests. The 77 JUnit cases in `android/app/src/test` cover the arithmetic, the database and its
   migrations (through Robolectric), but nothing drives the Compose screens.

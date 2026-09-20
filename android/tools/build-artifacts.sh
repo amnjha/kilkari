@@ -2,11 +2,11 @@
 #
 # Builds every shippable Kilkari artifact in one go and collects them in release/.
 #
-#   ./tools/build-artifacts.sh            # release bundle + release APK + debug APK
-#   ./tools/build-artifacts.sh --clean    # same, from a clean build directory
-#   ./tools/build-artifacts.sh --help     # all options
+#   ./android/tools/build-artifacts.sh            # release bundle + release APK + debug APK
+#   ./android/tools/build-artifacts.sh --clean    # same, from a clean build directory
+#   ./android/tools/build-artifacts.sh --help     # all options
 #
-# Signing is automatic: drop a filled-in keystore.properties at the repo root and the
+# Signing is automatic: drop a filled-in keystore.properties in android/ and the
 # release artifacts come out signed and uploadable. Without one they are unsigned, and
 # the script additionally emits a debug-signed copy of the release APK so the minified
 # build can still be installed and smoke-tested.
@@ -15,7 +15,10 @@
 
 set -euo pipefail
 
+# The Gradle project lives in android/; everything it produces is collected at the repo
+# root, which is one level further up now that the repo carries an iOS tree beside it.
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+WORKSPACE_ROOT="$(cd -- "$REPO_ROOT/.." && pwd)"
 APP_NAME="kilkari"
 
 # ---------------------------------------------------------------- options
@@ -23,7 +26,7 @@ APP_NAME="kilkari"
 DO_CLEAN=false
 BUILD_DEBUG=true
 BUILD_RELEASE=true
-OUT_DIR="$REPO_ROOT/release"
+OUT_DIR="$WORKSPACE_ROOT/release"
 
 usage() {
     sed -n '3,12p' "${BASH_SOURCE[0]}" | sed 's/^#\{1,\} \{0,1\}//'

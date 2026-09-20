@@ -14,6 +14,13 @@ keystore.properties
 *.jks
 *.keystore
 
+# iOS
+xcuserdata/
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+DerivedData/
+.build/
+*.xcuserstate
+
 # Release artifacts are built, not committed; release/README.md is kept.
 release/*
 !release/README.md

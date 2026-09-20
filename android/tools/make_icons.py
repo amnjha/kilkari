@@ -1,6 +1,6 @@
-"""Regenerate Kilkari's launcher assets from design/icon-source.jpg.
+"""Regenerate Kilkari's launcher assets from common/design/icon-source.jpg.
 
-Run with Pillow available:  python3 tools/make_icons.py
+Run with Pillow available:  python3 android/tools/make_icons.py
 
 The source is a square badge sitting on a palette backdrop. We crop the badge, discard
 the sliver of backdrop caught in its rounded corners, then extend the badge's own edge
@@ -9,9 +9,11 @@ pixels outward so the adaptive-icon mask never reveals a gap whatever shape it u
 from PIL import Image, ImageDraw, ImageFilter
 import os
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SOURCE = os.path.join(ROOT, 'design', 'icon-source.jpg')
-RES = os.path.join(ROOT, 'app', 'src', 'main', 'res')
+ANDROID = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WORKSPACE = os.path.dirname(ANDROID)
+# The badge is the brand, not an Android asset: both platforms cut their icons from it.
+SOURCE = os.path.join(WORKSPACE, 'common', 'design', 'icon-source.jpg')
+RES = os.path.join(ANDROID, 'app', 'src', 'main', 'res')
 
 BADGE_BOX = (548, 256, 548 + 1208, 256 + 1208)
 # Enough inset to clear the backdrop trapped in the badge's rounded corners.

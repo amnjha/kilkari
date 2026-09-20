@@ -1,3 +1,4 @@
+import javax.inject.Inject
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -14,6 +15,45 @@ val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) {
         FileInputStream(keystorePropertiesFile).use { load(it) }
+    }
+}
+
+/**
+ * Copies the shared illustrations into a generated resource folder.
+ *
+ * The artwork is the product's, not Android's: it lives in common/illustrations so the iOS
+ * app cuts its asset catalogue from exactly the same files, and the Android build picks it
+ * up from there rather than the tree carrying a second copy. Declared as a real task with a
+ * directory output so AGP can wire it into the variant's resources and keep it up to date.
+ */
+abstract class SyncIllustrations : DefaultTask() {
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val source: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val destination: DirectoryProperty
+
+    @get:Inject
+    abstract val fs: FileSystemOperations
+
+    @TaskAction
+    fun sync() {
+        fs.sync {
+            from(source) { include("*.png", "*.webp", "*.jpg") }
+            into(destination.dir("drawable-nodpi"))
+        }
+    }
+}
+
+val syncIllustrations = tasks.register<SyncIllustrations>("syncIllustrations") {
+    source.set(rootProject.file("../common/illustrations"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.res?.addGeneratedSourceDirectory(syncIllustrations, SyncIllustrations::destination)
     }
 }
 
