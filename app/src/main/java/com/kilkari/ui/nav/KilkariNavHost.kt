@@ -20,6 +20,7 @@ import com.kilkari.data.repo.KilkariRepository
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.KBottomNav
 import com.kilkari.ui.components.KToast
+import com.kilkari.ui.theme.AccentScope
 import com.kilkari.ui.screens.AppointmentsScreen
 import com.kilkari.ui.screens.BackupScreen
 import com.kilkari.ui.screens.CatchUpScreen
@@ -83,56 +84,61 @@ fun KilkariNavHost(repository: KilkariRepository, onReady: () -> Unit = {}) {
 
     val go = remember(nav) { NavActions(nav) }
 
-    Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
-            NavHost(
-                navController = nav,
-                startDestination = if (baby == null) Routes.ONBOARDING else Routes.TODAY,
-                modifier = Modifier.weight(1f),
-            ) {
-                composable(Routes.ONBOARDING) { OnboardingScreen(vm) }
+    // One place decides what colour the app is right now. Every shared control below —
+    // buttons, chips, switches, tick rings, the FAB, the header wash — reads it from here, so
+    // a screen changes hue as a whole rather than one widget at a time.
+    AccentScope(Routes.accentFor(route)) {
+        Box(Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize()) {
+                NavHost(
+                    navController = nav,
+                    startDestination = if (baby == null) Routes.ONBOARDING else Routes.TODAY,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    composable(Routes.ONBOARDING) { OnboardingScreen(vm) }
 
-                composable(Routes.TODAY) { TodayScreen(vm, go) }
-                composable(Routes.LOG) { LogScreen(vm, go) }
-                composable(Routes.HEALTH) { HealthScreen(vm, go) }
-                composable(Routes.MONEY) { MoneyScreen(vm, go) }
-                composable(Routes.MORE) { MoreScreen(vm, go) }
+                    composable(Routes.TODAY) { TodayScreen(vm, go) }
+                    composable(Routes.LOG) { LogScreen(vm, go) }
+                    composable(Routes.HEALTH) { HealthScreen(vm, go) }
+                    composable(Routes.MONEY) { MoneyScreen(vm, go) }
+                    composable(Routes.MORE) { MoreScreen(vm, go) }
 
-                composable(Routes.VACCINES) { VaccinesScreen(vm, go) }
-                composable(Routes.VACCINE_DETAIL) { VaccineDetailScreen(vm, go) }
-                composable(Routes.GROWTH) { GrowthScreen(vm, go) }
-                composable(Routes.TEETH) { TeethScreen(vm, go) }
-                composable(Routes.MEDS) { MedsScreen(vm, go) }
-                composable(Routes.APPOINTMENTS) { AppointmentsScreen(vm, go) }
-                composable(Routes.DOCTORS) { DoctorsScreen(vm, go) }
+                    composable(Routes.VACCINES) { VaccinesScreen(vm, go) }
+                    composable(Routes.VACCINE_DETAIL) { VaccineDetailScreen(vm, go) }
+                    composable(Routes.GROWTH) { GrowthScreen(vm, go) }
+                    composable(Routes.TEETH) { TeethScreen(vm, go) }
+                    composable(Routes.MEDS) { MedsScreen(vm, go) }
+                    composable(Routes.APPOINTMENTS) { AppointmentsScreen(vm, go) }
+                    composable(Routes.DOCTORS) { DoctorsScreen(vm, go) }
 
-                composable(Routes.CATCH_UP) { CatchUpScreen(vm, go) }
-                composable(Routes.RECONCILE) { ReconcileScreen(vm, go) }
-                composable(Routes.LOG_DAY) { LogDayScreen(vm, go) }
-                composable(Routes.INSIGHTS) { InsightsScreen(vm, go) }
+                    composable(Routes.CATCH_UP) { CatchUpScreen(vm, go) }
+                    composable(Routes.RECONCILE) { ReconcileScreen(vm, go) }
+                    composable(Routes.LOG_DAY) { LogDayScreen(vm, go) }
+                    composable(Routes.INSIGHTS) { InsightsScreen(vm, go) }
 
-                composable(Routes.TIMELINE) { TimelineScreen(vm, go) }
-                composable(Routes.DOCUMENTS) { DocumentsScreen(vm, go) }
-                composable(Routes.DOCUMENT_DETAIL) { DocumentDetailScreen(vm, go) }
-                composable(Routes.PAPERWORK) { PaperworkScreen(vm, go) }
-                composable(Routes.PHOTOS) { PhotosScreen(vm, go) }
-                composable(Routes.EVENTS) { EventsScreen(vm, go) }
-                composable(Routes.REMINDERS) { RemindersScreen(vm, go) }
-                composable(Routes.BACKUP) { BackupScreen(vm, go) }
-                composable(Routes.SETTINGS) { SettingsScreen(vm, go) }
+                    composable(Routes.TIMELINE) { TimelineScreen(vm, go) }
+                    composable(Routes.DOCUMENTS) { DocumentsScreen(vm, go) }
+                    composable(Routes.DOCUMENT_DETAIL) { DocumentDetailScreen(vm, go) }
+                    composable(Routes.PAPERWORK) { PaperworkScreen(vm, go) }
+                    composable(Routes.PHOTOS) { PhotosScreen(vm, go) }
+                    composable(Routes.EVENTS) { EventsScreen(vm, go) }
+                    composable(Routes.REMINDERS) { RemindersScreen(vm, go) }
+                    composable(Routes.BACKUP) { BackupScreen(vm, go) }
+                    composable(Routes.SETTINGS) { SettingsScreen(vm, go) }
+                }
+
+                if (Routes.showsNav(route)) {
+                    KBottomNav(
+                        tabs = Routes.tabs,
+                        active = Routes.activeTab(route),
+                        onSelect = go::tab,
+                    )
+                }
             }
 
-            if (Routes.showsNav(route)) {
-                KBottomNav(
-                    tabs = Routes.tabs,
-                    active = Routes.activeTab(route),
-                    onSelect = go::tab,
-                )
-            }
+            // Float the toast clear of the 76dp navigation bar when it is showing.
+            KToast(toast, bottomInset = if (Routes.showsNav(route)) 92.dp else 16.dp)
         }
-
-        // Float the toast clear of the 76dp navigation bar when it is showing.
-        KToast(toast, bottomInset = if (Routes.showsNav(route)) 92.dp else 16.dp)
     }
 }
 

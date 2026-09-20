@@ -40,6 +40,7 @@ import com.kilkari.ui.components.StatCell
 import com.kilkari.ui.components.StatRow
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.GrowthSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
@@ -69,7 +70,7 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
         growth.dropLast(1).lastOrNull { it.lengthCm != null }?.lengthCm?.let { l - it }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Growth", go::back) {
                 IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)

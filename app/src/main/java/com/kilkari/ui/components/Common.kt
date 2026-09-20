@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kilkari.ui.theme.Display
+import com.kilkari.ui.theme.LocalAccent
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.springPress
 import com.kilkari.ui.theme.rememberPressSource
@@ -273,6 +274,7 @@ fun Monogram(letter: String, size: Int = 44, fontSize: Int = 18) {
 @Composable
 fun KChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val press = rememberPressSource()
+    val accent = LocalAccent.current
     Surface(
         modifier = modifier
             .height(36.dp)
@@ -280,13 +282,13 @@ fun KChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onCli
             .clip(RoundedCornerShape(999.dp))
             .clickable(interactionSource = press, indication = null, onClick = onClick),
         shape = RoundedCornerShape(999.dp),
-        color = if (selected) KC.Coral else KC.Surface,
-        border = BorderStroke(1.dp, if (selected) KC.Coral else KC.BorderStrong),
+        color = if (selected) accent.main else KC.Surface,
+        border = BorderStroke(1.dp, if (selected) accent.main else accent.ring),
     ) {
         Box(Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
             Text(
                 label,
-                color = if (selected) Color.White else KC.CoralDeep,
+                color = if (selected) Color.White else accent.deep,
                 fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
             )
         }
@@ -296,11 +298,12 @@ fun KChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onCli
 /** Segmented control on a lilac track — Feed type, expense category. */
 @Composable
 fun KSegmented(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
+    val accent = LocalAccent.current
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(999.dp))
-            .background(KC.ClayBg)
+            .background(accent.bg)
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -309,7 +312,7 @@ fun KSegmented(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Uni
             // The pill fades between options rather than jumping, which at this size reads as
             // the selection moving.
             val fill by animateColorAsState(
-                targetValue = if (on) KC.Coral else Color.Transparent,
+                targetValue = if (on) accent.main else Color.Transparent,
                 animationSpec = tween(200),
                 label = "segment",
             )
@@ -327,7 +330,7 @@ fun KSegmented(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Uni
             ) {
                 Text(
                     label,
-                    color = if (on) Color.White else KC.CoralDeep,
+                    color = if (on) Color.White else accent.deep,
                     fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp,
                 )
             }
@@ -344,14 +347,15 @@ fun PrimaryButton(
     onClick: () -> Unit,
 ) {
     val press = rememberPressSource()
+    val accent = LocalAccent.current
     Box(
         modifier
             .fillMaxWidth()
             .height(52.dp)
             .springPress(press)
-            .let { if (enabled) it.clay(999, 8.dp, KC.Coral) else it }
+            .let { if (enabled) it.clay(999, 8.dp, accent.main) else it }
             .clip(RoundedCornerShape(999.dp))
-            .background(if (enabled) KC.Coral else KC.CoralPale)
+            .background(if (enabled) accent.main else accent.ring)
             .clickable(enabled = enabled, interactionSource = press, indication = null, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -367,6 +371,7 @@ fun SecondaryButton(
     icon: String? = null,
     onClick: () -> Unit,
 ) {
+    val accent = LocalAccent.current
     Surface(
         modifier = modifier
             .height(46.dp)
@@ -374,15 +379,15 @@ fun SecondaryButton(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(999.dp),
         color = KC.Surface,
-        border = BorderStroke(1.dp, KC.BorderStrong),
+        border = BorderStroke(1.dp, accent.ring),
     ) {
         Row(
             Modifier.padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (icon != null) Icon(KIcons[icon], null, tint = KC.CoralDeep, modifier = Modifier.size(20.dp))
-            Text(label, color = KC.CoralDeep, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            if (icon != null) Icon(KIcons[icon], null, tint = accent.deep, modifier = Modifier.size(20.dp))
+            Text(label, color = accent.deep, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         }
     }
 }
@@ -390,12 +395,13 @@ fun SecondaryButton(
 /** iOS-style switch drawn to the design's 44×26 spec. */
 @Composable
 fun KSwitch(checked: Boolean, onToggle: (() -> Unit)? = null) {
+    val accent = LocalAccent.current
     Box(
         Modifier
             .width(44.dp)
             .height(26.dp)
             .clip(RoundedCornerShape(13.dp))
-            .background(if (checked) KC.Coral else KC.Track)
+            .background(if (checked) accent.main else KC.Track)
             .let { if (onToggle != null) it.clickable(onClick = onToggle) else it },
     ) {
         Box(
@@ -444,8 +450,8 @@ fun KRow(
     title: String,
     subtitle: String? = null,
     icon: String? = null,
-    iconTint: Color = KC.Coral,
-    iconBg: Color = KC.CoralBg,
+    iconTint: Color = LocalAccent.current.deep,
+    iconBg: Color = LocalAccent.current.bg,
     divider: Boolean = true,
     onClick: (() -> Unit)? = null,
     trailing: @Composable (RowScope.() -> Unit)? = null,
@@ -482,13 +488,14 @@ fun KRow(
 /** Checkbox-style ring used by the Today checklist and vaccine dose lists. */
 @Composable
 fun CheckRing(checked: Boolean, rounded: Boolean = false, size: Int = 24, glyph: String? = null) {
+    val accent = LocalAccent.current
     val shape = if (rounded) RoundedCornerShape(8.dp) else RoundedCornerShape(percent = 50)
     Box(
         Modifier
             .size(size.dp)
-            .border(2.dp, if (checked) KC.Coral else KC.CoralPale, shape)
+            .border(2.dp, if (checked) accent.main else accent.ring, shape)
             .clip(shape)
-            .background(if (checked) KC.Coral else KC.Surface),
+            .background(if (checked) accent.main else KC.Surface),
         contentAlignment = Alignment.Center,
     ) {
         val inner = (size * 2 / 3).dp
@@ -500,7 +507,7 @@ fun CheckRing(checked: Boolean, rounded: Boolean = false, size: Int = 24, glyph:
             // row is recognisable at a glance rather than being one of several bare circles.
             glyph == null -> Unit
             KIcons.isDrawn(glyph) ->
-                Icon(KIcons[glyph], null, tint = KC.Coral, modifier = Modifier.size(inner))
+                Icon(KIcons[glyph], null, tint = accent.main, modifier = Modifier.size(inner))
             else -> Text(glyph, fontSize = (size / 2).sp, lineHeight = (size / 2).sp)
         }
     }

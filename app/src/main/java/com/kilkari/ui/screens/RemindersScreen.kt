@@ -27,6 +27,8 @@ import com.kilkari.data.db.ReminderEntity
 import com.kilkari.domain.RepeatRule
 import com.kilkari.ui.DueTaskBuilder
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.EmptyState
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconButton44
 import com.kilkari.ui.components.IconPickerSheet
@@ -38,6 +40,7 @@ import com.kilkari.ui.components.KSwitch
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.ReminderSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -68,7 +71,7 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
     val builtIn = reminders.filter { it.builtIn }
     val custom = reminders.filterNot { it.builtIn }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Reminders", go::back) {
                 IconButton44("add", KC.Coral, { ensurePermission(); editing = null to true }, iconSize = 26)
@@ -103,10 +106,11 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
                 SectionLabel("Yours")
                 KCard {
                     if (custom.isEmpty()) {
-                        Text(
-                            "None yet. Tap + to add a reminder with its own time and cadence.",
-                            modifier = Modifier.padding(14.dp),
-                            fontFamily = Sans, fontSize = 13.sp, lineHeight = 19.sp, color = KC.Muted,
+                        EmptyState(
+                            Spot.EMPTY_REMINDERS,
+                            "No reminders of your own",
+                            "Vitamin drops at eight, tummy time after the nap — tap + and pick " +
+                                "its time and how often.",
                         )
                     }
                     custom.forEachIndexed { i, reminder ->

@@ -33,6 +33,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.db.AppointmentEntity
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.EmptyState
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconButton44
 import com.kilkari.ui.components.DoctorPickerSheets
@@ -42,6 +44,7 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.AppointmentSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -60,7 +63,7 @@ fun AppointmentsScreen(vm: KilkariViewModel, go: NavActions) {
     val upcoming = appointments.filter { !it.startAt.isBefore(now) }
     val past = appointments.filter { it.startAt.isBefore(now) }.reversed()
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Appointments", go::back) {
                 IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)
@@ -76,13 +79,12 @@ fun AppointmentsScreen(vm: KilkariViewModel, go: NavActions) {
             ) {
                 SectionLabel("Upcoming")
                 if (upcoming.isEmpty()) {
-                    KCard {
-                        Text(
-                            "Nothing booked. Tap + to add a visit.",
-                            modifier = Modifier.padding(14.dp),
-                            fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
-                        )
-                    }
+                    EmptyState(
+                        Spot.EMPTY_APPOINTMENTS,
+                        "Nothing booked",
+                        "Add the next check-up and it will be waiting on the home screen the " +
+                            "morning it comes round.",
+                    )
                 }
                 upcoming.forEachIndexed { i, appt ->
                     AppointmentCard(

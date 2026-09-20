@@ -35,12 +35,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.db.TimelineEntity
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.EmptyState
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconButton44
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.MilestoneSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -55,7 +58,7 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
     var editing by remember { mutableStateOf<TimelineEntity?>(null) }
     val context = LocalContext.current
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar(baby?.let { "${it.name}'s timeline" } ?: "Timeline", go::back) {
                 IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)
@@ -69,9 +72,11 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
                     .padding(top = 10.dp, bottom = 24.dp),
             ) {
                 if (timeline.isEmpty()) {
-                    Text(
-                        "Nothing here yet. Tap + to add the first moment.",
-                        fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
+                    EmptyState(
+                        Spot.EMPTY_TIMELINE,
+                        "The story starts here",
+                        "First smile, first outing, the day they rolled over — tap + and it is " +
+                            "kept for good.",
                     )
                 }
                 timeline.forEachIndexed { i, entry ->

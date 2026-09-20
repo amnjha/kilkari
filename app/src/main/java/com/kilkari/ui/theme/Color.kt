@@ -83,6 +83,62 @@ object KC {
     val SeaMid = Color(0xFF3E8F94)
     val SeaDeep = Color(0xFF235F63)
     val SeaBg = Color(0xFFE3F1F2)
+    val SeaRing = Color(0xFFBBDFE2)
+
+    /**
+     * Leaf, Sky and Rose — the three hues the mark does not supply.
+     *
+     * Six families was enough while colour only tinted an icon. Once whole surfaces are
+     * painted, a screen needs a hue of its own or every screen looks like the last one, and
+     * warm-only families (coral, clay, gold) blur into each other at tile size. These three
+     * fill the gaps in the wheel: green for anything that grows or completes, blue for the
+     * calm half — sleep, paperwork, records — and pink for the keepsakes.
+     *
+     * Each [main] was chosen as the darkest step that still reads as its hue while carrying
+     * white text at 4.5:1 — Leaf 4.8, Sky 5.0, Rose 5.4 — and each [Deep] step clears 4.5:1
+     * as text on the cream ground.
+     */
+    val Leaf = Color(0xFF487F3C)
+    val LeafDeep = Color(0xFF35622C)
+    val LeafLight = Color(0xFF79AE6B)
+    val LeafBg = Color(0xFFECF4E7)
+    val LeafRing = Color(0xFFBEDCAF)
+
+    val Sky = Color(0xFF2A72B8)
+    val SkyDeep = Color(0xFF1F568D)
+    val SkyLight = Color(0xFF619FD6)
+    val SkyBg = Color(0xFFE7F1FA)
+    val SkyRing = Color(0xFFB6D6F0)
+
+    val Rose = Color(0xFFB93B6B)
+    val RoseDeep = Color(0xFF96294F)
+    val RoseLight = Color(0xFFDE7399)
+    val RoseBg = Color(0xFFFBE9F0)
+    val RoseRing = Color(0xFFF3BED1)
+
+    /**
+     * Washes — the grounds a coloured surface is actually painted with.
+     *
+     * The `Bg` steps above are near-white: right behind a 20dp icon, invisible across a whole
+     * tile, which is what made the app read as one colour on cream. These sit a long way
+     * further up the ramp — the same hue at 72% saturation — while [Ink] on them still clears
+     * 8.3:1 everywhere.
+     *
+     * The warm three are darker than the cool six on purpose. The ground is warm cream, so a
+     * pale coral, clay or gold is the ground; a pale teal or lilac is already a different
+     * colour. Lightness was lowered on those three until each cleared 1.35:1 against the
+     * cream, which is where a tile stops looking like a shadow and starts looking painted.
+     */
+    val CoralWash = Color(0xFFF3BFB4)
+    val ClayWash = Color(0xFFF1C4A7)
+    val GoldWash = Color(0xFFEED196)
+    val LeafWash = Color(0xFFC3F4B9)
+    val TealWash = Color(0xFFB9F4EE)
+    val SeaWash = Color(0xFFB9F0F4)
+    val SkyWash = Color(0xFFB9D7F4)
+    val LilacWash = Color(0xFFC4BBF4)
+    val RoseWash = Color(0xFFF4B9CF)
+    val StoneWash = Color(0xFFE2C9BB)
 
     // Danger — deeper and browner than coral, so lateness is never read as brand.
     val Danger = Color(0xFF8C2F22)

@@ -10,6 +10,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.EmptyState
 import com.kilkari.ui.components.KIcons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +48,7 @@ import com.kilkari.ui.components.SheetField
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.SheetHint
 import com.kilkari.ui.sheets.SheetTitle
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -61,7 +64,7 @@ fun DoctorsScreen(vm: KilkariViewModel, go: NavActions) {
     /** Non-null while the editor is open; the inner value is null for a new doctor. */
     var editing by remember { mutableStateOf<Pair<DoctorEntity?, Boolean>?>(null) }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Doctors", go::back) {
                 IconButton44("add", KC.Coral, { editing = null to true }, iconSize = 26)
@@ -77,11 +80,11 @@ fun DoctorsScreen(vm: KilkariViewModel, go: NavActions) {
             ) {
                 KCard {
                     if (doctors.isEmpty()) {
-                        Text(
-                            "No one saved yet. Add a doctor here, or add one while booking an " +
-                                "appointment or recording a vaccine.",
-                            modifier = Modifier.padding(14.dp),
-                            fontFamily = Sans, fontSize = 13.sp, lineHeight = 19.sp, color = KC.Muted,
+                        EmptyState(
+                            Spot.EMPTY_DOCTORS,
+                            "No one saved yet",
+                            "Add a doctor here, or add one while booking an appointment or " +
+                                "recording a vaccine.",
                         )
                     }
                     doctors.forEachIndexed { i, doctor ->

@@ -4,10 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -37,6 +40,7 @@ import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -66,6 +70,7 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
     Column(
         Modifier
             .fillMaxSize()
+            .headerWash()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
             .padding(top = 18.dp, bottom = 24.dp),
@@ -73,7 +78,7 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
     ) {
         Text("Health", style = ScreenTitle, color = KC.Ink)
 
-        GradientCard(listOf(KC.Clay, KC.Gold), onClick = { go.push(Routes.VACCINES) }) {
+        GradientCard(listOf(KC.TealDeep, KC.SeaMid), onClick = { go.push(Routes.VACCINES) }) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -119,9 +124,12 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
             }
         }
 
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             HealthTile(
-                "monitor_weight", KC.TealLight, "Growth",
+                "monitor_weight", KC.LeafDeep, KC.LeafWash, "Growth",
                 latestGrowth?.let {
                     listOfNotNull(
                         it.weightKg?.let { w -> Fmt.weight(w, settings.metricUnits) },
@@ -129,39 +137,45 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
                         it.headCm?.let { h -> Fmt.length(h, settings.metricUnits) },
                     ).joinToString(" · ")
                 }?.ifBlank { "No measurements yet" } ?: "No measurements yet",
-                Modifier.weight(1f),
+                Modifier.weight(1f).fillMaxHeight(),
             ) { go.push(Routes.GROWTH) }
             HealthTile(
-                "dentistry", KC.Sea, "Teeth",
+                "dentistry", KC.SeaDeep, KC.SeaWash, "Teeth",
                 // Points at the tooth actually due next rather than repeating the first one
                 // forever, which stopped being true the moment it came through.
                 ToothChart.nextExpected(teeth).let { next ->
                     if (next == null) "All ${ToothChart.TOTAL} through"
                     else "${teeth.size} of ${ToothChart.TOTAL} · next ~${next.second.fromMonth} mo"
                 },
-                Modifier.weight(1f),
+                Modifier.weight(1f).fillMaxHeight(),
             ) { go.push(Routes.TEETH) }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             HealthTile(
-                "pill", KC.DangerLight, "Medications",
+                "pill", KC.ClayDeep, KC.ClayWash, "Medications",
                 if (activeMeds.isEmpty()) "None active"
                 else "${activeMeds.size} active · ${activeMeds.first().name}",
-                Modifier.weight(1f),
+                Modifier.weight(1f).fillMaxHeight(),
             ) { go.push(Routes.MEDS) }
             HealthTile(
-                "stethoscope", KC.Coral, "Appointments",
+                "stethoscope", KC.CoralDeep, KC.CoralWash, "Appointments",
                 nextAppt?.let { "Next: ${Fmt.dayAndDate(it.startAt.toLocalDate())} ${Fmt.time(it.startAt)}" }
                     ?: "Nothing booked",
-                Modifier.weight(1f),
+                Modifier.weight(1f).fillMaxHeight(),
             ) { go.push(Routes.APPOINTMENTS) }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             HealthTile(
-                "medical_services", KC.ClayDeep, "Doctors",
+                "medical_services", KC.SkyDeep, KC.SkyWash, "Doctors",
                 if (doctors.isEmpty()) "Add the people you see"
                 else "${doctors.size} saved · ${doctors.first().name}",
-                Modifier.weight(1f),
+                Modifier.weight(1f).fillMaxHeight(),
             ) { go.push(Routes.DOCTORS) }
             Box(Modifier.weight(1f))
         }
@@ -176,17 +190,17 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
                     } else ""
                     add(
                         Triple(
-                            "monitor_weight" to KC.TealLight,
+                            "monitor_weight" to KC.LeafDeep,
                             "Weight ${Fmt.weight(g.weightKg, settings.metricUnits)}$delta",
                             g.date,
                         )
                     )
                 }
                 meds.take(2).forEach { m ->
-                    add(Triple("pill" to KC.DangerLight, "${m.name} started, ${m.dose}", m.startDate))
+                    add(Triple("pill" to KC.ClayDeep, "${m.name} started, ${m.dose}", m.startDate))
                 }
                 timeline.filter { it.icon == "vaccines" }.take(2).forEach { t ->
-                    add(Triple("vaccines" to KC.GoldDeep, t.title, t.date))
+                    add(Triple("vaccines" to KC.TealDeep, t.title, t.date))
                 }
             }.sortedByDescending { it.third }.take(4)
 
@@ -222,31 +236,44 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
     }
 }
 
+/**
+ * One of the five things health is made of, drawn the way the log tiles are: the card itself
+ * wears the colour and the icon sits in a white disc on top of it. Five white cards with five
+ * small coloured dots is a settings list; five coloured cards is a place.
+ */
 @Composable
 private fun HealthTile(
     icon: String,
-    tint: Color,
+    fg: Color,
+    wash: Color,
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    KCard(modifier, onClick = onClick) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    KCard(modifier, corner = 26, background = wash, border = null, onClick = onClick) {
+        Column(
+            Modifier.fillMaxHeight().padding(16.dp).heightIn(min = 104.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Box(
                 Modifier
-                    .size(42.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
-                    .background(tint.copy(alpha = 0.14f)),
+                    .background(Color.White.copy(alpha = 0.85f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(KIcons[icon], null, tint = tint, modifier = Modifier.size(22.dp))
+                Icon(KIcons[icon], null, tint = fg, modifier = Modifier.size(23.dp))
             }
-            Text(title, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = KC.Ink)
-            Text(
-                subtitle, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
-            )
+            Column {
+                Text(title, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = KC.Ink)
+                Text(
+                    subtitle,
+                    fontFamily = Sans, fontSize = 12.sp, color = KC.MutedStrong,
+                    modifier = Modifier.padding(top = 2.dp),
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

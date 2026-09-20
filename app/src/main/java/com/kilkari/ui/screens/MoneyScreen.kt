@@ -69,6 +69,7 @@ import com.kilkari.ui.sheets.FundSources
 import com.kilkari.ui.sheets.FundTxnSheet
 import com.kilkari.ui.sheets.InvestmentDetailSheet
 import com.kilkari.ui.sheets.InvestmentSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -133,7 +134,7 @@ fun MoneyScreen(vm: KilkariViewModel, go: NavActions) {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             Column(
                 Modifier.padding(horizontal = 16.dp).padding(top = 18.dp, bottom = 12.dp),

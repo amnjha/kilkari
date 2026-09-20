@@ -44,7 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kilkari.ui.theme.BarTitle
 import androidx.compose.ui.graphics.Brush
+import com.kilkari.ui.theme.Accent
+import com.kilkari.ui.theme.KAccents
 import com.kilkari.ui.theme.KC
+import com.kilkari.ui.theme.LocalAccent
 import com.kilkari.ui.theme.springPress
 import com.kilkari.ui.theme.clay
 import com.kilkari.ui.theme.Sans
@@ -82,7 +85,13 @@ fun IconButton44(icon: String, tint: Color, onClick: () -> Unit, iconSize: Int =
     }
 }
 
-data class NavTab(val route: String, val label: String, val icon: String)
+data class NavTab(
+    val route: String,
+    val label: String,
+    val icon: String,
+    /** The colour the tab lights up in, and the colour its screen is painted in. */
+    val accent: Accent = KAccents.Brand,
+)
 
 /**
  * The five-tab bar: Today · Log · Health · Money · More.
@@ -126,7 +135,7 @@ fun KBottomNav(tabs: List<NavTab>, active: String, onSelect: (String) -> Unit) {
                             .width(52.dp)
                             .height(32.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(if (on) KC.Coral else Color.Transparent),
+                            .background(if (on) tab.accent.main else Color.Transparent),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
@@ -139,7 +148,7 @@ fun KBottomNav(tabs: List<NavTab>, active: String, onSelect: (String) -> Unit) {
                         tab.label,
                         fontFamily = Sans, fontSize = 11.sp,
                         fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
-                        color = if (on) KC.Ink else KC.Muted,
+                        color = if (on) tab.accent.deep else KC.Muted,
                         modifier = Modifier.padding(top = 3.dp),
                     )
                 }
@@ -214,7 +223,7 @@ fun BoxScope.KToast(message: String?, bottomInset: Dp = 16.dp) {
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(KIcons["check_circle"], null, tint = KC.CoralPaler, modifier = Modifier.size(20.dp))
+            Icon(KIcons["check_circle"], null, tint = LocalAccent.current.light, modifier = Modifier.size(20.dp))
             Text(
                 shown,
                 color = Color.White, fontFamily = Sans,
@@ -228,6 +237,7 @@ fun BoxScope.KToast(message: String?, bottomInset: Dp = 16.dp) {
 @Composable
 fun BoxScope.KFab(icon: String, label: String? = null, onClick: () -> Unit) {
     val press = remember { MutableInteractionSource() }
+    val accent = LocalAccent.current
     Row(
         Modifier
             .align(Alignment.BottomEnd)
@@ -235,9 +245,9 @@ fun BoxScope.KFab(icon: String, label: String? = null, onClick: () -> Unit) {
             .padding(end = 16.dp, bottom = 22.dp)
             .height(58.dp)
             .springPress(press)
-            .clay(corner = 22, elevation = 16.dp, tint = KC.Coral)
+            .clay(corner = 22, elevation = 16.dp, tint = accent.main)
             .clip(RoundedCornerShape(22.dp))
-            .background(Brush.linearGradient(listOf(KC.Coral, KC.CoralDeep)))
+            .background(Brush.linearGradient(listOf(accent.main, accent.deep)))
             .clickable(interactionSource = press, indication = null, onClick = onClick)
             .padding(horizontal = if (label == null) 17.dp else 21.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),

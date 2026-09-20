@@ -38,6 +38,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.db.MedicationEntity
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.EmptyState
 import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.IconButton44
 import com.kilkari.ui.components.DetailBar
@@ -49,6 +51,7 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.MedicationSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
@@ -71,7 +74,7 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
     val today = LocalDate.now()
     val week = remember(today) { (6 downTo 0).map { today.minusDays(it.toLong()) } }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Medications", go::back) {
                 IconButton44("add", KC.Coral, { editing = null; sheetOpen = true }, iconSize = 26)
@@ -93,13 +96,12 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
 
                 SectionLabel("Active")
                 if (active.isEmpty()) {
-                    KCard {
-                        Text(
-                            "No medicines right now. Tap + to add one.",
-                            modifier = Modifier.padding(14.dp),
-                            fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
-                        )
-                    }
+                    EmptyState(
+                        Spot.EMPTY_MEDICINES,
+                        "Nothing being taken",
+                        "Add a medicine and Kilkari keeps the doses, the days, and an alarm for " +
+                            "each one.",
+                    )
                 }
                 active.forEach { med ->
                     val taken = doses.filter { it.medicationId == med.id }.map { it.date }.toSet()

@@ -68,9 +68,9 @@ import com.kilkari.ui.components.Monogram
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
-import com.kilkari.ui.theme.KGradients
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
 import java.time.LocalDate
@@ -97,15 +97,9 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
     var cropping by remember { mutableStateOf<Uri?>(null) }
     val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri -> cropping = uri }
 
-    Box(Modifier.fillMaxSize()) {
-        // A warm wash behind the greeting that fades into the cream — the page starts with
-        // colour rather than with a wall of cards.
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(220.dp)
-                .background(KGradients.header)
-        )
+    // A wash of the screen's own colour behind the greeting, fading into the cream — the page
+    // starts with colour rather than with a wall of cards.
+    Box(Modifier.fillMaxSize().headerWash(height = 260.dp)) {
         Column(
             Modifier
                 .fillMaxSize()
@@ -271,7 +265,11 @@ private fun TodayAgenda(
                     "asleep ${Fmt.elapsed(openSleep!!.startAt)}"
                 else -> Fmt.ago(latest[kind]?.startAt)
             }
-            KCard(Modifier.weight(1f), corner = 22, onClick = { onQuickLog(kind) }) {
+            KCard(
+                Modifier.weight(1f), corner = 22,
+                background = spec.wash, border = null,
+                onClick = { onQuickLog(kind) },
+            ) {
                 Column(
                     Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -282,7 +280,7 @@ private fun TodayAgenda(
                             Modifier
                                 .size(46.dp)
                                 .clip(CircleShape)
-                                .background(spec.bg),
+                                .background(Color.White.copy(alpha = 0.85f)),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(KIcons[spec.icon], null, tint = spec.fg, modifier = Modifier.size(23.dp))
@@ -295,7 +293,7 @@ private fun TodayAgenda(
                                 .background(Color.White)
                                 .padding(1.5.dp)
                                 .clip(CircleShape)
-                                .background(KC.Coral),
+                                .background(spec.fg),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
@@ -309,7 +307,7 @@ private fun TodayAgenda(
                         fontSize = 13.sp, color = KC.Ink,
                     )
                     Text(
-                        agoText, fontFamily = Sans, fontSize = 11.sp, color = KC.Muted,
+                        agoText, fontFamily = Sans, fontSize = 11.sp, color = KC.MutedStrong,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -737,7 +735,14 @@ private fun DoneHeader(count: Int, expanded: Boolean, onToggle: () -> Unit) {
 @Composable
 private fun DueTaskRow(task: DueTask, vm: KilkariViewModel, go: NavActions) {
     val skin = taskSkin(task)
-    KCard(corner = 14) {
+    // Half-strength: the tile washes are mixed for a card the size of a thumb, and six rows
+    // of one at full strength is a paint chart. Done rows drop back to white — the colour is
+    // there to say what a thing is while it still wants doing.
+    KCard(
+        corner = 16,
+        background = if (task.done) KC.Surface else skin.second.copy(alpha = 0.5f),
+        border = null,
+    ) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -762,7 +767,7 @@ private fun DueTaskRow(task: DueTask, vm: KilkariViewModel, go: NavActions) {
                 // plain ring rather than repeating an icon the row's text already says.
                 CheckRing(task.done, glyph = task.icon.takeIf { task.kind == DueTaskKind.REMINDER })
             } else {
-                IconBadge(task.icon, skin.first, skin.second)
+                IconBadge(task.icon, skin.first, Color.White.copy(alpha = 0.8f))
             }
             Column(Modifier.weight(1f)) {
                 Text(
@@ -804,13 +809,19 @@ private fun DueTaskRow(task: DueTask, vm: KilkariViewModel, go: NavActions) {
     }
 }
 
+/**
+ * The colour a due row wears, matched to the screen its subject lives on: a vaccine is teal
+ * because vaccines are on Health, a nappy reminder is gold because that is the Log tile, and
+ * so on. The row's ground is the pale step and its icon the deep one, so a list of six kinds
+ * reads as six things rather than six identical white bars.
+ */
 private fun taskSkin(task: DueTask): Pair<Color, Color> = when (task.kind) {
-    DueTaskKind.MEDICATION -> KC.DangerDeep to KC.DangerBg2
-    DueTaskKind.APPOINTMENT -> KC.Coral to KC.CoralBg
-    DueTaskKind.VACCINE -> KC.GoldDeep to KC.GoldBg
-    DueTaskKind.PAPERWORK -> KC.ClayDeep to KC.ClayBg
-    DueTaskKind.SLEEP -> KC.CoralDeep to KC.CoralBg
-    DueTaskKind.REMINDER -> KC.SeaDeep to KC.SeaBg
+    DueTaskKind.MEDICATION -> KC.ClayDeep to KC.ClayWash
+    DueTaskKind.APPOINTMENT -> KC.CoralDeep to KC.CoralWash
+    DueTaskKind.VACCINE -> KC.TealDeep to KC.TealWash
+    DueTaskKind.PAPERWORK -> KC.SeaDeep to KC.SeaWash
+    DueTaskKind.SLEEP -> KC.LilacDeep to KC.LilacWash
+    DueTaskKind.REMINDER -> KC.GoldDeep to KC.GoldWash
 }
 
 @Composable
@@ -847,13 +858,28 @@ private fun greeting(): String {
     }
 }
 
-internal data class TileSpec(val icon: String, val title: String, val fg: Color, val bg: Color)
+/**
+ * How one kind of log entry is drawn wherever it appears: the tile on Log, the quick action
+ * on Today, the row in the day's list.
+ *
+ * [bg] is the pale ground behind a small icon; [wash] is the ground for a whole tile. The six
+ * kinds deliberately take six different hues rather than six shades of the brand — at tile
+ * size the colour is how a parent finds "sleep" without reading, and a grid of one colour was
+ * the single biggest reason the app looked like a form.
+ */
+internal data class TileSpec(
+    val icon: String,
+    val title: String,
+    val fg: Color,
+    val bg: Color,
+    val wash: Color,
+)
 
 internal fun tileSpec(kind: LogKind): TileSpec = when (kind) {
-    LogKind.FEED -> TileSpec("water_drop", "Feed", KC.GoldDeep, KC.GoldBg)
-    LogKind.SLEEP -> TileSpec("bedtime", "Sleep", KC.CoralDeep, KC.CoralBg)
-    LogKind.DIAPER -> TileSpec("baby_changing_station", "Diaper", KC.SeaDeep, KC.SeaBg)
-    LogKind.MEDICINE -> TileSpec("pill", "Medicine", KC.DangerDeep, KC.DangerBg2)
-    LogKind.GROWTH -> TileSpec("monitor_weight", "Growth", KC.TealDeep, KC.TealBg)
-    LogKind.TOOTH -> TileSpec("dentistry", "Teeth", KC.Clay, KC.ClayBg)
+    LogKind.FEED -> TileSpec("water_drop", "Feed", KC.GoldDeep, KC.GoldBg, KC.GoldWash)
+    LogKind.SLEEP -> TileSpec("bedtime", "Sleep", KC.LilacDeep, KC.LilacBg, KC.LilacWash)
+    LogKind.DIAPER -> TileSpec("baby_changing_station", "Diaper", KC.SeaDeep, KC.SeaBg, KC.SeaWash)
+    LogKind.MEDICINE -> TileSpec("pill", "Medicine", KC.CoralDeep, KC.CoralBg, KC.CoralWash)
+    LogKind.GROWTH -> TileSpec("monitor_weight", "Growth", KC.LeafDeep, KC.LeafBg, KC.LeafWash)
+    LogKind.TOOTH -> TileSpec("dentistry", "Teeth", KC.ClayDeep, KC.ClayBg, KC.ClayWash)
 }

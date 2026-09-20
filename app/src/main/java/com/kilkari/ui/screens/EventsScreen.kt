@@ -34,6 +34,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.db.EventEntity
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.EmptyState
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.IconButton44
@@ -42,6 +44,7 @@ import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.EventSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -58,7 +61,7 @@ fun EventsScreen(vm: KilkariViewModel, go: NavActions) {
     val today = LocalDate.now()
     val b = baby
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Birthdays & events", go::back) {
                 IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)
@@ -102,10 +105,11 @@ fun EventsScreen(vm: KilkariViewModel, go: NavActions) {
                 KCard {
                     val sorted = events.sortedBy { nextOccurrence(it.date, it.annual, today) }
                     if (sorted.isEmpty()) {
-                        Text(
-                            "No events yet. Tap + to add one.",
-                            modifier = Modifier.padding(14.dp),
-                            fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
+                        EmptyState(
+                            Spot.EMPTY_EVENTS,
+                            "No dates saved",
+                            "Birthdays, naming days, the first Diwali — add one and it counts " +
+                                "down here every year.",
                         )
                     }
                     sorted.forEachIndexed { i, event ->

@@ -43,6 +43,7 @@ import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.MarkVaccineSheet
 import com.kilkari.ui.sheets.RecordedDoseSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -69,7 +70,7 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
     val lastDoctor = appointments.firstOrNull { it.doctor != null }?.doctor.orEmpty()
     val pending = g.items.filterNot { it.given }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("${g.label} vaccines", go::back)
 

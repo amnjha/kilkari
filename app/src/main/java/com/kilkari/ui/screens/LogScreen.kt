@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,6 +43,8 @@ import com.kilkari.domain.FeedType
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.LogKind
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.EmptyState
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
@@ -53,6 +57,7 @@ import com.kilkari.ui.sheets.GrowthSheet
 import com.kilkari.ui.sheets.MedicineDoseSheet
 import com.kilkari.ui.sheets.MedicineSheet
 import com.kilkari.ui.sheets.SleepSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
@@ -85,7 +90,7 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
         if (LogKind.of(entry.kind) == LogKind.TOOTH) go.push(Routes.TEETH) else editing = entry
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(
             Modifier
                 .fillMaxSize()
@@ -104,7 +109,10 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
 
             val rows = LogKind.entries.chunked(2)
             rows.forEach { pair ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
                     pair.forEach { kind ->
                         val spec = tileSpec(kind)
                         val ago = when {
@@ -129,7 +137,7 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
                         }
                         LogTile(
                             icon = spec.icon, title = spec.title, ago = ago, detail = detail,
-                            fg = spec.fg, bg = spec.bg, modifier = Modifier.weight(1f),
+                            fg = spec.fg, bg = spec.wash, modifier = Modifier.weight(1f).fillMaxHeight(),
                         ) {
                             if (kind == LogKind.TOOTH) go.push(Routes.TEETH) else sheet = kind
                         }
@@ -152,10 +160,11 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
             SectionLabel("Today's entries", Modifier.padding(top = 4.dp))
             KCard {
                 if (todayLogs.isEmpty()) {
-                    Text(
-                        "Nothing logged today yet.",
-                        modifier = Modifier.padding(14.dp),
-                        fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
+                    EmptyState(
+                        Spot.EMPTY_LOG,
+                        "Nothing logged today",
+                        "Tap a tile above. Everything you record shows up here, newest last.",
+                        size = 112.dp,
                     )
                 }
                 todayLogs.forEachIndexed { i, entry ->
@@ -336,7 +345,7 @@ private fun LogTile(
 ) {
     KCard(modifier, corner = 26, background = bg, border = null, onClick = onClick) {
         Column(
-            Modifier.padding(16.dp).heightIn(min = 104.dp),
+            Modifier.fillMaxHeight().padding(16.dp).heightIn(min = 104.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Row(

@@ -43,6 +43,7 @@ import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.components.SheetField
 import com.kilkari.ui.nav.NavActions
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
@@ -88,7 +89,7 @@ fun ReconcileScreen(vm: KilkariViewModel, go: NavActions) {
     val statementInr = statementBalance.toDoubleOrNull()?.let { Fmt.toInr(it, currency) }
     val difference = statementInr?.let { it - clearedInr }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().headerWash()) {
         DetailBar("Check against a statement", go::back)
 
         Column(

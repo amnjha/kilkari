@@ -35,6 +35,7 @@ import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.components.VaccineCatchUpList
 import com.kilkari.ui.nav.NavActions
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
@@ -85,7 +86,7 @@ fun CatchUpScreen(vm: KilkariViewModel, go: NavActions) {
 
     val nothingLeft = outstanding.isEmpty() && passed.isEmpty()
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().headerWash()) {
         DetailBar("Catch up", go::back)
 
         Column(

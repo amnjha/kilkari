@@ -56,11 +56,16 @@ import com.kilkari.domain.Currency
 import com.kilkari.domain.Fmt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.Illustration
 import com.kilkari.ui.components.CheckRing
 import com.kilkari.ui.components.Hint
 import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.BlobPortrait
 import com.kilkari.ui.components.BlobBackdrop
+import com.kilkari.ui.theme.KAccents
+import com.kilkari.ui.theme.AccentScope
+import com.kilkari.ui.theme.Accent
 import com.kilkari.ui.theme.KGradients
 import androidx.compose.ui.graphics.SolidColor
 import com.kilkari.ui.components.KIcons
@@ -144,6 +149,7 @@ fun OnboardingScreen(vm: KilkariViewModel) {
 
     // The welcome sits on the warm gradient the splash hands over; the form steps after it go
     // back to the flat cream, where fields are easier to read.
+    AccentScope(current.accent) {
     BlobBackdrop(
         Modifier.fillMaxSize(),
         brush = if (current == Step.WELCOME) KGradients.welcome else SolidColor(KC.Screen),
@@ -175,6 +181,11 @@ fun OnboardingScreen(vm: KilkariViewModel) {
                     .padding(bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
+                target.art?.let { art ->
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Illustration(art, 148.dp, Modifier.padding(top = 4.dp))
+                    }
+                }
                 when (target) {
                     Step.WELCOME -> WelcomeStep()
                     Step.BABY -> BabyStep(state)
@@ -243,11 +254,24 @@ fun OnboardingScreen(vm: KilkariViewModel) {
         }
     }
     }
+    }
 }
 
-private enum class Step {
-    WELCOME, BABY, MEASUREMENTS, SCHEDULE, CURRENCY,
-    CATCH_UP_VACCINES, CATCH_UP_MILESTONES, DONE,
+/**
+ * The steps, each with the colour of what it asks for: the baby in the brand's coral, the
+ * measurements in green, the schedule in the health teal, the currency in gold. Setting up
+ * the app is the first thing a parent sees of it, so it is also where the palette introduces
+ * itself.
+ */
+private enum class Step(val accent: Accent, val art: Spot?) {
+    WELCOME(KAccents.Quiet, null),
+    BABY(KAccents.Brand, Spot.ONBOARD_BABY),
+    MEASUREMENTS(KAccents.Growth, Spot.ONBOARD_MEASUREMENTS),
+    SCHEDULE(KAccents.Health, Spot.ONBOARD_SCHEDULE),
+    CURRENCY(KAccents.Money, Spot.ONBOARD_MONEY),
+    CATCH_UP_VACCINES(KAccents.Care, null),
+    CATCH_UP_MILESTONES(KAccents.Memories, null),
+    DONE(KAccents.Brand, Spot.ONBOARD_DONE),
 }
 
 @Composable

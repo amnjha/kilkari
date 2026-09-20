@@ -1,6 +1,8 @@
 package com.kilkari.ui.nav
 
 import com.kilkari.ui.components.NavTab
+import com.kilkari.ui.theme.Accent
+import com.kilkari.ui.theme.KAccents
 
 /** Every destination in the app. The five [tabs] own the bottom bar; the rest are pushed. */
 object Routes {
@@ -36,11 +38,11 @@ object Routes {
     const val SETTINGS = "settings"
 
     val tabs = listOf(
-        NavTab(TODAY, "Today", "sunny"),
-        NavTab(LOG, "Log", "edit_note"),
-        NavTab(HEALTH, "Health", "favorite"),
-        NavTab(MONEY, "Money", "payments"),
-        NavTab(MORE, "More", "grid_view"),
+        NavTab(TODAY, "Today", "sunny", KAccents.Brand),
+        NavTab(LOG, "Log", "edit_note", KAccents.Day),
+        NavTab(HEALTH, "Health", "favorite", KAccents.Health),
+        NavTab(MONEY, "Money", "payments", KAccents.Money),
+        NavTab(MORE, "More", "grid_view", KAccents.Quiet),
     )
 
     /** Which tab stays lit while a pushed screen is on top. */
@@ -51,6 +53,27 @@ object Routes {
         TIMELINE to MORE, DOCUMENTS to MORE, DOCUMENT_DETAIL to MORE, PAPERWORK to MORE, PHOTOS to MORE,
         EVENTS to MORE, REMINDERS to MORE, BACKUP to MORE, SETTINGS to MORE,
     )
+
+    /**
+     * The colour each destination wears.
+     *
+     * Grouped by what the screen is about rather than by which tab it hangs off: the vaccine
+     * list and an appointment are both clinical, the timeline and the albums are both
+     * keepsakes, and the fund and its reconciliation are both money. Sibling screens sharing
+     * a hue is the point — it is how a pushed screen still feels like where it came from.
+     */
+    fun accentFor(route: String?): Accent = when (route) {
+        LOG, LOG_DAY -> KAccents.Day
+        HEALTH, VACCINES, VACCINE_DETAIL -> KAccents.Health
+        GROWTH, TEETH -> KAccents.Growth
+        MEDS, CATCH_UP -> KAccents.Care
+        APPOINTMENTS -> KAccents.Brand
+        MONEY, RECONCILE -> KAccents.Money
+        TIMELINE, PHOTOS, EVENTS -> KAccents.Memories
+        DOCUMENTS, DOCUMENT_DETAIL, PAPERWORK, DOCTORS, BACKUP -> KAccents.Records
+        MORE, SETTINGS, REMINDERS, INSIGHTS, ONBOARDING -> KAccents.Quiet
+        else -> KAccents.Brand
+    }
 
     fun activeTab(route: String?): String = route?.let { tabOf[it] ?: it } ?: TODAY
 

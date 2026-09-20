@@ -47,6 +47,8 @@ import com.kilkari.domain.Paperwork
 import com.kilkari.domain.PaperworkStatus
 import com.kilkari.domain.PaperworkStep
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.EmptyState
 import com.kilkari.ui.components.rememberImageSource
 import com.kilkari.ui.components.rememberFileSource
 import com.kilkari.ui.sheets.SheetTitle
@@ -61,6 +63,7 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.sheets.DocumentSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.io.File
@@ -121,7 +124,7 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
         camera.launch(uri)
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Documents", go::back)
 
@@ -141,13 +144,12 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
                 PaperworkBanner(paperwork) { go.push(Routes.PAPERWORK) }
 
                 if (documents.isEmpty()) {
-                    KCard {
-                        Text(
-                            "No documents yet. Tap + to scan, pick a photo, or attach a file.",
-                            modifier = Modifier.padding(14.dp),
-                            fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
-                        )
-                    }
+                    EmptyState(
+                        Spot.EMPTY_DOCUMENTS,
+                        "Nothing filed yet",
+                        "Birth certificate, hospital discharge, insurance — tap + to scan one, " +
+                            "pick a photo, or attach a file.",
+                    )
                 }
 
                 documents.chunked(2).forEach { pair ->

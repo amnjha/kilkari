@@ -1,17 +1,21 @@
 package com.kilkari.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -25,7 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,12 +41,12 @@ import com.kilkari.domain.PaperworkStatus
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
-import com.kilkari.ui.components.KRow
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.Monogram
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.BabySheet
 import com.kilkari.ui.nav.Routes
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
@@ -63,7 +69,7 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
     val birthdayDays = Fmt.daysUntil(Fmt.nextBirthday(b.dob))
     val remindersOn = reminders.count { it.enabled }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
     Column(
         Modifier
             .fillMaxSize()
@@ -78,9 +84,8 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(18.dp))
-                .background(Brush.linearGradient(listOf(KC.CoralBg, KC.GoldBg)))
-                .border(1.dp, KC.BorderStrong, RoundedCornerShape(18.dp))
-                .clickable { editing = true }
+                .background(Brush.linearGradient(listOf(KC.CoralWash, KC.GoldWash)))
+                                .clickable { editing = true }
                 .padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -90,63 +95,75 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
                 Text(b.name, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = KC.Ink)
                 Text(
                     "Born ${Fmt.dateFull(b.dob)} · ${Fmt.age(b.dob)}",
-                    fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                    fontFamily = Sans, fontSize = 12.sp, color = KC.MutedStrong,
                 )
             }
-            Icon(KIcons["edit"], null, tint = KC.Muted, modifier = Modifier.size(22.dp))
+            Icon(KIcons["edit"], null, tint = KC.CoralDeep, modifier = Modifier.size(22.dp))
         }
 
-        KCard {
-            val items = listOf(
-                MoreItem(Routes.TIMELINE, "timeline", "Timeline", "Milestones, events, photo moments", KC.GoldDeep, KC.GoldBg),
-                MoreItem(
-                    Routes.DOCUMENTS, "folder_open", "Documents",
-                    if (documents.isEmpty()) "Scan certificates and prescriptions"
-                    else "${documents.size} ${Fmt.plural(documents.size.toLong(), "scan")} filed",
-                    KC.GoldDeep, KC.GoldBg,
-                ),
-                MoreItem(
-                    Routes.PAPERWORK, "badge", "Paperwork",
-                    when {
-                        nextDocument != null ->
-                            "${nextDocument.kind.title} ${Fmt.dueText(nextDocument.inDays ?: 0)}"
-                        documentsObtained == paperwork.size && paperwork.isNotEmpty() ->
-                            "Birth certificate, Aadhaar, passport, PAN — all in hand"
-                        else -> "$documentsObtained of ${paperwork.size} obtained"
-                    },
-                    KC.ClayDeep, KC.ClayBg,
-                ),
-                MoreItem(
-                    Routes.PHOTOS, "photo_library", "Photo albums",
-                    if (albums.isEmpty()) "Link a Google Photos album"
-                    else "${albums.size} ${Fmt.plural(albums.size.toLong(), "album")} linked",
-                    KC.SeaDeep, KC.SeaBg,
-                ),
-                MoreItem(
-                    Routes.EVENTS, "cake", "Birthdays & events",
-                    "First birthday in $birthdayDays days", KC.Danger, KC.DangerBg,
-                ),
-                MoreItem(Routes.REMINDERS, "notifications_active", "Reminders", "$remindersOn on", KC.CoralDeep, KC.CoralBg),
-                MoreItem(Routes.BACKUP, "backup", "Backup & export", "Everything stays on this phone", KC.TealDeep, KC.TealBg),
-                MoreItem(
-                    Routes.SETTINGS, "settings", "Settings",
-                    "${settings.currency.symbol} ${settings.currency.code} · " +
-                        "${VaccineSchedules.byId(settings.scheduleId).shortName} schedule",
-                    KC.Stone, KC.StoneBg,
-                ),
-            )
-            items.forEachIndexed { i, item ->
-                KRow(
-                    title = item.title,
-                    subtitle = item.subtitle,
-                    icon = item.icon,
-                    iconTint = item.tint,
-                    iconBg = item.background,
-                    divider = i != items.lastIndex,
-                    onClick = { go.push(item.route) },
-                ) {
-                    Icon(KIcons["chevron_right"], null, tint = KC.CoralPaler, modifier = Modifier.size(20.dp))
+        val items = listOf(
+            MoreItem(
+                Routes.TIMELINE, "timeline", "Timeline",
+                "Milestones and moments",
+                KC.RoseDeep, KC.RoseWash,
+            ),
+            MoreItem(
+                Routes.DOCUMENTS, "folder_open", "Documents",
+                if (documents.isEmpty()) "Scan certificates and prescriptions"
+                else "${documents.size} ${Fmt.plural(documents.size.toLong(), "scan")} filed",
+                KC.SeaDeep, KC.SeaWash,
+            ),
+            MoreItem(
+                Routes.PAPERWORK, "badge", "Paperwork",
+                when {
+                    nextDocument != null ->
+                        "${nextDocument.kind.title} ${Fmt.dueText(nextDocument.inDays ?: 0)}"
+                    documentsObtained == paperwork.size && paperwork.isNotEmpty() ->
+                        "All four in hand"
+                    else -> "$documentsObtained of ${paperwork.size} obtained"
+                },
+                KC.ClayDeep, KC.ClayWash,
+            ),
+            MoreItem(
+                Routes.PHOTOS, "photo_library", "Photo albums",
+                if (albums.isEmpty()) "Link a Google Photos album"
+                else "${albums.size} ${Fmt.plural(albums.size.toLong(), "album")} linked",
+                KC.LilacDeep, KC.LilacWash,
+            ),
+            MoreItem(
+                Routes.EVENTS, "cake", "Birthdays & events",
+                "First birthday in $birthdayDays days", KC.GoldDeep, KC.GoldWash,
+            ),
+            MoreItem(
+                Routes.REMINDERS, "notifications_active", "Reminders",
+                "$remindersOn on", KC.CoralDeep, KC.CoralWash,
+            ),
+            MoreItem(
+                Routes.BACKUP, "backup", "Backup & export",
+                "Everything stays on this phone", KC.TealDeep, KC.TealWash,
+            ),
+            MoreItem(
+                Routes.SETTINGS, "settings", "Settings",
+                "${settings.currency.symbol} ${settings.currency.code} · " +
+                    "${VaccineSchedules.byId(settings.scheduleId).shortName} schedule",
+                KC.Stone, KC.StoneWash,
+            ),
+        )
+
+        // A grid rather than a list. Eight rows of the same white card was the drawer of the
+        // app looking like a settings screen; eight coloured tiles is somewhere to browse,
+        // and the colour is what a parent aims at rather than the word.
+        items.chunked(2).forEach { pair ->
+            // Both tiles take the height of the taller one, so a two-line subtitle beside a
+            // one-line subtitle does not leave a step in the grid.
+            Row(
+                Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                pair.forEach { item ->
+                    MoreTile(item, Modifier.weight(1f).fillMaxHeight()) { go.push(item.route) }
                 }
+                if (pair.size == 1) Box(Modifier.weight(1f))
             }
         }
     }
@@ -155,6 +172,39 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
             BabySheet(b, settings.metricUnits) { name, dob, sex, place, weight, length, head ->
                 vm.updateBabyDetails(name, dob, sex, place, weight, length, head)
                 editing = false
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoreTile(item: MoreItem, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    KCard(modifier, corner = 26, background = item.background, border = null, onClick = onClick) {
+        Column(
+            Modifier.fillMaxHeight().padding(16.dp).heightIn(min = 108.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.85f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(KIcons[item.icon], null, tint = item.tint, modifier = Modifier.size(23.dp))
+            }
+            Column {
+                Text(
+                    item.title,
+                    fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = KC.Ink,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    item.subtitle,
+                    fontFamily = Sans, fontSize = 12.sp, color = KC.MutedStrong,
+                    modifier = Modifier.padding(top = 2.dp),
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

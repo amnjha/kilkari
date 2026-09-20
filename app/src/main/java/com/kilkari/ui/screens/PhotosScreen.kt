@@ -34,6 +34,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.repo.PHOTO_DIR
 import com.kilkari.data.db.AlbumEntity
 import com.kilkari.ui.KilkariViewModel
+import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.EmptyState
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconButton44
 import com.kilkari.ui.components.KCard
@@ -45,6 +47,7 @@ import com.kilkari.ui.components.deleteOwnFile
 import com.kilkari.ui.components.rememberImageSource
 import com.kilkari.ui.sheets.PhotoCheckInSheet
 import com.kilkari.ui.sheets.AlbumSheet
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -72,7 +75,7 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().headerWash()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Photo albums", go::back) {
                 IconButton44("add_link", KC.Coral, { sheetOpen = true }, iconSize = 26)
@@ -92,13 +95,12 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
                 )
 
                 if (albums.isEmpty()) {
-                    KCard {
-                        Text(
-                            "No albums linked yet.",
-                            modifier = Modifier.padding(14.dp),
-                            fontFamily = Sans, fontSize = 13.sp, color = KC.Muted,
-                        )
-                    }
+                    EmptyState(
+                        Spot.EMPTY_PHOTOS,
+                        "No albums linked yet",
+                        "Paste a Google Photos link and it shows up here — the photos stay where " +
+                            "they are.",
+                    )
                 }
 
                 albums.forEach { album ->
