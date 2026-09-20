@@ -41,7 +41,7 @@ struct QuickLogSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle(kind.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

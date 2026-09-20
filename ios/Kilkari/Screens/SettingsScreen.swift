@@ -278,7 +278,7 @@ struct AddDoctorSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("Add a doctor")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

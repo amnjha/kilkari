@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import KilkariCore
 import UniformTypeIdentifiers
 
 /// What a backup contains, and the two ways to take one.
@@ -25,6 +26,8 @@ struct BackupScreen: View {
     @Query private var milestones: [Milestone]
     @Query private var doctors: [Doctor]
     @Query private var reminders: [Reminder]
+    @Query private var vaccineDoses: [VaccineDose]
+    @State private var prefsForRecord = Preferences.shared
 
     @State private var exported: ExportFile?
     @State private var failure: String?
@@ -69,6 +72,11 @@ struct BackupScreen: View {
 
                 Button { exportCSV() } label: {
                     row("Spending, as CSV", "Opens in any spreadsheet.", "tablecells")
+                }
+                .buttonStyle(.plain)
+
+                Button { exportRecord() } label: {
+                    row("Immunisation record, as PDF", "For a clinic or a school.", "doc.richtext")
                 }
                 .buttonStyle(.plain)
 
@@ -246,6 +254,19 @@ struct BackupScreen: View {
     private func exportCSV() {
         write(name: "kilkari-spending-\(stamp()).csv",
               data: Backup.spendingCSV(context: context).data(using: .utf8))
+    }
+
+    private func exportRecord() {
+        let groups = VaccinePlan.groups(for: baby, doses: vaccineDoses)
+        write(
+            name: "immunisation-record-\(stamp()).pdf",
+            data: VaccinationRecord.pdf(
+                babyName: baby.name,
+                dob: baby.dob,
+                scheduleName: VaccineSchedules.byId(prefsForRecord.scheduleId).name,
+                groups: groups
+            )
+        )
     }
 
     private func stamp() -> String {

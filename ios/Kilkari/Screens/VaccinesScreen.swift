@@ -223,29 +223,31 @@ struct RecordDoseSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 12) {
+                    sheetTitle("\(vaccine.name) given")
                     if !vaccine.description.isEmpty {
-                        Text(vaccine.description)
-                            .font(KFont.sans(13)).foregroundStyle(KC.muted)
+                        sheetHint(vaccine.description)
                     }
 
-                    DatePicker("Date", selection: $on, in: babyDob...Date.now,
-                               displayedComponents: .date)
-                        .font(KFont.sans(14, .semibold)).tint(accent.main)
+                    sheetRow("Date") {
+                        DatePicker("", selection: $on, in: babyDob...Date.now,
+                                   displayedComponents: .date)
+                            .labelsHidden()
+                            .tint(accent.main)
+                    }
 
                     sheetField("Clinic", $clinic, "Where it was given")
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Doctor").font(KFont.sans(13, .semibold)).foregroundStyle(KC.mutedStrong)
+                    sheetRow("Doctor") {
                         if doctors.isEmpty {
-                            TextField("", text: $doctor, prompt: Text("Who gave it"))
-                                .font(KFont.sans(16))
-                                .padding(14)
-                                .background(KC.surface)
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            TextField("", text: $doctor, prompt:
+                                Text("Who gave it").font(KFont.sans(14)).foregroundStyle(KC.faint))
+                                .multilineTextAlignment(.trailing)
+                                .font(KFont.sans(14, .bold))
+                                .foregroundStyle(KC.ink)
+                                .tint(KC.coral)
                         } else {
-                            // Picked from the ones already on file, with a free line for
-                            // anyone who is not: a clinic visit is often a locum.
+                            // Picked from the ones on file, with a way out for a locum.
                             Menu {
                                 ForEach(doctors) { saved in
                                     Button(saved.name) {
@@ -255,35 +257,39 @@ struct RecordDoseSheet: View {
                                 }
                                 Button("Someone else") { doctor = "" }
                             } label: {
-                                HStack {
+                                HStack(spacing: 4) {
                                     Text(doctor.isEmpty ? "Choose" : doctor)
-                                        .font(KFont.sans(16))
+                                        .font(KFont.sans(14, .bold))
                                         .foregroundStyle(doctor.isEmpty ? KC.faint : KC.ink)
-                                    Spacer()
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 13, weight: .semibold))
+                                        .font(.system(size: 12, weight: .semibold))
                                         .foregroundStyle(accent.deep)
                                 }
-                                .padding(14)
-                                .background(KC.surface)
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             }
                         }
                     }
 
                     sheetField("Brand (optional)", $brand, "e.g. Pentavac")
-                    sheetField("Cost (\(prefs.currency.symbol))", $cost, "0", numeric: true)
+                    sheetField("Cost (\(prefs.currency.symbol))", $cost, "0",
+                               numeric: true, big: true)
 
-                    Toggle(isOn: $addExpense) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Add to Medical expenses")
-                                .font(KFont.sans(14, .semibold)).foregroundStyle(KC.ink)
-                            Text("Shows up under Money")
-                                .font(KFont.sans(12)).foregroundStyle(KC.muted)
+                    Button {
+                        addExpense.toggle()
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Add to Medical expenses")
+                                    .font(KFont.sans(14, .semibold)).foregroundStyle(KC.ink)
+                                Text("Shows up under Money")
+                                    .font(KFont.sans(12)).foregroundStyle(KC.muted)
+                            }
+                            Spacer()
+                            KToggle(on: addExpense, tint: accent.main)
                         }
+                        .padding(4)
+                        .contentShape(Rectangle())
                     }
-                    .tint(accent.main)
-                    .disabled((Int(cost) ?? 0) <= 0)
+                    .buttonStyle(.plain)
 
                     PrimaryButton(label: existing == nil ? "Save · add to timeline" : "Save changes") {
                         func clean(_ s: String) -> String? {
@@ -291,8 +297,7 @@ struct RecordDoseSheet: View {
                             return t.isEmpty ? nil : t
                         }
                         let amount = Int(cost).flatMap { $0 > 0 ? $0 : nil }
-                        onSave(on, clean(clinic), clean(brand), amount,
-                               addExpense && amount != nil)
+                        onSave(on, clean(clinic), clean(brand), amount, addExpense && amount != nil)
                         dismiss()
                     }
                     .padding(.top, 2)
@@ -309,8 +314,7 @@ struct RecordDoseSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
-            .navigationTitle("\(vaccine.name) given")
+            .background(KC.surface)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -324,5 +328,21 @@ struct RecordDoseSheet: View {
                 brand = existing?.brand ?? ""
             }
         }
+    }
+}
+
+/// The 44x26 switch Android draws, so a toggle looks the same on both.
+struct KToggle: View {
+    let on: Bool
+    let tint: Color
+
+    var body: some View {
+        Capsule()
+            .fill(on ? tint : KC.track)
+            .frame(width: 44, height: 26)
+            .overlay(alignment: on ? .trailing : .leading) {
+                Circle().fill(.white).frame(width: 20, height: 20).padding(3)
+            }
+            .animation(.spring(response: 0.25, dampingFraction: 0.8), value: on)
     }
 }

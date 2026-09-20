@@ -128,8 +128,10 @@ struct AddReminderSheet: View {
                 VStack(alignment: .leading, spacing: 14) {
                     sheetField("What to remind you", $title, "e.g. Vitamin D drops")
 
-                    DatePicker("Time", selection: $at, displayedComponents: .hourAndMinute)
-                        .font(KFont.sans(14, .semibold)).tint(accent.main)
+                    sheetRow("Time") {
+                        DatePicker("", selection: $at, displayedComponents: .hourAndMinute)
+                            .labelsHidden().tint(accent.main)
+                    }
 
                     Picker("", selection: $cadence) {
                         ForEach(Cadence.allCases) { Text($0.label).tag($0) }
@@ -160,7 +162,7 @@ struct AddReminderSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("Add a reminder")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -227,12 +227,17 @@ struct AddExpenseSheet: View {
                     sheetField("For", $title, "e.g. Diapers, size 1")
                     sheetField("Where", $vendor, "Shop or clinic")
 
-                    DatePicker("Date", selection: $date, in: ...Date.now, displayedComponents: .date)
-                        .font(KFont.sans(14, .semibold)).tint(accent.main)
+                    sheetRow("Date") {
+                        DatePicker("", selection: $date, in: ...Date.now, displayedComponents: .date)
+                            .labelsHidden().tint(accent.main)
+                    }
 
-                    Toggle("Paid from the fund", isOn: $fromFund)
-                        .font(KFont.sans(14, .semibold))
-                        .tint(accent.main)
+                    sheetRow("Paid from the fund") {
+                        Button { fromFund.toggle() } label: {
+                            KToggle(on: fromFund, tint: accent.main)
+                        }
+                        .buttonStyle(.plain)
+                    }
 
                     PrimaryButton(label: "Save expense", enabled: Int(amount) ?? 0 > 0) {
                         onSave(Expense(
@@ -251,7 +256,7 @@ struct AddExpenseSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("Add expense")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -279,8 +284,10 @@ struct AddDepositSheet: View {
                 VStack(alignment: .leading, spacing: 14) {
                     sheetField("Amount (\(Preferences.shared.currency.symbol))", $amount, "0", numeric: true)
                     sheetField("Note", $note, "e.g. Monthly transfer")
-                    DatePicker("Date", selection: $date, in: ...Date.now, displayedComponents: .date)
-                        .font(KFont.sans(14, .semibold)).tint(accent.main)
+                    sheetRow("Date") {
+                        DatePicker("", selection: $date, in: ...Date.now, displayedComponents: .date)
+                            .labelsHidden().tint(accent.main)
+                    }
                     PrimaryButton(label: "Add to the fund", enabled: Int(amount) ?? 0 > 0) {
                         onSave(FundDeposit(
                             note: note.trimmingCharacters(in: .whitespaces).isEmpty ? nil : note,
@@ -293,7 +300,7 @@ struct AddDepositSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("Add to the fund")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -305,17 +312,71 @@ struct AddDepositSheet: View {
     }
 }
 
-/// The labelled input every sheet uses. Label above the field, never a placeholder standing
-/// in for one: the label has to survive the field being filled.
+/// The input every sheet uses: label on the left, value on the right, on a cream field.
+///
+/// The same shape as Android's, and the reason is the same — a sheet is read down its left
+/// edge to find the thing you want to change, and a stack of labels above their fields makes
+/// that column twice as tall for no gain. The label stays visible once the field is filled,
+/// which a placeholder standing in for one does not.
 @ViewBuilder
-func sheetField(_ label: String, _ text: Binding<String>, _ prompt: String, numeric: Bool = false) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-        Text(label).font(KFont.sans(13, .semibold)).foregroundStyle(KC.mutedStrong)
-        TextField("", text: text, prompt: Text(prompt))
+func sheetField(
+    _ label: String,
+    _ text: Binding<String>,
+    _ prompt: String,
+    numeric: Bool = false,
+    big: Bool = false
+) -> some View {
+    HStack(spacing: 10) {
+        Text(label)
+            .font(KFont.sans(13))
+            .foregroundStyle(KC.muted)
+        TextField("", text: text, prompt:
+            Text(prompt).font(KFont.sans(big ? 18 : 14)).foregroundStyle(KC.faint))
             .keyboardType(numeric ? .numberPad : .default)
-            .font(KFont.sans(16))
-            .padding(14)
-            .background(KC.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .multilineTextAlignment(.trailing)
+            .font(KFont.sans(big ? 18 : 14, .bold))
+            .foregroundStyle(KC.ink)
+            .tint(KC.coral)
     }
+    .padding(.horizontal, 14)
+    .padding(.vertical, big ? 10 : 13)
+    .background(KC.screen)
+    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+}
+
+/// The same row, for a value the parent picks rather than types.
+@ViewBuilder
+func sheetRow<Trailing: View>(
+    _ label: String,
+    @ViewBuilder trailing: () -> Trailing
+) -> some View {
+    HStack(spacing: 10) {
+        Text(label)
+            .font(KFont.sans(13))
+            .foregroundStyle(KC.muted)
+        Spacer(minLength: 0)
+        trailing()
+    }
+    .padding(.horizontal, 14)
+    .padding(.vertical, 10)
+    .background(KC.screen)
+    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+}
+
+/// A sheet's heading and the line under it, so every sheet opens the same way.
+@ViewBuilder
+func sheetTitle(_ text: String) -> some View {
+    Text(text)
+        .font(KFont.display(20, .bold))
+        .foregroundStyle(KC.ink)
+        .frame(maxWidth: .infinity, alignment: .leading)
+}
+
+@ViewBuilder
+func sheetHint(_ text: String) -> some View {
+    Text(text)
+        .font(KFont.sans(13))
+        .foregroundStyle(KC.muted)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
 }

@@ -344,7 +344,7 @@ struct PaperworkStepSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle(step.kind.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

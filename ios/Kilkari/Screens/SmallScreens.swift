@@ -221,8 +221,10 @@ struct AddAppointmentSheet: View {
                 VStack(alignment: .leading, spacing: 14) {
                     sheetField("What", $title, "e.g. Six-week check")
                     sheetField("Who", $who, "Doctor or clinic")
-                    DatePicker("When", selection: $at)
-                        .font(KFont.sans(14, .semibold)).tint(accent.main)
+                    sheetRow("When") {
+                        DatePicker("", selection: $at)
+                            .labelsHidden().tint(accent.main)
+                    }
                     PrimaryButton(label: "Save the visit",
                                   enabled: !title.trimmingCharacters(in: .whitespaces).isEmpty) {
                         onSave(Appointment(
@@ -236,7 +238,7 @@ struct AddAppointmentSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("Book a visit")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

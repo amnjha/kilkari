@@ -236,8 +236,10 @@ struct AddMeasurementSheet: View {
                     field(Preferences.shared.metric ? "Weight (kg)" : "Weight (lb)", $weight, Preferences.shared.metric ? "e.g. 4.2" : "e.g. 9.2")
                     field(Preferences.shared.metric ? "Length (cm)" : "Length (in)", $length, "optional")
                     field(Preferences.shared.metric ? "Head (cm)" : "Head (in)", $head, "optional")
-                    DatePicker("Taken", selection: $date, in: ...Date.now, displayedComponents: .date)
-                        .font(KFont.sans(14, .semibold)).tint(accent.main)
+                    sheetRow("Taken") {
+                        DatePicker("", selection: $date, in: ...Date.now, displayedComponents: .date)
+                            .labelsHidden().tint(accent.main)
+                    }
                     PrimaryButton(label: "Save measurement", enabled: anyValue) {
                         // Typed in whatever the parent reads, stored in kilograms and
                         // centimetres, because that is what the WHO tables speak.
@@ -254,7 +256,7 @@ struct AddMeasurementSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("Measurement")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

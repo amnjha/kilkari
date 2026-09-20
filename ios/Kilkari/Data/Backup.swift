@@ -135,6 +135,19 @@ enum Backup {
         try? json(context: context)?.write(to: folder.appendingPathComponent("check.json"))
         try? spendingCSV(context: context).data(using: .utf8)?
             .write(to: folder.appendingPathComponent("check.csv"))
+
+        // The record too: a PDF that silently stops at the fold is the failure worth catching,
+        // and only a real render can say how many pages came out.
+        if let baby = (try? context.fetch(FetchDescriptor<Baby>()))?.first {
+            let doses = (try? context.fetch(FetchDescriptor<VaccineDose>())) ?? []
+            let pdf = VaccinationRecord.pdf(
+                babyName: baby.name,
+                dob: baby.dob,
+                scheduleName: VaccineSchedules.byId(Preferences.shared.scheduleId).name,
+                groups: VaccinePlan.groups(for: baby, doses: doses)
+            )
+            try? pdf.write(to: folder.appendingPathComponent("check.pdf"))
+        }
         #endif
     }
 }

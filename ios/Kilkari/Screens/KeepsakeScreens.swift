@@ -192,7 +192,7 @@ struct NameDocumentSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("File a document")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -307,7 +307,7 @@ struct AddAlbumSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("Link an album")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -405,8 +405,10 @@ struct AddEventSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     sheetField("What", $title, "e.g. Diwali")
-                    DatePicker("When", selection: $date, displayedComponents: .date)
-                        .font(KFont.sans(14, .semibold)).tint(accent.main)
+                    sheetRow("When") {
+                        DatePicker("", selection: $date, displayedComponents: .date)
+                            .labelsHidden().tint(accent.main)
+                    }
                     Picker("", selection: $annual) {
                         Text("One-off").tag(false)
                         Text("Every year").tag(true)
@@ -425,7 +427,7 @@ struct AddEventSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("Add a date")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

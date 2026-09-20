@@ -242,8 +242,10 @@ struct AddMilestoneSheet: View {
                     }
                     sheetField("What happened", $title, "or type your own")
                     sheetField("Note", $note, "A line to remember it by")
-                    DatePicker("When", selection: $date, in: ...Date.now, displayedComponents: .date)
-                        .font(KFont.sans(14, .semibold)).tint(accent.main)
+                    sheetRow("When") {
+                        DatePicker("", selection: $date, in: ...Date.now, displayedComponents: .date)
+                            .labelsHidden().tint(accent.main)
+                    }
                     PrimaryButton(label: "Add to the timeline",
                                   enabled: !title.trimmingCharacters(in: .whitespaces).isEmpty) {
                         onSave(Milestone(title: title.trimmingCharacters(in: .whitespaces),
@@ -255,7 +257,7 @@ struct AddMilestoneSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("Add a moment")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -256,14 +256,22 @@ struct AddInvestmentSheet: View {
                     }
                     sheetField("Rate (% a year)", $rate, "e.g. 7.1")
 
-                    DatePicker("Started", selection: $started, displayedComponents: .date)
-                        .font(KFont.sans(14, .semibold)).tint(accent.main)
+                    sheetRow("Started") {
+                        DatePicker("", selection: $started, displayedComponents: .date)
+                            .labelsHidden().tint(accent.main)
+                    }
 
-                    Toggle("Has a maturity date", isOn: $hasMaturity)
-                        .font(KFont.sans(14, .semibold)).tint(accent.main)
+                    sheetRow("Has a maturity date") {
+                        Button { hasMaturity.toggle() } label: {
+                            KToggle(on: hasMaturity, tint: accent.main)
+                        }
+                        .buttonStyle(.plain)
+                    }
                     if hasMaturity {
-                        DatePicker("Matures", selection: $matures, displayedComponents: .date)
-                            .font(KFont.sans(14, .semibold)).tint(accent.main)
+                        sheetRow("Matures") {
+                        DatePicker("", selection: $matures, displayedComponents: .date)
+                            .labelsHidden().tint(accent.main)
+                    }
                     }
 
                     sheetField("Worth today (\(symbol))", $value, "optional", numeric: true)
@@ -289,7 +297,7 @@ struct AddInvestmentSheet: View {
                 }
                 .padding(20)
             }
-            .background(KC.screen)
+            .background(KC.surface)
             .navigationTitle("Add a holding")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
