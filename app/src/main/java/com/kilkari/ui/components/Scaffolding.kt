@@ -43,7 +43,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kilkari.ui.theme.BarTitle
+import androidx.compose.ui.graphics.Brush
 import com.kilkari.ui.theme.KC
+import com.kilkari.ui.theme.springPress
+import com.kilkari.ui.theme.clay
 import com.kilkari.ui.theme.Sans
 
 /** Back arrow + display title + optional action, the header on every detail screen. */
@@ -81,49 +84,55 @@ fun IconButton44(icon: String, tint: Color, onClick: () -> Unit, iconSize: Int =
 
 data class NavTab(val route: String, val label: String, val icon: String)
 
-/** The five-tab bar: Today · Log · Health · Money · More. */
+/**
+ * The five-tab bar: Today · Log · Health · Money · More.
+ *
+ * A floating rounded bar rather than a strip welded to the bottom edge: it reads as part of
+ * the same family of soft, raised things the rest of the app is built from, and the active tab
+ * carries a coral pill so where you are is obvious at a glance rather than a shade of grey.
+ */
 @Composable
 fun KBottomNav(tabs: List<NavTab>, active: String, onSelect: (String) -> Unit) {
-    Column(
+    Box(
         Modifier
             .fillMaxWidth()
-            // Paint to the very bottom, then inset only the content, so the gesture bar sits
-            // on the app's surface rather than a strip of system colour.
-            .background(KC.Surface)
-            .navigationBarsPadding(),
+            .navigationBarsPadding()
+            .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
-        Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Border))
         Row(
             Modifier
                 .fillMaxWidth()
-                .height(76.dp)
-                .padding(start = 4.dp, end = 4.dp, top = 6.dp, bottom = 4.dp),
+                .clay(corner = 28, elevation = 16.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(KC.Surface)
+                .padding(horizontal = 6.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEach { tab ->
                 val on = tab.route == active
+                val press = remember { MutableInteractionSource() }
                 Column(
                     Modifier
                         .weight(1f)
-                        .fillMaxSize()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) { onSelect(tab.route) },
+                        .springPress(press)
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable(interactionSource = press, indication = null) { onSelect(tab.route) }
+                        .padding(vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Box(
                         Modifier
-                            .width(56.dp)
-                            .height(30.dp)
-                            .clip(RoundedCornerShape(15.dp))
-                            .background(if (on) KC.CoralBg else Color.Transparent),
+                            .width(52.dp)
+                            .height(32.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (on) KC.Coral else Color.Transparent),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             KIcons[tab.icon], contentDescription = tab.label,
-                            tint = if (on) KC.Ink else KC.Muted,
-                            modifier = Modifier.size(22.dp),
+                            tint = if (on) Color.White else KC.Muted,
+                            modifier = Modifier.size(21.dp),
                         )
                     }
                     Text(
@@ -218,15 +227,19 @@ fun BoxScope.KToast(message: String?, bottomInset: Dp = 16.dp) {
 /** Square FAB matching the design's 56dp / 18dp-corner button. */
 @Composable
 fun BoxScope.KFab(icon: String, label: String? = null, onClick: () -> Unit) {
+    val press = remember { MutableInteractionSource() }
     Row(
         Modifier
             .align(Alignment.BottomEnd)
-            .padding(end = 16.dp, bottom = 16.dp)
-            .height(56.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(KC.Coral)
-            .clickable(onClick = onClick)
-            .padding(horizontal = if (label == null) 16.dp else 20.dp),
+            // Clear of the floating bar, which now stands off the bottom edge itself.
+            .padding(end = 16.dp, bottom = 22.dp)
+            .height(58.dp)
+            .springPress(press)
+            .clay(corner = 22, elevation = 16.dp, tint = KC.Coral)
+            .clip(RoundedCornerShape(22.dp))
+            .background(Brush.linearGradient(listOf(KC.Coral, KC.CoralDeep)))
+            .clickable(interactionSource = press, indication = null, onClick = onClick)
+            .padding(horizontal = if (label == null) 17.dp else 21.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

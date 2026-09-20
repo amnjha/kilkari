@@ -59,6 +59,12 @@ import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.CheckRing
 import com.kilkari.ui.components.Hint
 import com.kilkari.ui.components.IconBadge
+import com.kilkari.ui.components.BlobPortrait
+import com.kilkari.ui.components.BlobBackdrop
+import com.kilkari.ui.theme.KGradients
+import androidx.compose.ui.graphics.SolidColor
+import com.kilkari.ui.components.KIcons
+import androidx.compose.ui.layout.ContentScale
 import com.kilkari.ui.components.KCard
 import com.kilkari.data.seed.VaccineGroupDef
 import com.kilkari.ui.components.milestoneAge
@@ -136,11 +142,14 @@ fun OnboardingScreen(vm: KilkariViewModel) {
     }
     val current = steps[step.coerceIn(0, steps.lastIndex)]
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(KC.Screen),
+    // The welcome sits on the warm gradient the splash hands over; the form steps after it go
+    // back to the flat cream, where fields are easier to read.
+    BlobBackdrop(
+        Modifier.fillMaxSize(),
+        brush = if (current == Step.WELCOME) KGradients.welcome else SolidColor(KC.Screen),
+        animated = current == Step.WELCOME,
     ) {
+    Column(Modifier.fillMaxSize()) {
         if (current != Step.WELCOME) {
             StepHeader(
                 index = step,
@@ -193,7 +202,7 @@ fun OnboardingScreen(vm: KilkariViewModel) {
             }
             PrimaryButton(
                 label = when (current) {
-                    Step.WELCOME -> "Get started"
+                    Step.WELCOME -> "Begin your journey"
                     Step.DONE -> "Start tracking"
                     else -> "Continue"
                 },
@@ -232,6 +241,7 @@ fun OnboardingScreen(vm: KilkariViewModel) {
                 )
             }
         }
+    }
     }
 }
 
@@ -284,42 +294,95 @@ private fun StepHeader(index: Int, total: Int, onBack: () -> Unit) {
 
 // ── Steps ───────────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColumnScope.WelcomeStep() {
-    Spacer(Modifier.height(28.dp))
+    // The brand as a stamp, not the subject: the picture below is what the screen is about.
+    Row(
+        Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(
+            painter = painterResource(R.mipmap.ic_launcher_foreground),
+            contentDescription = null,
+            modifier = Modifier.size(30.dp),
+        )
+        Text(
+            "Kilkari",
+            fontFamily = Display, fontWeight = FontWeight.ExtraBold,
+            fontSize = 19.sp, color = KC.MutedStrong, letterSpacing = (-0.3).sp,
+        )
+    }
+
+    Spacer(Modifier.height(18.dp))
+    Text(
+        "Your journey to\nconfident parenting",
+        modifier = Modifier.align(Alignment.CenterHorizontally),
+        fontFamily = Display, fontWeight = FontWeight.ExtraBold,
+        fontSize = 34.sp, lineHeight = 38.sp, color = KC.Ink, letterSpacing = (-0.9).sp,
+        textAlign = TextAlign.Center,
+    )
+    Text(
+        "Feeds, sleep, vaccines, growth and money — in one place, on this phone, for whoever " +
+            "is holding the baby.",
+        modifier = Modifier
+            .align(Alignment.CenterHorizontally)
+            .padding(top = 10.dp, start = 8.dp, end = 8.dp),
+        fontFamily = Sans, fontSize = 15.sp, lineHeight = 22.sp, color = KC.MutedStrong,
+        textAlign = TextAlign.Center,
+    )
+
+    // Three promises rather than a feature list: what a parent is actually agreeing to.
+    Spacer(Modifier.height(16.dp))
+    FlowRow(
+        Modifier.align(Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        WelcomePill("cloud_off", "Works offline")
+        WelcomePill("lock", "No account")
+        WelcomePill("bolt", "One tap to log")
+    }
+
+    Text(
+        "Already a few weeks in? Kilkari asks about the vaccines and moments already behind " +
+            "you, so nothing is missing.",
+        modifier = Modifier
+            .align(Alignment.CenterHorizontally)
+            .padding(top = 16.dp, start = 8.dp, end = 8.dp),
+        fontFamily = Sans, fontSize = 13.sp, lineHeight = 19.sp, color = KC.Muted,
+        textAlign = TextAlign.Center,
+    )
+
+    // The picture closes the screen, running to the bottom edge behind the button.
     Image(
-        painter = painterResource(R.mipmap.ic_launcher_foreground),
+        painter = painterResource(R.drawable.welcome_family),
         contentDescription = null,
         modifier = Modifier
             .align(Alignment.CenterHorizontally)
-            .size(148.dp),
+            .padding(top = 10.dp)
+            .fillMaxWidth(0.92f),
+        contentScale = ContentScale.FillWidth,
     )
-    Text(
-        "Kilkari",
-        modifier = Modifier.align(Alignment.CenterHorizontally),
-        fontFamily = Display, fontWeight = FontWeight.ExtraBold,
-        fontSize = 38.sp, color = KC.Ink, letterSpacing = (-0.76).sp,
-    )
-    Text(
-        "Everything for your baby, on your phone. Feeds, sleep, vaccines, growth, money — " +
-            "all of it stays on this device.",
-        modifier = Modifier.align(Alignment.CenterHorizontally),
-        fontFamily = Sans, fontSize = 14.sp, lineHeight = 21.sp,
-        color = KC.Muted, textAlign = TextAlign.Center,
-    )
-    Spacer(Modifier.height(4.dp))
-    KCard(background = KC.CoralBg, border = KC.BorderStrong) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                "Already a few weeks in?",
-                fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = KC.Ink,
-            )
-            Text(
-                "No problem. Once we know the date of birth, Kilkari will ask about the " +
-                    "vaccines and moments that have already happened so nothing is missing.",
-                fontFamily = Sans, fontSize = 13.sp, lineHeight = 19.sp, color = KC.MutedStrong,
-            )
-        }
+}
+
+/** A small reassurance on the welcome screen: an icon and two or three words. */
+@Composable
+private fun WelcomePill(icon: String, label: String) {
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(Color.White.copy(alpha = 0.72f))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(KIcons[icon], null, tint = KC.LilacDeep, modifier = Modifier.size(15.dp))
+        Text(
+            label, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp, color = KC.MutedStrong,
+        )
     }
 }
 

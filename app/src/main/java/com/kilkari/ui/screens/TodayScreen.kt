@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -60,6 +61,7 @@ import com.kilkari.ui.components.CheckRing
 import com.kilkari.ui.components.GradientCard
 import com.kilkari.ui.components.bleedHorizontal
 import com.kilkari.ui.components.IconBadge
+import com.kilkari.ui.components.RoundIconButton
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.Monogram
@@ -68,6 +70,7 @@ import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
+import com.kilkari.ui.theme.KGradients
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
 import java.time.LocalDate
@@ -95,6 +98,14 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
     val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri -> cropping = uri }
 
     Box(Modifier.fillMaxSize()) {
+        // A warm wash behind the greeting that fades into the cream — the page starts with
+        // colour rather than with a wall of cards.
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .background(KGradients.header)
+        )
         Column(
             Modifier
                 .fillMaxSize()
@@ -190,9 +201,30 @@ private fun TodayAgenda(
     val latest by vm.latestPerKind.collectAsStateWithLifecycle()
     val openSleep by vm.openSleep.collectAsStateWithLifecycle()
 
-    Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-        Text(greeting(), fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
-        Text("$name is ${Fmt.age(dob)}", style = ScreenTitle, color = KC.Ink)
+    // Who this is, before what is due: the child's face, the time of day, and how old they are
+    // today — the line a parent reads out loud when someone asks.
+    Row(
+        Modifier.fillMaxWidth().padding(top = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ChildAvatar(photoUri, name, Modifier.size(52.dp), ring = KC.CoralRing, onClick = onEditPhoto)
+        Column(Modifier.weight(1f)) {
+            Text(greeting(), fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
+            Text(
+                name,
+                fontFamily = Display, fontWeight = FontWeight.ExtraBold, fontSize = 25.sp,
+                color = KC.Ink, letterSpacing = (-0.5).sp,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                "${Fmt.age(dob)} old today",
+                fontFamily = Sans, fontWeight = FontWeight.Medium, fontSize = 13.sp,
+                color = KC.MutedStrong,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        RoundIconButton("notifications", KC.LilacDeep, KC.LilacBg, "Reminders") { go.push(Routes.REMINDERS) }
     }
 
     // What is happening now outranks what is due later. A nap started ten minutes ago wants
@@ -239,26 +271,42 @@ private fun TodayAgenda(
                     "asleep ${Fmt.elapsed(openSleep!!.startAt)}"
                 else -> Fmt.ago(latest[kind]?.startAt)
             }
-            KCard(Modifier.weight(1f), corner = 14, onClick = { onQuickLog(kind) }) {
+            KCard(Modifier.weight(1f), corner = 22, onClick = { onQuickLog(kind) }) {
                 Column(
-                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(KIcons[spec.icon], null, tint = spec.fg, modifier = Modifier.size(20.dp))
+                    Box(contentAlignment = Alignment.TopEnd) {
+                        Box(
+                            Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(spec.bg),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(KIcons[spec.icon], null, tint = spec.fg, modifier = Modifier.size(23.dp))
+                        }
                         // Says the card does something, without a button competing with it.
-                        Icon(
-                            KIcons["add"], null,
-                            tint = KC.Faint, modifier = Modifier.size(15.dp),
-                        )
+                        Box(
+                            Modifier
+                                .size(19.dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                                .padding(1.5.dp)
+                                .clip(CircleShape)
+                                .background(KC.Coral),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                KIcons["add"], null,
+                                tint = Color.White, modifier = Modifier.size(12.dp),
+                            )
+                        }
                     }
                     Text(
                         spec.title, fontFamily = Sans, fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp, color = KC.Ink,
+                        fontSize = 13.sp, color = KC.Ink,
                     )
                     Text(
                         agoText, fontFamily = Sans, fontSize = 11.sp, color = KC.Muted,

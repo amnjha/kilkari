@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -333,9 +334,9 @@ private fun LogTile(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    KCard(modifier, corner = 20, background = bg, border = null, onClick = onClick) {
+    KCard(modifier, corner = 26, background = bg, border = null, onClick = onClick) {
         Column(
-            Modifier.padding(16.dp).heightIn(min = 100.dp),
+            Modifier.padding(16.dp).heightIn(min = 104.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Row(
@@ -343,7 +344,17 @@ private fun LogTile(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(KIcons[icon], null, tint = fg, modifier = Modifier.size(26.dp))
+                // The icon sits in a white disc: it lifts off the tint the way the tiles lift
+                // off the page, and gives each kind a recognisable shape rather than a glyph.
+                Box(
+                    Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.85f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(KIcons[icon], null, tint = fg, modifier = Modifier.size(24.dp))
+                }
                 Box(
                     Modifier
                         .clip(RoundedCornerShape(999.dp))

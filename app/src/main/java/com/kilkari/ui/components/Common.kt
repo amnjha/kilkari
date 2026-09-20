@@ -10,6 +10,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +29,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -42,7 +47,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
+import com.kilkari.ui.theme.springPress
+import com.kilkari.ui.theme.rememberPressSource
+import com.kilkari.ui.theme.clay
+import com.kilkari.ui.theme.KDepth
 import com.kilkari.ui.theme.Sans
 
 /**
@@ -66,18 +76,28 @@ fun Modifier.bleedHorizontal(amount: Dp): Modifier = this.layout { measurable, c
 @Composable
 fun KCard(
     modifier: Modifier = Modifier,
-    corner: Int = 18,
+    corner: Int = KDepth.CARD,
     background: Color = KC.Surface,
     border: Color? = KC.Border,
+    /** Lifts the card off the cream. Off for cards drawn inside another raised surface. */
+    raised: Boolean = true,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(corner.dp)
+    val press = rememberPressSource()
     Surface(
         modifier = modifier
             .fillMaxWidth()
+            // A pressed card squashes slightly, then springs back: the whole app is built out
+            // of these, so the feel of one tap is the feel of the product.
+            .let { if (onClick != null) it.springPress(press) else it }
+            .let { if (raised) it.clay(corner) else it }
             .clip(shape)
-            .let { if (onClick != null) it.clickable(onClick = onClick) else it },
+            .let {
+                if (onClick == null) it
+                else it.clickable(interactionSource = press, indication = null, onClick = onClick)
+            },
         shape = shape,
         color = background,
         border = border?.let { BorderStroke(1.dp, it) },
@@ -90,19 +110,57 @@ fun KCard(
 fun GradientCard(
     colors: List<Color>,
     modifier: Modifier = Modifier,
-    corner: Int = 20,
+    corner: Int = KDepth.HERO,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(corner.dp)
+    val press = rememberPressSource()
     Box(
         modifier
             .fillMaxWidth()
+            .let { if (onClick != null) it.springPress(press) else it }
+            // Lifted further than a plain card, and tinted with its own colour so the glow
+            // under it belongs to the card rather than sitting behind it.
+            .clay(corner, KDepth.heroElevation, colors.first())
             .clip(shape)
             .background(Brush.linearGradient(colors))
-            .let { if (onClick != null) it.clickable(onClick = onClick) else it },
+            .let {
+                if (onClick == null) it
+                else it.clickable(interactionSource = press, indication = null, onClick = onClick)
+            },
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
+    }
+}
+
+/**
+ * A circular icon button on a tinted ground — the header actions. Sized to the 48dp touch
+ * minimum even though the circle itself is smaller.
+ */
+@Composable
+fun RoundIconButton(
+    icon: String,
+    tint: Color,
+    background: Color,
+    contentDescription: String? = null,
+    onClick: () -> Unit,
+) {
+    val press = rememberPressSource()
+    Box(
+        Modifier
+            .size(48.dp)
+            .springPress(press)
+            .clip(CircleShape)
+            .clickable(interactionSource = press, indication = null, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier.size(42.dp).clip(CircleShape).background(background),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(KIcons[icon], contentDescription, tint = tint, modifier = Modifier.size(21.dp))
+        }
     }
 }
 
@@ -214,11 +272,13 @@ fun Monogram(letter: String, size: Int = 44, fontSize: Int = 18) {
 /** Pill button used for filters (Money, Settings currency, milestone chips). */
 @Composable
 fun KChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val press = rememberPressSource()
     Surface(
         modifier = modifier
-            .height(34.dp)
+            .height(36.dp)
+            .springPress(press)
             .clip(RoundedCornerShape(999.dp))
-            .clickable(onClick = onClick),
+            .clickable(interactionSource = press, indication = null, onClick = onClick),
         shape = RoundedCornerShape(999.dp),
         color = if (selected) KC.Coral else KC.Surface,
         border = BorderStroke(1.dp, if (selected) KC.Coral else KC.BorderStrong),
@@ -246,13 +306,23 @@ fun KSegmented(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Uni
     ) {
         options.forEachIndexed { i, label ->
             val on = i == selectedIndex
+            // The pill fades between options rather than jumping, which at this size reads as
+            // the selection moving.
+            val fill by animateColorAsState(
+                targetValue = if (on) KC.Coral else Color.Transparent,
+                animationSpec = tween(200),
+                label = "segment",
+            )
             Box(
                 Modifier
                     .weight(1f)
-                    .height(38.dp)
+                    .height(40.dp)
                     .clip(RoundedCornerShape(999.dp))
-                    .background(if (on) KC.Coral else Color.Transparent)
-                    .clickable { onSelect(i) },
+                    .background(fill)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { onSelect(i) },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -273,13 +343,16 @@ fun PrimaryButton(
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
+    val press = rememberPressSource()
     Box(
         modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .height(52.dp)
+            .springPress(press)
+            .let { if (enabled) it.clay(999, 8.dp, KC.Coral) else it }
             .clip(RoundedCornerShape(999.dp))
             .background(if (enabled) KC.Coral else KC.CoralPale)
-            .clickable(enabled = enabled, onClick = onClick),
+            .clickable(enabled = enabled, interactionSource = press, indication = null, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(label, color = Color.White, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp)
@@ -340,7 +413,8 @@ fun KSwitch(checked: Boolean, onToggle: (() -> Unit)? = null) {
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text, modifier = modifier,
-        fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = KC.Ink,
+        fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 17.sp,
+        letterSpacing = (-0.3).sp, color = KC.Ink,
     )
 }
 

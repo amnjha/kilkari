@@ -31,6 +31,7 @@ import com.kilkari.domain.Fmt
 import com.kilkari.domain.ToothChart
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.GradientCard
+import androidx.compose.foundation.shape.CircleShape
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.SectionLabel
@@ -231,8 +232,16 @@ private fun HealthTile(
     onClick: () -> Unit,
 ) {
     KCard(modifier, onClick = onClick) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(KIcons[icon], null, tint = tint, modifier = Modifier.size(24.dp))
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(
+                Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(tint.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(KIcons[icon], null, tint = tint, modifier = Modifier.size(22.dp))
+            }
             Text(title, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = KC.Ink)
             Text(
                 subtitle, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,

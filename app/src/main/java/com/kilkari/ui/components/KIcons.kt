@@ -46,6 +46,9 @@ import androidx.compose.material.icons.filled.EventAvailable
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Insights
@@ -155,6 +158,9 @@ object KIcons {
         "chevron_right" to Icons.Filled.ChevronRight,
         "insights" to Icons.Filled.Insights,
         "history" to Icons.Filled.History,
+        "bolt" to Icons.Filled.Bolt,
+        "lock" to Icons.Filled.Lock,
+        "cloud_off" to Icons.Filled.CloudOff,
         "swap_horiz" to Icons.Filled.SwapHoriz,
         "check" to Icons.Filled.Check,
         "check_circle" to Icons.Filled.CheckCircle,

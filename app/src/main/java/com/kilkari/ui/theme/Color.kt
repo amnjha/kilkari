@@ -23,6 +23,9 @@ object KC {
     val BorderStrong = Color(0xFFE5D3BE)
     val Divider = Color(0xFFF5EBDE)
 
+    /** What a raised surface casts on the cream: warm brown, never grey. */
+    val ClayShadow = Color(0xFF8C6A4A)
+
     // Ink — the deep brown of the mark's eyes.
     val Ink = Color(0xFF332420)
     val Muted = Color(0xFF7E6B61)
@@ -37,6 +40,21 @@ object KC {
     val CoralPaler = Color(0xFFF8DCD2)
     val CoralBg = Color(0xFFFCEDE7)
     val CoralRing = Color(0xFFF2C6B8)
+
+    /**
+     * Lilac — the one hue not taken from the mark.
+     *
+     * Coral carries everything the app asks of a parent: doses due, vaccines overdue, money
+     * going out. A second warm accent beside it would blend into that; a cool one gives the
+     * gentler half of the app — the welcome, the moments, the playful surfaces — somewhere to
+     * live without competing with the brand. Checked against the cream ground at 4.9:1, and
+     * white on it at 5.3:1.
+     */
+    val Lilac = Color(0xFF6C57D6)
+    val LilacDeep = Color(0xFF4F3DAE)
+    val LilacLight = Color(0xFF9C8BEA)
+    val LilacBg = Color(0xFFEFEBFD)
+    val LilacRing = Color(0xFFD8CEFA)
 
     // Clay — the burnt orange quadrant. Medicines, sleep, documents.
     val Clay = Color(0xFFC4703A)
