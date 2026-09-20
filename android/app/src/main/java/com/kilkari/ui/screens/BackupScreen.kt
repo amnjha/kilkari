@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,12 +34,20 @@ import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KRow
 import com.kilkari.ui.components.KSwitch
+import com.kilkari.ui.components.SectionLabel
+import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.theme.KDepth
+import com.kilkari.ui.sheets.SheetHint
+import com.kilkari.ui.sheets.SheetTitle
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import com.kilkari.ui.components.PrimaryButton
+import com.kilkari.data.repo.SharedBackup
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 
 private const val BACKUP_MIME = "application/zip"
 
@@ -100,6 +109,23 @@ fun BackupScreen(vm: KilkariViewModel, go: NavActions) {
         }
     }
 
+    // The shared format, kept separate from the .kilkari zip above it: a different file for
+    // a different job, and saying so beats one button that quietly does less than the other.
+    val saveShared = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch { vm.writeSharedBackup(uri) }
+    }
+
+    var pendingRestore by remember { mutableStateOf<SharedBackup.Summary?>(null) }
+    val openShared = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch { pendingRestore = vm.readSharedBackup(uri) }
+    }
+
     Column(Modifier.fillMaxSize()) {
         DetailBar("Backup & export", go::back)
 
@@ -159,6 +185,34 @@ fun BackupScreen(vm: KilkariViewModel, go: NavActions) {
                 )
             }
 
+            SectionLabel("Moving to or from an iPhone", Modifier.padding(top = 4.dp))
+            KCard {
+                KRow(
+                    title = "Export as shared JSON",
+                    subtitle = "Opens in Kilkari on iOS. Readable in any text editor.",
+                    icon = "share",
+                    iconTint = KC.SeaDeep,
+                    iconBg = KC.SeaBg,
+                    onClick = { saveShared.launch("kilkari-${LocalDate.now()}.json") },
+                )
+                KRow(
+                    title = "Restore from shared JSON",
+                    subtitle = "A backup written by either app",
+                    icon = "restore",
+                    iconTint = KC.SeaDeep,
+                    iconBg = KC.SeaBg,
+                    divider = false,
+                    onClick = { openShared.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                )
+            }
+
+            Text(
+                "The shared file carries less than the .kilkari one above: " +
+                    SharedBackup.omissions.joinToString(", ") { it.replaceFirstChar(Char::lowercase) } +
+                    " stay on this phone. Use the .kilkari backup for moving between Android phones.",
+                fontFamily = Sans, fontSize = 12.sp, lineHeight = 18.sp, color = KC.Muted,
+            )
+
             KCard {
                 KRow(
                     title = "Auto-backup weekly",
@@ -175,6 +229,28 @@ fun BackupScreen(vm: KilkariViewModel, go: NavActions) {
                     "Restoring needs an app restart to take effect.",
                 fontFamily = Sans, fontSize = 12.sp, lineHeight = 18.sp, color = KC.Muted,
             )
+        }
+    }
+
+    // A restore is not undoable, so it asks once, in plain words, with the number of records
+    // about to replace the ones here.
+    val pending = pendingRestore
+    KSheet(pending != null, onDismiss = { pendingRestore = null }) {
+        if (pending != null) {
+            SheetTitle("Replace everything?")
+            SheetHint(
+                "This backup was written by the ${pending.writtenBy} app and holds " +
+                    "${pending.total} records" +
+                    (pending.babyName?.let { " for $it" } ?: "") + ": " +
+                    pending.counts.joinToString(", ") { "${it.second} ${it.first.lowercase()}" } +
+                    ".\n\nEverything currently in Kilkari will be removed first. This cannot be undone."
+            )
+            PrimaryButton("Replace everything") {
+                scope.launch {
+                    vm.restoreSharedBackup()
+                    pendingRestore = null
+                }
+            }
         }
     }
 }

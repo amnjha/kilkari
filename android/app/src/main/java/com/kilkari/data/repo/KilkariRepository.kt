@@ -59,6 +59,9 @@ import kotlinx.coroutines.flow.map
 import androidx.core.net.toUri
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import android.net.Uri
 
 /**
  * Icons on the two rows the app writes for itself at the start. They are also how those rows
@@ -1271,6 +1274,41 @@ class KilkariRepository(
      * rather than numbers. Every other measurement on screen is formatted as it is drawn and
      * follows the setting on its own.
      */
+    // ── The shared backup format ────────────────────────────────────────────
+
+    /** The three preferences a shared backup carries, wired to this app's store. */
+    private val sharedSettings = object : SharedBackup.Settings {
+        override suspend fun setCurrency(currency: Currency) { settingsStore.setCurrency(currency) }
+        override suspend fun setMetric(metric: Boolean) { settingsStore.setMetric(metric) }
+        override suspend fun setSchedule(id: String) { settingsStore.setSchedule(id) }
+    }
+
+    suspend fun writeSharedBackup(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            val current = settings.first()
+            val text = SharedBackup.write(db, current.currency, current.metricUnits, current.scheduleId)
+            appContext.contentResolver.openOutputStream(uri, "wt")?.use { it.write(text.toByteArray()) }
+                ?: error("no stream")
+            true
+        }.getOrDefault(false)
+    }
+
+    /** Reads and validates, without touching a row. */
+    suspend fun readSharedBackup(uri: Uri): Result<Pair<SharedBackup.Summary, org.json.JSONObject>> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val text = appContext.contentResolver.openInputStream(uri)?.use {
+                    it.readBytes().decodeToString()
+                } ?: error("That file could not be opened.")
+                SharedBackup.summarise(text)
+            }
+        }
+
+    suspend fun restoreSharedBackup(root: org.json.JSONObject) = withContext(Dispatchers.IO) {
+        SharedBackup.restore(root, db, sharedSettings)
+        rescheduleNotifications()
+    }
+
     suspend fun setMetric(metric: Boolean) {
         settingsStore.setMetric(metric)
         val baby = db.babyDao().get() ?: return

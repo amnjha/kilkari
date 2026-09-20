@@ -23,6 +23,7 @@ import com.kilkari.data.db.TimelineEntity
 import com.kilkari.data.db.ToothEntity
 import com.kilkari.data.prefs.AppSettings
 import com.kilkari.data.repo.KilkariRepository
+import com.kilkari.data.repo.SharedBackup
 import com.kilkari.domain.BreastSide
 import com.kilkari.domain.Currency
 import com.kilkari.domain.DiaperKind
@@ -962,6 +963,39 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             repo.updateDose(groupLabel, vaccineName, on, clinic, brand)
             toast("$vaccineName updated")
         }
+
+    // ── The shared backup format ────────────────────────────────────────────
+    //
+    // Held between reading a file and the parent agreeing to it, because a restore replaces
+    // everything and should never happen on the strength of a file picker alone.
+    private var stagedRestore: org.json.JSONObject? = null
+
+    fun writeSharedBackup(uri: android.net.Uri) = viewModelScope.launch {
+        val ok = repo.writeSharedBackup(uri)
+        toast(if (ok) "Saved · opens in Kilkari on iOS" else "Could not write that file")
+    }
+
+    /** Reads a file and reports what is in it. Null, with a toast, when it is not a backup. */
+    suspend fun readSharedBackup(uri: android.net.Uri): SharedBackup.Summary? {
+        val result = repo.readSharedBackup(uri)
+        return result.fold(
+            onSuccess = { (summary, root) ->
+                stagedRestore = root
+                summary
+            },
+            onFailure = {
+                toast(it.message ?: "That file could not be read")
+                null
+            },
+        )
+    }
+
+    fun restoreSharedBackup() = viewModelScope.launch {
+        val root = stagedRestore ?: return@launch
+        stagedRestore = null
+        repo.restoreSharedBackup(root)
+        toast("Restored · close and reopen Kilkari")
+    }
 
     fun setMetric(metric: Boolean) = viewModelScope.launch { repo.setMetric(metric) }
     fun setTodayVariant(v: String) = viewModelScope.launch { repo.setTodayVariant(v) }

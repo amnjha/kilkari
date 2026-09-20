@@ -9,13 +9,18 @@ it — and that moving from one phone to the other should not mean retyping a ye
 **iOS writes it.** Settings → Backup & export → *Everything, as JSON*, which hands the file to
 the share sheet so it lands wherever you choose.
 
-**Android does not yet.** Its backup is a zip around the Room database — complete, including
-photographs and scanned pages, but only restorable by the Android app, because the file inside
-is SQLite laid out the way Room wants it. Teaching it to read and write this format is what
-makes an Android-to-iPhone move possible, and is not done.
+**Android writes and reads it too.** More → Backup & export → *Moving to or from an iPhone*.
+Its own `.kilkari` zip is still there and is still the right thing for moving between Android
+phones: that one is a zip around the Room database, complete with photographs and scanned
+pages, and restorable only by the Android app.
 
-**Neither reads it back yet.** Export exists; import does not. That is the next piece, and
-until it lands a backup is a record you can read rather than a restore you can perform.
+**Both read it back.** A file written on either phone restores on either phone. A restore
+replaces everything rather than merging — merging two histories of the same baby produces
+duplicate feeds nobody can tell apart — and both apps say so and ask before doing it.
+
+Android additionally leaves out, because the format has no place for them: medicines and the
+doses taken of them, teeth, and savings accounts, transfers and contributions. The screen
+lists them rather than dropping them quietly.
 
 ## What is not in it
 
@@ -23,6 +28,10 @@ Photographs and scanned pages. They are large, they already live in the photo li
 the app's own storage, and putting them in would turn a 40KB file into a 400MB one. A backup
 is the record, not the album — the screen says so rather than letting anyone believe
 otherwise.
+
+A real file written by the iOS app lives at `common/samples/from-ios.json`, and an Android
+test reads it. Not a hand-typed approximation of the format — an actual export — so the test
+fails if either side drifts from what the other produces.
 
 ## Shape
 
