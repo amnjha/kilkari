@@ -12,6 +12,8 @@ struct VaccinesScreen: View {
     @Environment(\.modelContext) private var context
     @Environment(\.accent) private var accent
     @Query private var doses: [VaccineDose]
+    @Query(sort: \Doctor.name) private var doctors: [Doctor]
+    @Query(sort: \Appointment.startAt, order: .reverse) private var appointments: [Appointment]
 
     /// The dose whose sheet is open, with the group it belongs to.
     @State private var recording: (group: VaccineGroupState, vaccine: VaccineDef)?
@@ -40,9 +42,13 @@ struct VaccinesScreen: View {
                 vaccine: open.vaccine,
                 existing: open.group.records[open.vaccine.name],
                 babyDob: baby.dob,
-                onSave: { on, clinic, brand in
+                doctors: doctors,
+                lastClinic: lastClinic,
+                lastDoctor: appointments.first?.who ?? "",
+                onSave: { on, clinic, brand, cost, addExpense in
                     record(open.group.def.label, open.vaccine.name,
-                           on: on, clinic: clinic, brand: brand)
+                           on: on, clinic: clinic, brand: brand,
+                           cost: cost, addExpense: addExpense)
                     recording = nil
                 },
                 onRemove: {
@@ -140,17 +146,37 @@ struct VaccinesScreen: View {
         }
     }
 
+    /// Where the last dose was given. Most are given at the same place as the one before, and
+    /// an appointment records who rather than where, so the doses themselves are the better
+    /// source for this.
+    private var lastClinic: String {
+        doses.sorted { $0.givenOn > $1.givenOn }
+            .compactMap(\.clinic).first { !$0.isEmpty } ?? ""
+    }
+
     private func recorded(_ group: VaccineGroupState, _ vaccine: String) -> String {
         guard let dose = group.records[vaccine] else { return "" }
         return [Fmt.date(dose.givenOn), dose.clinic, dose.brand]
             .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
-    private func record(_ group: String, _ vaccine: String,
-                        on: Date, clinic: String?, brand: String?) {
+    private func record(_ group: String, _ vaccine: String, on: Date,
+                        clinic: String?, brand: String?, cost: Int?, addExpense: Bool) {
+        let alreadyRecorded = doses.contains { $0.groupLabel == group && $0.vaccineName == vaccine }
         clear(group, vaccine)
         context.insert(VaccineDose(groupLabel: group, vaccineName: vaccine,
                                    givenOn: on, clinic: clinic, brand: brand))
+
+        // Only on the way in. Re-opening a dose to fix its date should not post the cost a
+        // second time or add a second line to the timeline.
+        guard !alreadyRecorded else { return }
+        if let cost, addExpense {
+            context.insert(Expense(title: "\(vaccine) vaccine", vendor: clinic,
+                                   category: .medical, amount: cost, date: on))
+        }
+        context.insert(Milestone(title: "\(vaccine) given",
+                                 note: [clinic, brand].compactMap { $0 }.joined(separator: " · "),
+                                 date: on))
     }
 
     private func clear(_ group: String, _ vaccine: String) {
@@ -168,22 +194,31 @@ private struct RecordingDose: Identifiable {
 
 /// Recording one dose. Everything is optional except the fact that it happened.
 ///
-/// The date defaults to today and the rest can stay blank, so confirming takes one tap — but
-/// a parent who knows the clinic or the brand has somewhere to put it, instead of a tick they
-/// would have to come back and annotate.
+/// The same questions Android asks, in the same order: the date, where it was given, who gave
+/// it, the brand off the vial, and what it cost — which can post to Medical expenses so the
+/// fund stays right without the parent entering it twice. All of it can stay blank, so
+/// confirming is one tap for anyone who does not have the receipt to hand.
 struct RecordDoseSheet: View {
     let vaccine: VaccineDef
     let existing: VaccineDose?
     let babyDob: Date
-    let onSave: (Date, String?, String?) -> Void
+    let doctors: [Doctor]
+    /// The clinic and doctor of the last visit, because most doses happen where the last one did.
+    let lastClinic: String
+    let lastDoctor: String
+    let onSave: (Date, String?, String?, Int?, Bool) -> Void
     let onRemove: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accent) private var accent
+    @State private var prefs = Preferences.shared
 
     @State private var on = Date.now
     @State private var clinic = ""
+    @State private var doctor = ""
     @State private var brand = ""
+    @State private var cost = ""
+    @State private var addExpense = true
 
     var body: some View {
         NavigationStack {
@@ -194,19 +229,70 @@ struct RecordDoseSheet: View {
                             .font(KFont.sans(13)).foregroundStyle(KC.muted)
                     }
 
-                    DatePicker("Given on", selection: $on, in: babyDob...Date.now,
+                    DatePicker("Date", selection: $on, in: babyDob...Date.now,
                                displayedComponents: .date)
                         .font(KFont.sans(14, .semibold)).tint(accent.main)
 
-                    sheetField("Clinic", $clinic, "Optional")
-                    sheetField("Brand", $brand, "Optional")
+                    sheetField("Clinic", $clinic, "Where it was given")
 
-                    PrimaryButton(label: existing == nil ? "Record it" : "Save changes") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Doctor").font(KFont.sans(13, .semibold)).foregroundStyle(KC.mutedStrong)
+                        if doctors.isEmpty {
+                            TextField("", text: $doctor, prompt: Text("Who gave it"))
+                                .font(KFont.sans(16))
+                                .padding(14)
+                                .background(KC.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        } else {
+                            // Picked from the ones already on file, with a free line for
+                            // anyone who is not: a clinic visit is often a locum.
+                            Menu {
+                                ForEach(doctors) { saved in
+                                    Button(saved.name) {
+                                        doctor = saved.name
+                                        if let theirs = saved.clinic, !theirs.isEmpty { clinic = theirs }
+                                    }
+                                }
+                                Button("Someone else") { doctor = "" }
+                            } label: {
+                                HStack {
+                                    Text(doctor.isEmpty ? "Choose" : doctor)
+                                        .font(KFont.sans(16))
+                                        .foregroundStyle(doctor.isEmpty ? KC.faint : KC.ink)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(accent.deep)
+                                }
+                                .padding(14)
+                                .background(KC.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            }
+                        }
+                    }
+
+                    sheetField("Brand (optional)", $brand, "e.g. Pentavac")
+                    sheetField("Cost (\(prefs.currency.symbol))", $cost, "0", numeric: true)
+
+                    Toggle(isOn: $addExpense) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Add to Medical expenses")
+                                .font(KFont.sans(14, .semibold)).foregroundStyle(KC.ink)
+                            Text("Shows up under Money")
+                                .font(KFont.sans(12)).foregroundStyle(KC.muted)
+                        }
+                    }
+                    .tint(accent.main)
+                    .disabled((Int(cost) ?? 0) <= 0)
+
+                    PrimaryButton(label: existing == nil ? "Save · add to timeline" : "Save changes") {
                         func clean(_ s: String) -> String? {
                             let t = s.trimmingCharacters(in: .whitespaces)
                             return t.isEmpty ? nil : t
                         }
-                        onSave(on, clean(clinic), clean(brand))
+                        let amount = Int(cost).flatMap { $0 > 0 ? $0 : nil }
+                        onSave(on, clean(clinic), clean(brand), amount,
+                               addExpense && amount != nil)
                         dismiss()
                     }
                     .padding(.top, 2)
@@ -224,7 +310,7 @@ struct RecordDoseSheet: View {
                 .padding(20)
             }
             .background(KC.screen)
-            .navigationTitle(vaccine.name)
+            .navigationTitle("\(vaccine.name) given")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -233,7 +319,8 @@ struct RecordDoseSheet: View {
             }
             .onAppear {
                 on = existing?.givenOn ?? .now
-                clinic = existing?.clinic ?? ""
+                clinic = existing?.clinic ?? lastClinic
+                doctor = lastDoctor
                 brand = existing?.brand ?? ""
             }
         }
