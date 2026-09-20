@@ -133,7 +133,7 @@ fun BackupScreen(vm: KilkariViewModel, go: NavActions) {
             KCard {
                 KRow(
                     title = "Back up now",
-                    subtitle = "Database and scans in one .kilkari file",
+                    subtitle = "Entries, scans, photo and settings in one .kilkari file",
                     icon = "backup",
                     onClick = { saveBackup.launch(backupName()) },
                 )

@@ -215,8 +215,9 @@ app/src/main/java/com/kilkari/
 
 Nothing leaves the device unless you export it.
 
-- **Backup** writes a `.kilkari` zip (SQLite database + scanned pages) through the Storage
-  Access Framework, so you choose where it lands. Backups are **not encrypted**.
+- **Backup** writes a `.kilkari` zip (SQLite database, scanned pages, the child's photo and the
+  settings store — currency, schedule, units, Today layout and the fund top-up) through the
+  Storage Access Framework, so you choose where it lands. Backups are **not encrypted**.
 - **Restore** replaces the current database and scans, and needs an app restart to take effect.
 - **CSV export** writes logs, growth, vaccines, expenses, timeline, events, fund movements,
   investments and contributions as one file.

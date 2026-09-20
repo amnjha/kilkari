@@ -20,13 +20,23 @@ import java.util.zip.ZipOutputStream
 /**
  * Local-only backup, CSV export and a printable vaccination record.
  *
- * A backup is a plain zip holding the SQLite database plus every scanned page, written through
- * the Storage Access Framework so the user picks where it lands — Drive, Files, anywhere.
+ * A backup is a plain zip holding everything the app cannot rebuild for itself: the SQLite
+ * database, every scanned page, the child's photo, and the settings store. Written through the
+ * Storage Access Framework so the user picks where it lands — Drive, Files, anywhere.
+ *
+ * The settings matter as much as the rows. They carry the vaccination schedule, so a restore
+ * without them silently regenerates every due date against the default one, and the standing
+ * fund top-up, which is not derivable from the ledger it produced.
  */
 object BackupManager {
 
     private const val DB_ENTRY = "kilkari.db"
     private const val DOCS_PREFIX = "documents/"
+    private const val PHOTOS_PREFIX = "photos/"
+
+    /** Where the entry sits in the zip, and the file DataStore keeps under `files/`. */
+    private const val SETTINGS_ENTRY = "settings/kilkari_settings.preferences_pb"
+    private const val SETTINGS_FILE = "datastore/kilkari_settings.preferences_pb"
 
     /** Checkpoints WAL into the main database file so the copy is complete. */
     private suspend fun checkpoint(context: Context) = withContext(Dispatchers.IO) {
@@ -38,28 +48,41 @@ object BackupManager {
         checkpoint(context)
         var bytes = 0L
         ZipOutputStream(target.buffered()).use { zip ->
-            context.getDatabasePath(KilkariDatabase.DB_NAME).takeIf { it.exists() }?.let { db ->
-                zip.putNextEntry(ZipEntry(DB_ENTRY))
-                bytes += db.inputStream().use { it.copyTo(zip) }
-                zip.closeEntry()
-            }
-            File(context.filesDir, "documents").listFiles()?.forEach { page ->
-                zip.putNextEntry(ZipEntry(DOCS_PREFIX + page.name))
-                bytes += page.inputStream().use { it.copyTo(zip) }
-                zip.closeEntry()
-            }
+            bytes += zip.put(DB_ENTRY, context.getDatabasePath(KilkariDatabase.DB_NAME))
+            bytes += zip.putAll(DOCS_PREFIX, File(context.filesDir, "documents"))
+            bytes += zip.putAll(PHOTOS_PREFIX, File(context.filesDir, PHOTO_DIR))
+            bytes += zip.put(SETTINGS_ENTRY, File(context.filesDir, SETTINGS_FILE))
         }
         bytes
     }
 
+    /** One file, if it is there at all. Returns the bytes written. */
+    private fun ZipOutputStream.put(entry: String, file: File): Long {
+        if (!file.exists()) return 0L
+        putNextEntry(ZipEntry(entry))
+        val bytes = file.inputStream().use { it.copyTo(this) }
+        closeEntry()
+        return bytes
+    }
+
+    /** Every file in [dir], flattened under [prefix]. */
+    private fun ZipOutputStream.putAll(prefix: String, dir: File): Long =
+        dir.listFiles().orEmpty().filter { it.isFile }.sumOf { put(prefix + it.name, it) }
+
     /**
-     * Replaces the current database and scans with the contents of a backup. The caller must
-     * restart the process afterwards — Room holds the old file open until then.
+     * Replaces the current database, scans, photo and settings with the contents of a backup.
+     * The caller must restart the process afterwards — Room holds the old database file open
+     * until then, and DataStore keeps the settings it has already read in memory, so it would
+     * write them back over the restored ones at the next edit.
+     *
+     * Backups written before photos and settings were included still restore: whatever the zip
+     * does not carry is left as it is, and only the database is required.
      */
     suspend fun restoreBackup(context: Context, source: Uri): Boolean = withContext(Dispatchers.IO) {
         val input = context.contentResolver.openInputStream(source) ?: return@withContext false
         KilkariDatabase.close()
         val docsDir = File(context.filesDir, "documents").apply { mkdirs() }
+        val photosDir = File(context.filesDir, PHOTO_DIR).apply { mkdirs() }
         var sawDatabase = false
 
         ZipInputStream(input.buffered()).use { zip ->
@@ -75,9 +98,18 @@ object BackupManager {
                         File(context.getDatabasePath(KilkariDatabase.DB_NAME).path + "-shm").delete()
                         sawDatabase = true
                     }
+                    name == SETTINGS_ENTRY -> {
+                        File(context.filesDir, SETTINGS_FILE)
+                            .also { it.parentFile?.mkdirs() }
+                            .outputStream().use { zip.copyTo(it) }
+                    }
+                    // The name is taken off the entry rather than trusted whole, so a crafted
+                    // zip cannot write outside these two directories.
                     name.startsWith(DOCS_PREFIX) && !entry.isDirectory -> {
-                        val safeName = File(name).name
-                        File(docsDir, safeName).outputStream().use { zip.copyTo(it) }
+                        File(docsDir, File(name).name).outputStream().use { zip.copyTo(it) }
+                    }
+                    name.startsWith(PHOTOS_PREFIX) && !entry.isDirectory -> {
+                        File(photosDir, File(name).name).outputStream().use { zip.copyTo(it) }
                     }
                 }
                 zip.closeEntry()
