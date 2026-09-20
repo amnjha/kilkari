@@ -5,17 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -31,7 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,6 +35,7 @@ import com.kilkari.domain.PaperworkStatus
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.KIcons
+import com.kilkari.ui.components.KRow
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.Monogram
 import com.kilkari.ui.nav.NavActions
@@ -107,7 +102,7 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
         val items = listOf(
             MoreItem(
                 Routes.TIMELINE, "timeline", "Timeline",
-                "Milestones and moments",
+                "Milestones, events, photo moments",
                 KC.RoseDeep, KC.RoseWash,
             ),
             MoreItem(
@@ -133,7 +128,7 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
                     nextDocument != null ->
                         "${nextDocument.kind.title} ${Fmt.dueText(nextDocument.inDays ?: 0)}"
                     documentsObtained == paperwork.size && paperwork.isNotEmpty() ->
-                        "All four in hand"
+                        "Birth certificate, Aadhaar, passport, PAN — all in hand"
                     else -> "$documentsObtained of ${paperwork.size} obtained"
                 },
                 KC.SeaDeep, KC.SeaWash,
@@ -156,20 +151,27 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
             ),
         )
 
-        // A grid rather than a list. Eight rows of the same white card was the drawer of the
-        // app looking like a settings screen; eight coloured tiles is somewhere to browse,
-        // and the colour is what a parent aims at rather than the word.
-        items.chunked(2).forEach { pair ->
-            // Both tiles take the height of the taller one, so a two-line subtitle beside a
-            // one-line subtitle does not leave a step in the grid.
-            Row(
-                Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                pair.forEach { item ->
-                    MoreTile(item, Modifier.weight(1f).fillMaxHeight()) { go.push(item.route) }
+        // A list, not a grid. The tiles were prettier and worse: eight of them pushed the
+        // last two below the fold, and a drawer of occasional things is read down the titles
+        // rather than aimed at. The grouping survives in the badges — rose for the keepsakes,
+        // sea for the records, lilac for the app's own settings — so the list still has
+        // colour in it without being made of it.
+        KCard {
+            items.forEachIndexed { i, item ->
+                KRow(
+                    title = item.title,
+                    subtitle = item.subtitle,
+                    icon = item.icon,
+                    iconTint = item.tint,
+                    iconBg = item.background,
+                    divider = i != items.lastIndex,
+                    onClick = { go.push(item.route) },
+                ) {
+                    Icon(
+                        KIcons["chevron_right"], null,
+                        tint = KC.StoneLight, modifier = Modifier.size(20.dp),
+                    )
                 }
-                if (pair.size == 1) Box(Modifier.weight(1f))
             }
         }
     }
@@ -178,39 +180,6 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
             BabySheet(b, settings.metricUnits) { name, dob, sex, place, weight, length, head ->
                 vm.updateBabyDetails(name, dob, sex, place, weight, length, head)
                 editing = false
-            }
-        }
-    }
-}
-
-@Composable
-private fun MoreTile(item: MoreItem, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    KCard(modifier, corner = 26, background = item.background, border = null, onClick = onClick) {
-        Column(
-            Modifier.fillMaxHeight().padding(16.dp).heightIn(min = 108.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(
-                Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.85f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(KIcons[item.icon], null, tint = item.tint, modifier = Modifier.size(23.dp))
-            }
-            Column {
-                Text(
-                    item.title,
-                    fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = KC.Ink,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    item.subtitle,
-                    fontFamily = Sans, fontSize = 12.sp, color = KC.MutedStrong,
-                    modifier = Modifier.padding(top = 2.dp),
-                    maxLines = 2, overflow = TextOverflow.Ellipsis,
-                )
             }
         }
     }

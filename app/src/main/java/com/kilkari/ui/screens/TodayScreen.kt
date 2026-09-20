@@ -236,10 +236,7 @@ private fun TodayAgenda(
             title = "Asleep since ${Fmt.time(napping.startAt)}",
             subtitle = napping.place?.takeIf { it.isNotBlank() } ?: "Tap to wake and record it",
             action = "End the nap",
-            photoUri = photoUri,
-            name = name,
             onAction = { onQuickLog(LogKind.SLEEP) },
-            onEditPhoto = onEditPhoto,
             onCard = { onQuickLog(LogKind.SLEEP) },
         )
 
@@ -250,10 +247,7 @@ private fun TodayAgenda(
                 title = "${g.label} vaccines · ${g.count} ${Fmt.plural(g.count.toLong(), "dose")}",
                 subtitle = "${Fmt.date(g.dueDate)} · ${g.names}",
                 action = "See schedule",
-                photoUri = photoUri,
-                name = name,
                 onAction = { go.push(Routes.VACCINES) },
-                onEditPhoto = onEditPhoto,
                 onCard = { go.push(Routes.VACCINES) },
             )
         }
@@ -337,10 +331,7 @@ private fun NextUpCard(
     title: String,
     subtitle: String,
     action: String,
-    photoUri: String?,
-    name: String,
     onAction: () -> Unit,
-    onEditPhoto: () -> Unit,
     onCard: () -> Unit,
 ) {
     GradientCard(listOf(KC.Coral, KC.Clay), onClick = onCard) {
@@ -357,35 +348,22 @@ private fun NextUpCard(
             Pill(badge)
         }
 
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(0.7f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    title,
-                    fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 20.sp,
-                    color = Color.White,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    subtitle,
-                    fontFamily = Sans, fontSize = 13.sp, color = Color.White.copy(alpha = 0.9f),
-                    maxLines = 2, overflow = TextOverflow.Ellipsis,
-                )
-                WhiteButton(action, onClick = onAction)
-            }
-
-            // Its own tap target inside a card that does something else: the picture is the
-            // way to change the picture.
-            ChildAvatar(
-                photoUri = photoUri,
-                name = name,
-                modifier = Modifier.weight(0.3f).aspectRatio(1f),
-                ring = Color.White.copy(alpha = 0.55f),
-                onClick = onEditPhoto,
+        // No picture here. The greeting above this card already carries the child's photo,
+        // and two of the same face a thumb apart reads as a mistake — the card gets the width
+        // back, which is what the title wanted anyway.
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                title,
+                fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 20.sp,
+                color = Color.White,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
+            Text(
+                subtitle,
+                fontFamily = Sans, fontSize = 13.sp, color = Color.White.copy(alpha = 0.9f),
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+            WhiteButton(action, Modifier.padding(top = 2.dp), onClick = onAction)
         }
     }
 }
@@ -843,9 +821,9 @@ private fun Pill(text: String) {
 }
 
 @Composable
-private fun WhiteButton(label: String, onClick: () -> Unit) {
+private fun WhiteButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
-        Modifier
+        modifier
             .clip(RoundedCornerShape(999.dp))
             .background(Color.White)
             .clickable(onClick = onClick)
