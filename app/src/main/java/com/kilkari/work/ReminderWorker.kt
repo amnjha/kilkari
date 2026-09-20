@@ -23,6 +23,7 @@ import com.kilkari.data.db.ReminderEntity
 import com.kilkari.data.repo.KilkariRepository
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.PaperworkStatus
+import com.kilkari.domain.Recurrence
 import com.kilkari.domain.RepeatRule
 import kotlinx.coroutines.flow.first
 import java.time.Duration
@@ -200,7 +201,7 @@ internal suspend fun notesFor(
     // Weekly prompts and anything the parent added, each at its own time.
     reminders
         .filter { it.enabled && (!it.builtIn || it.key in SELF_STANDING) }
-        .filter { dueOn(it, day) }
+        .filter { Recurrence.dueOn(it, day) }
         .forEach { r ->
             notes += Note(
                 r.minuteOfDay ?: DIGEST_MINUTE,
@@ -210,14 +211,6 @@ internal suspend fun notesFor(
         }
 
     return notes
-}
-
-/** True when this reminder's cadence lands on [day]. */
-private fun dueOn(r: ReminderEntity, day: LocalDate): Boolean = when (RepeatRule.of(r.repeatRule)) {
-    RepeatRule.DAILY -> true
-    RepeatRule.WEEKLY -> day.dayOfWeek.value == (r.weekday ?: 7)
-    RepeatRule.MONTHLY -> day.dayOfMonth == (r.dayOfMonth ?: 1).coerceIn(1, 28)
-    RepeatRule.NONE -> r.startDate == day
 }
 
 /** Kept separate so [KilkariApp] does not need to know WorkManager's API surface. */
@@ -279,20 +272,12 @@ object ReminderScheduler {
         repo: KilkariRepository,
         now: LocalDateTime,
     ): Pair<LocalDateTime, Int>? {
-        val today = now.toLocalDate()
-        val minuteNow = now.hour * 60 + now.minute
-
-        for (offset in 0..SEARCH_DAYS) {
-            val day = today.plusDays(offset.toLong())
-            val minutes = notesFor(context, repo, day).map { it.minuteOfDay }
-            // On today, strictly after the current minute, so the run that just fired does not
-            // re-arm itself for the same minute and notify twice.
-            val next = if (offset == 0) minutes.filter { it > minuteNow } else minutes
-            next.minOrNull()?.let { return day.atTime(it / 60, it % 60) to it }
+        // Read a week of days up front: the decision itself is arithmetic, and lives in
+        // Recurrence where it can be tested without a worker, a database or a clock.
+        val minutesByDay = (0..Recurrence.SEARCH_DAYS).associate { offset ->
+            val day = now.toLocalDate().plusDays(offset.toLong())
+            day to notesFor(context, repo, day).map { it.minuteOfDay }
         }
-        return null
+        return Recurrence.nextMoment(now) { day -> minutesByDay[day].orEmpty() }
     }
-
-    /** A week ahead: long enough to catch anything weekly without scanning a whole month. */
-    private const val SEARCH_DAYS = 7
 }

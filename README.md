@@ -248,6 +248,26 @@ app/src/main/java/com/kilkari/
 - **Money precision.** Amounts are stored as whole INR (`amountInr`) and converted at display
   time. Rates are fixed constants, matching the prototype — there is no FX lookup.
 
+## Tests
+
+```bash
+./gradlew :app:testDebugUnitTest
+```
+
+77 JUnit cases, all on the JVM — Robolectric supplies SQLite for the ones that need a real
+database, so there is nothing to plug in.
+
+| Area | What it covers |
+| --- | --- |
+| `MigrationTest` | Builds a database in an older shape from that version's exported schema, fills it, and opens it through Room — which runs the migrations and refuses to open if the result does not match the entities. Includes a full version 1 → 12 run. |
+| `RepositoryTest` | The writes that touch more than one table: transfers, deleting an account that is still in use, reconciling one half of a transfer, and a corrected date of birth moving the arrival entry, the birthday and the growth chart's first point. |
+| `FundMathTest` | Balances, per-account balances, the ledger, and when the monthly top-up is due. |
+| `RecurrenceTest` | Which days a reminder falls on, and which minute the notification chain arms next — including not re-arming the minute that just fired. |
+| `InsightsTest` | The daily averages: logged days rather than calendar days, sleep split at midnight, medians, adherence. |
+| `GrowthStandardsTest` | The WHO percentile curves, against WHO's own published percentile tables. |
+| `ReturnsTest` | XIRR and the maturity projection. |
+| `UnitsTest`, `PaperworkTest` | Unit conversion round-trips; the identity-document chain. |
+
 ## Data, backup and privacy
 
 Nothing leaves the device unless you export it.
@@ -269,5 +289,5 @@ Nothing leaves the device unless you export it.
 - Investment values are whatever you last entered. The app is offline by design, so there is no
   price feed: a holding's return is only as current as the value last written down, and the
   screen says so.
-- Tests cover the insights arithmetic only (`app/src/test`, 18 JUnit cases). There are no UI
-  tests and no tests around the database, scheduling or money.
+- No UI tests. The 77 JUnit cases in `app/src/test` cover the arithmetic, the database and its
+  migrations (through Robolectric), but nothing drives the Compose screens.

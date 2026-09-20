@@ -66,7 +66,7 @@ abstract class KilkariDatabase : RoomDatabase() {
                 context.applicationContext,
                 KilkariDatabase::class.java,
                 DB_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12).build().also { instance = it }
+            ).addMigrations(*ALL_MIGRATIONS).build().also { instance = it }
         }
 
         /** Drops the cached handle so a restore can swap the file underneath us. */
@@ -240,6 +240,17 @@ abstract class KilkariDatabase : RoomDatabase() {
                 )
             }
         }
+
+        /**
+         * Every migration, in one list so the database and its tests cannot disagree about
+         * which ones exist — a migration left out of the builder only shows up as a crash on
+         * someone's phone months later.
+         */
+        val ALL_MIGRATIONS: Array<Migration> get() = arrayOf(
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6,
+            MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
+            MIGRATION_11_12,
+        )
 
         /**
          * Gives the fund more than one account, and the ledger a way to be checked off.

@@ -41,6 +41,18 @@ android {
         }
     }
 
+    // The migration tests read the exported schemas, so they have to be on the test classpath.
+    sourceSets.getByName("test") {
+        assets.srcDir("$projectDir/schemas")
+    }
+
+    testOptions {
+        unitTests {
+            // Room and the database tests need Android's SQLite, which Robolectric provides.
+            isIncludeAndroidResources = true
+        }
+    }
+
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release")
@@ -105,5 +117,9 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
 }

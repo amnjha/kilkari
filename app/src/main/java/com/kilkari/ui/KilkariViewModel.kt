@@ -40,6 +40,7 @@ import com.kilkari.domain.InsightReport
 import com.kilkari.domain.DaySummary
 import com.kilkari.domain.FundLedgerOrigin
 import com.kilkari.domain.FundLedgerRow
+import com.kilkari.domain.FundMath
 import com.kilkari.domain.FundTxnKind
 import com.kilkari.domain.InvestmentKind
 import com.kilkari.domain.InvestmentSummary
@@ -236,14 +237,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
     /** Each account's own balance, by account id, on the same derivation as the total. */
     val fundBalances: StateFlow<Map<Long, Long>> =
         combine(fundTransactions, expenses, contributions) { txns, expenses, contributions ->
-            buildMap {
-                txns.forEach { t ->
-                    val signed = if (t.kind == FundTxnKind.DEPOSIT.key) t.amountInr else -t.amountInr
-                    merge(t.accountId, signed, Long::plus)
-                }
-                expenses.forEach { e -> e.fundAccountId?.let { merge(it, -e.amountInr, Long::plus) } }
-                contributions.forEach { c -> c.fundAccountId?.let { merge(it, -c.amountInr, Long::plus) } }
-            }
+            FundMath.balances(txns, expenses, contributions)
         }.state(emptyMap())
 
     fun addFundAccount(name: String, note: String?) = viewModelScope.launch {
@@ -278,84 +272,13 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     val fundBalance: StateFlow<Long> =
         combine(fundTransactions, expenses, contributions) { txns, expenses, contributions ->
-            val deposits = txns.filter { it.kind == FundTxnKind.DEPOSIT.key }.sumOf { it.amountInr }
-            val withdrawals = txns.filter { it.kind == FundTxnKind.WITHDRAWAL.key }.sumOf { it.amountInr }
-            val spent = expenses.filter { it.paidFromFund }.sumOf { it.amountInr }
-            val invested = contributions.filter { it.paidFromFund }.sumOf { it.amountInr }
-            deposits - withdrawals - spent - invested
+            FundMath.total(txns, expenses, contributions)
         }.state(0)
 
     /** Every movement through the account on one timeline, newest first. */
     val fundLedger: StateFlow<List<FundLedgerRow>> =
         combine(fundTransactions, expenses, contributions, investments) { txns, expenses, contributions, investments ->
-            val byId = investments.associateBy { it.id }
-            buildList {
-                txns.forEach { t ->
-                    val deposit = t.kind == FundTxnKind.DEPOSIT.key
-                    val transfer = t.transferGroup != null
-                    add(
-                        FundLedgerRow(
-                            id = "t${t.id}",
-                            sourceId = t.id,
-                            date = t.date,
-                            title = when {
-                                transfer && deposit -> "Transfer in"
-                                transfer -> "Transfer out"
-                                deposit -> "Deposit"
-                                else -> "Withdrawal"
-                            },
-                            subtitle = t.note.orEmpty(),
-                            amountInr = t.amountInr,
-                            incoming = deposit,
-                            icon = when {
-                                transfer -> "swap_horiz"
-                                deposit -> "payments"
-                                else -> "shopping_bag"
-                            },
-                            origin = if (deposit) FundLedgerOrigin.DEPOSIT else FundLedgerOrigin.WITHDRAWAL,
-                            accountId = t.accountId,
-                            reconciled = t.reconciledOn != null,
-                            transfer = transfer,
-                        )
-                    )
-                }
-                expenses.filter { it.paidFromFund }.forEach { e ->
-                    add(
-                        FundLedgerRow(
-                            id = "e${e.id}",
-                            sourceId = e.id,
-                            date = e.date,
-                            title = e.title,
-                            subtitle = listOfNotNull(
-                                ExpenseCategory.of(e.category).label,
-                                e.vendor,
-                            ).joinToString(" · "),
-                            amountInr = e.amountInr,
-                            incoming = false,
-                            icon = e.icon,
-                            origin = FundLedgerOrigin.EXPENSE,
-                            accountId = e.fundAccountId,
-                        )
-                    )
-                }
-                contributions.filter { it.paidFromFund }.forEach { c ->
-                    val investment = byId[c.investmentId]
-                    add(
-                        FundLedgerRow(
-                            id = "c${c.id}",
-                            sourceId = c.id,
-                            date = c.date,
-                            title = investment?.name ?: "Investment",
-                            subtitle = investment?.let { InvestmentKind.of(it.kind).label }.orEmpty(),
-                            amountInr = c.amountInr,
-                            incoming = false,
-                            icon = "savings",
-                            origin = FundLedgerOrigin.INVESTMENT,
-                            accountId = c.fundAccountId,
-                        )
-                    )
-                }
-            }.sortedWith(compareByDescending<FundLedgerRow> { it.date }.thenByDescending { it.id })
+            FundMath.ledger(txns, expenses, contributions, investments)
         }.state(emptyList())
 
     val investmentSummaries: StateFlow<List<InvestmentSummary>> =
