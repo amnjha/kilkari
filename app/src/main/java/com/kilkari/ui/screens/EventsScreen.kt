@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kilkari.data.db.EventEntity
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.DetailBar
@@ -52,6 +53,7 @@ fun EventsScreen(vm: KilkariViewModel, go: NavActions) {
     val baby by vm.baby.collectAsStateWithLifecycle()
     val events by vm.events.collectAsStateWithLifecycle()
     var sheetOpen by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<EventEntity?>(null) }
 
     val today = LocalDate.now()
     val b = baby
@@ -111,7 +113,10 @@ fun EventsScreen(vm: KilkariViewModel, go: NavActions) {
                         val days = Fmt.daysUntil(occurrence, today)
                         val tint = eventTint(event.icon)
                         Row(
-                            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { editing = event }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -135,7 +140,6 @@ fun EventsScreen(vm: KilkariViewModel, go: NavActions) {
                                 Fmt.dueBadge(days),
                                 fontFamily = Sans, fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp, color = tint.first,
-                                modifier = Modifier.clickable { vm.deleteEvent(event) },
                             )
                         }
                         if (i != sorted.lastIndex) {
@@ -144,7 +148,7 @@ fun EventsScreen(vm: KilkariViewModel, go: NavActions) {
                     }
                 }
                 Text(
-                    "Tap the countdown on a row to remove that event.",
+                    "Tap an event to change or remove it.",
                     fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
                 )
             }
@@ -154,6 +158,19 @@ fun EventsScreen(vm: KilkariViewModel, go: NavActions) {
             EventSheet { title, note, date, annual ->
                 vm.addEvent(title, note, date, iconFor(title), annual)
                 sheetOpen = false
+            }
+        }
+
+        val edit = editing
+        KSheet(edit != null, onDismiss = { editing = null }) {
+            if (edit != null) {
+                EventSheet(
+                    existing = edit,
+                    onDelete = { vm.deleteEvent(edit); editing = null },
+                ) { title, note, date, annual ->
+                    vm.updateEvent(edit, title, note, date, annual)
+                    editing = null
+                }
             }
         }
     }

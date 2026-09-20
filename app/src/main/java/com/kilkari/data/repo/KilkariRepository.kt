@@ -290,6 +290,7 @@ class KilkariRepository(
                                     given = dose != null,
                                     givenOn = dose?.givenOn,
                                     brand = dose?.brand,
+                                    clinic = dose?.clinic,
                                 )
                             },
                             costMinor = costBy[g.label],
@@ -298,6 +299,26 @@ class KilkariRepository(
                 }
             }
         }
+
+    /**
+     * Corrects a dose already recorded: when it was given, where, and which product.
+     *
+     * The cost is not touched. It was posted to Money as an expense of its own, which is
+     * editable there, and rewriting it from here would either double count or silently
+     * disagree with the row the parent can see.
+     */
+    suspend fun updateDose(
+        groupLabel: String,
+        vaccineName: String,
+        on: LocalDate,
+        clinic: String?,
+        brand: String?,
+    ) {
+        val id = babyId() ?: return
+        db.vaccineDao().upsertDose(
+            VaccineDoseEntity(id, currentScheduleId(), groupLabel, vaccineName, on, clinic, brand)
+        )
+    }
 
     /**
      * Records or withdraws a single dose. Withdrawing the last dose of a group also clears the
@@ -719,6 +740,9 @@ class KilkariRepository(
     }
 
     /** The scan goes; whatever it was a scan of stays obtained, just without a scan attached. */
+    /** Corrects what a filed document is called, how it is tagged, and the day it is filed under. */
+    suspend fun updateDocument(row: DocumentEntity) = db.documentDao().update(row)
+
     suspend fun deleteDocument(row: DocumentEntity) {
         db.paperworkDao().unlinkDocument(row.id)
         db.documentDao().delete(row)
@@ -808,6 +832,7 @@ class KilkariRepository(
         db.albumDao().insert(AlbumEntity(babyId = id, title = title, subtitle = subtitle, url = url))
     }
 
+    suspend fun updateAlbum(row: AlbumEntity) = db.albumDao().update(row)
     suspend fun deleteAlbum(row: AlbumEntity) = db.albumDao().delete(row)
 
     fun events(): Flow<List<EventEntity>> = forBaby { db.eventDao().observeAll(it) }
@@ -817,6 +842,7 @@ class KilkariRepository(
         db.eventDao().insert(EventEntity(babyId = id, title = title, subtitle = subtitle, date = date, icon = icon, annual = annual))
     }
 
+    suspend fun updateEvent(row: EventEntity) = db.eventDao().update(row)
     suspend fun deleteEvent(row: EventEntity) = db.eventDao().delete(row)
 
     // ── Reminders ───────────────────────────────────────────────────────────

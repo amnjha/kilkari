@@ -62,6 +62,12 @@ days late, so the chart was otherwise a record of when someone looked. A back-da
 not tick off a reminder whose occurrence it predates: last week's weigh-in does not clear this
 week's prompt.
 
+**Everything saved can be reopened.** Journal and money entries, the child's details, custom
+reminders, recorded teeth, appointments, filed documents, photo albums, birthdays and events,
+and recorded vaccine doses all open in the sheet that created them. A recorded dose keeps its
+cost out of that sheet: the cost went to Money as its own expense, editable there, and a second
+copy of it could only disagree.
+
 **Nothing is written in stone either.** Every journal entry and every money entry can be
 reopened from the list it appears in — a feed, a nap, a diaper, a dose, a measurement, an
 expense, a fund deposit or withdrawal, an investment contribution, a moment on the timeline —
@@ -242,9 +248,6 @@ Nothing leaves the device unless you export it.
 ## Not done yet
 
 - Multi-baby support — the schema has a `babyId` throughout but the UI assumes one baby.
-- Editing existing entries — journal and money entries, the child's details, custom reminders
-  and recorded teeth can all be edited. Appointments, filed documents, photo albums, birthdays
-  and recorded vaccine doses still support add and delete only.
 - The fund assumes a single account. Multiple accounts, transfers between them, and reconciling
   against a bank statement are not modelled.
 - Investment values are whatever you last entered. There is no price feed, no XIRR, and no

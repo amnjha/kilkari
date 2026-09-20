@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.repo.PHOTO_DIR
+import com.kilkari.data.db.AlbumEntity
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.IconButton44
@@ -53,6 +54,7 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
     val albums by vm.albums.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var sheetOpen by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<AlbumEntity?>(null) }
 
     val baby by vm.baby.collectAsStateWithLifecycle()
     // The weekly check-in is its own two-step flow; the + button adds an album on its own.
@@ -148,11 +150,13 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
                                     )
                                 }
                             }
+                            // Edit rather than remove: a mistyped link was previously only
+                            // fixable by deleting the album and adding it again.
                             Text(
-                                "Remove",
+                                "Edit",
                                 modifier = Modifier
                                     .padding(12.dp)
-                                    .clickable { vm.deleteAlbum(album) },
+                                    .clickable { editing = album },
                                 fontFamily = Sans, fontSize = 12.sp, color = KC.Faint,
                             )
                         }
@@ -165,6 +169,19 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
             AlbumSheet { title, subtitle, url ->
                 vm.addAlbum(title, subtitle, url)
                 sheetOpen = false
+            }
+        }
+
+        val edit = editing
+        KSheet(edit != null, onDismiss = { editing = null }) {
+            if (edit != null) {
+                AlbumSheet(
+                    existing = edit,
+                    onDelete = { vm.deleteAlbum(edit); editing = null },
+                ) { title, subtitle, url ->
+                    vm.updateAlbum(edit, title, subtitle, url)
+                    editing = null
+                }
             }
         }
 

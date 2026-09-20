@@ -42,6 +42,7 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.MarkVaccineSheet
+import com.kilkari.ui.sheets.RecordedDoseSheet
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -59,6 +60,7 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
     val baby by vm.baby.collectAsStateWithLifecycle()
 
     /** Doses the open sheet is recording; empty means no sheet. */
+    var editingDose by remember { mutableStateOf<VaccineItemState?>(null) }
     var sheetDoses by remember { mutableStateOf<List<VaccineItemState>>(emptyList()) }
 
     val g = group ?: return
@@ -92,7 +94,7 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
                         DoseRow(
                             item = item,
                             onMark = { sheetDoses = listOf(item) },
-                            onUndo = { vm.toggleDose(g.label, item.name, false) },
+                            onEdit = { editingDose = item },
                         )
                         if (i != g.items.lastIndex) {
                             Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Divider))
@@ -163,6 +165,24 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
                 }
             }
         }
+        val dose = editingDose
+        KSheet(dose != null, onDismiss = { editingDose = null }) {
+            if (dose != null) {
+                RecordedDoseSheet(
+                    item = dose,
+                    dob = baby?.dob,
+                    onPickDoctor = picker::open,
+                    onRemove = {
+                        vm.toggleDose(g.label, dose.name, false)
+                        editingDose = null
+                    },
+                ) { on, clinic, brand ->
+                    vm.updateDose(g.label, dose.name, on, clinic, brand)
+                    editingDose = null
+                }
+            }
+        }
+
         DoctorPickerSheets(
             state = picker,
             doctors = doctors,
@@ -178,10 +198,13 @@ fun VaccineDetailScreen(vm: KilkariViewModel, go: NavActions) {
 private fun DoseRow(
     item: VaccineItemState,
     onMark: () -> Unit,
-    onUndo: () -> Unit,
+    onEdit: () -> Unit,
 ) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+        Modifier
+            .fillMaxWidth()
+            .let { if (item.given) it.clickable(onClick = onEdit) else it }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -214,11 +237,13 @@ private fun DoseRow(
             )
         }
         if (item.given) {
+            // Was "Undo", which could only throw the record away. The row now opens it for
+            // correction, and removing it is one of the things that sheet offers.
             Text(
-                "Undo",
+                "Edit",
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
-                    .clickable(onClick = onUndo)
+                    .clickable(onClick = onEdit)
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 fontFamily = Sans, fontSize = 12.sp, color = KC.Faint,
             )

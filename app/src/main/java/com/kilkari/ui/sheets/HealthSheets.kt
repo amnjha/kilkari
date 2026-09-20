@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kilkari.data.db.AppointmentEntity
 import com.kilkari.data.db.MedicationEntity
 import com.kilkari.ui.components.clockLabel
 import com.kilkari.data.db.DoctorEntity
@@ -153,6 +154,45 @@ fun ColumnScope.MarkVaccineSheet(
     }
 }
 
+/**
+ * A dose already recorded, reopened.
+ *
+ * What gets typed wrong is the date — a dose entered a week later defaults to today — along
+ * with the clinic and the brand off the vial. The cost is not here: it went to Money as its own
+ * expense, which is editable there, and a second copy of it would only disagree.
+ */
+@Composable
+fun ColumnScope.RecordedDoseSheet(
+    item: VaccineItemState,
+    dob: LocalDate?,
+    onPickDoctor: (current: String?, apply: (DoctorEntity?) -> Unit) -> Unit,
+    onRemove: () -> Unit,
+    onSave: (on: LocalDate, clinic: String?, brand: String?) -> Unit,
+) {
+    var given by remember(item) { mutableStateOf(item.givenOn ?: LocalDate.now()) }
+    var clinic by remember(item) { mutableStateOf(item.clinic.orEmpty()) }
+    var brand by remember(item) { mutableStateOf(item.brand.orEmpty()) }
+
+    SheetTitle("${item.name} given")
+    SheetHint(item.desc)
+    KDateField(
+        "Date", given, selectableFrom = dob, selectableTo = LocalDate.now(),
+        format = { Fmt.relativeDate(it) },
+    ) { given = it }
+    SheetField("Clinic", clinic, "Where it was given") { clinic = it }
+    DoctorPickerField("Doctor", "") {
+        onPickDoctor(null) { picked ->
+            picked?.clinic?.takeIf { it.isNotBlank() }?.let { clinic = it }
+        }
+    }
+    SheetField("Brand (optional)", brand, "e.g. Pentavac") { brand = it }
+
+    PrimaryButton("Save changes") {
+        onSave(given, clinic.ifBlank { null }, brand.ifBlank { null })
+    }
+    SheetDelete("Remove this record", onRemove)
+}
+
 /** Switch schedules. Doses already recorded under the old schedule are kept, not deleted. */
 @Composable
 fun ColumnScope.ScheduleSheet(currentId: String, onPick: (String) -> Unit) {
@@ -244,15 +284,19 @@ private fun cadenceOf(scheduleText: String?): String? =
 @Composable
 fun ColumnScope.AppointmentSheet(
     onPickDoctor: (current: String?, apply: (DoctorEntity?) -> Unit) -> Unit,
+    existing: AppointmentEntity? = null,
+    onDelete: (() -> Unit)? = null,
     onSave: (String, LocalDate, Int, String?, String?) -> Unit,
 ) {
-    var title by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf<LocalDate?>(null) }
-    var minute by remember { mutableStateOf<Int?>(10 * 60 + 30) }
-    var doctor by remember { mutableStateOf("") }
-    var place by remember { mutableStateOf("") }
+    var title by remember(existing) { mutableStateOf(existing?.title.orEmpty()) }
+    var date by remember(existing) { mutableStateOf(existing?.startAt?.toLocalDate()) }
+    var minute by remember(existing) {
+        mutableStateOf(existing?.startAt?.let { it.hour * 60 + it.minute } ?: (10 * 60 + 30))
+    }
+    var doctor by remember(existing) { mutableStateOf(existing?.doctor.orEmpty()) }
+    var place by remember(existing) { mutableStateOf(existing?.place.orEmpty()) }
 
-    SheetTitle("Add an appointment")
+    SheetTitle(if (existing == null) "Add an appointment" else "Edit appointment")
     SheetField("What", title, "e.g. 6-week check") { title = it }
     KDateField(
         "Date", date, selectableFrom = LocalDate.now().minusYears(2),
@@ -267,9 +311,13 @@ fun ColumnScope.AppointmentSheet(
     }
     SheetField("Where", place, "Clinic or hospital") { place = it }
 
-    PrimaryButton("Save appointment", enabled = title.isNotBlank() && date != null && minute != null) {
+    PrimaryButton(
+        if (existing == null) "Save appointment" else "Save changes",
+        enabled = title.isNotBlank() && date != null && minute != null,
+    ) {
         onSave(title.trim(), date!!, minute!!, doctor.ifBlank { null }, place.ifBlank { null })
     }
+    if (onDelete != null) SheetDelete("Remove this appointment", onDelete)
 }
 
 /** "HH:MM" → minutes past midnight, or null when unparseable. */

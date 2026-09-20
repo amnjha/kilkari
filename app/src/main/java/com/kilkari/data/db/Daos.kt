@@ -243,6 +243,9 @@ interface AlbumDao {
     @Insert
     suspend fun insert(row: AlbumEntity): Long
 
+    @Update
+    suspend fun update(row: AlbumEntity)
+
     @Delete
     suspend fun delete(row: AlbumEntity)
 }

@@ -25,6 +25,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.KilkariViewModel
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.kilkari.ui.components.KSheet
+import com.kilkari.ui.sheets.DocumentSheet
 import com.kilkari.ui.components.DetailBar
 import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.PrimaryButton
@@ -42,6 +47,7 @@ fun DocumentDetailScreen(vm: KilkariViewModel, go: NavActions) {
     val d = doc ?: return
 
     val pages = d.pageUris.split(",").filter { it.isNotBlank() }
+    var editing by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()) {
         DetailBar(d.title, go::back)
@@ -76,6 +82,7 @@ fun DocumentDetailScreen(vm: KilkariViewModel, go: NavActions) {
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SecondaryButton("Edit", Modifier.weight(1f), icon = "edit") { editing = true }
                 SecondaryButton("Share", Modifier.weight(1f), icon = "share") {
                     sharePages(context, pages)
                 }
@@ -92,6 +99,15 @@ fun DocumentDetailScreen(vm: KilkariViewModel, go: NavActions) {
                     "pick a PDF app there to combine them.",
                 fontFamily = Sans, fontSize = 12.sp, lineHeight = 18.sp, color = KC.Muted,
             )
+        }
+    }
+
+    // A filed document's name, tags and date are the parts that get typed in a hurry with a
+    // baby on one arm; the pages themselves are what they are.
+    KSheet(editing, onDismiss = { editing = false }) {
+        DocumentSheet(pageCount = d.pageCount, existing = d) { title, tags, filedOn ->
+            vm.updateDocument(d, title, tags, filedOn)
+            editing = false
         }
     }
 }

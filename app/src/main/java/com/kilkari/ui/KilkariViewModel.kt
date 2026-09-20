@@ -603,6 +603,17 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun deleteAppointment(row: AppointmentEntity) = viewModelScope.launch { repo.deleteAppointment(row) }
 
+    fun updateAppointment(
+        row: AppointmentEntity,
+        title: String,
+        at: LocalDateTime,
+        doctor: String?,
+        place: String?,
+    ) = viewModelScope.launch {
+        repo.updateAppointment(row.copy(title = title, startAt = at, doctor = doctor, place = place))
+        toast("Appointment updated")
+    }
+
     fun addExpense(
         title: String,
         vendor: String?,
@@ -770,6 +781,12 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun deleteDocument(row: DocumentEntity) = viewModelScope.launch { repo.deleteDocument(row) }
 
+    fun updateDocument(row: DocumentEntity, title: String, tags: String, filedOn: LocalDate) =
+        viewModelScope.launch {
+            repo.updateDocument(row.copy(title = title, tags = tags, filedOn = filedOn))
+            toast("Document updated")
+        }
+
     /**
      * Records where an identity document stands. Obtaining one moves the chain on, so the
      * confirmation names what comes next rather than just what was done.
@@ -810,6 +827,12 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     fun deleteAlbum(row: AlbumEntity) = viewModelScope.launch { repo.deleteAlbum(row) }
 
+    fun updateAlbum(row: AlbumEntity, title: String, subtitle: String, url: String) =
+        viewModelScope.launch {
+            repo.updateAlbum(row.copy(title = title, subtitle = subtitle, url = url))
+            toast("Album updated")
+        }
+
     fun addEvent(title: String, subtitle: String, date: LocalDate, icon: String, annual: Boolean) =
         viewModelScope.launch {
             repo.addEvent(title, subtitle, date, icon, annual)
@@ -817,6 +840,12 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         }
 
     fun deleteEvent(row: EventEntity) = viewModelScope.launch { repo.deleteEvent(row) }
+
+    fun updateEvent(row: EventEntity, title: String, subtitle: String, date: LocalDate, annual: Boolean) =
+        viewModelScope.launch {
+            repo.updateEvent(row.copy(title = title, subtitle = subtitle, date = date, annual = annual))
+            toast("Event updated")
+        }
 
     fun saveDoctor(id: Long?, name: String, speciality: String?, clinic: String?, phone: String?) =
         viewModelScope.launch {
@@ -903,6 +932,12 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     /** Which milestones are already on the timeline, so catch-up does not offer them again. */
     suspend fun recordedMilestoneKeys(): Set<String> = repo.recordedMilestoneKeys()
+
+    fun updateDose(groupLabel: String, vaccineName: String, on: LocalDate, clinic: String?, brand: String?) =
+        viewModelScope.launch {
+            repo.updateDose(groupLabel, vaccineName, on, clinic, brand)
+            toast("$vaccineName updated")
+        }
 
     fun setMetric(metric: Boolean) = viewModelScope.launch { repo.setMetric(metric) }
     fun setTodayVariant(v: String) = viewModelScope.launch { repo.setTodayVariant(v) }

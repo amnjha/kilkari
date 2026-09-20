@@ -62,6 +62,7 @@ data class VaccineItemState(
     val given: Boolean,
     val givenOn: LocalDate? = null,
     val brand: String? = null,
+    val clinic: String? = null,
 )
 
 data class VaccineGroupState(

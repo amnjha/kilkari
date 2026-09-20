@@ -54,6 +54,7 @@ fun AppointmentsScreen(vm: KilkariViewModel, go: NavActions) {
     val doctors by vm.doctors.collectAsStateWithLifecycle()
     val picker = rememberDoctorPickerState()
     var sheetOpen by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<AppointmentEntity?>(null) }
 
     val now = LocalDateTime.now()
     val upcoming = appointments.filter { !it.startAt.isBefore(now) }
@@ -87,6 +88,7 @@ fun AppointmentsScreen(vm: KilkariViewModel, go: NavActions) {
                     AppointmentCard(
                         appt = appt,
                         emphasis = i == 0,
+                        onEdit = { editing = appt },
                         onDelete = { vm.deleteAppointment(appt) },
                     )
                 }
@@ -94,9 +96,13 @@ fun AppointmentsScreen(vm: KilkariViewModel, go: NavActions) {
                 if (past.isNotEmpty()) {
                     SectionLabel("Past")
                     past.forEach { appt ->
-                        AppointmentCard(appt = appt, emphasis = false, past = true) {
-                            vm.deleteAppointment(appt)
-                        }
+                        AppointmentCard(
+                            appt = appt,
+                            emphasis = false,
+                            past = true,
+                            onEdit = { editing = appt },
+                            onDelete = { vm.deleteAppointment(appt) },
+                        )
                     }
                 }
             }
@@ -108,6 +114,20 @@ fun AppointmentsScreen(vm: KilkariViewModel, go: NavActions) {
                     title, date.atTime(minute / 60, minute % 60), doctor, place, reminderDaysBefore = 1,
                 )
                 sheetOpen = false
+            }
+        }
+
+        val edit = editing
+        KSheet(edit != null, onDismiss = { editing = null }) {
+            if (edit != null) {
+                AppointmentSheet(
+                    onPickDoctor = picker::open,
+                    existing = edit,
+                    onDelete = { vm.deleteAppointment(edit); editing = null },
+                ) { title, date, minute, doctor, place ->
+                    vm.updateAppointment(edit, title, date.atTime(minute / 60, minute % 60), doctor, place)
+                    editing = null
+                }
             }
         }
         DoctorPickerSheets(
@@ -125,6 +145,7 @@ private fun AppointmentCard(
     appt: AppointmentEntity,
     emphasis: Boolean,
     past: Boolean = false,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val tint = when {
@@ -138,7 +159,9 @@ private fun AppointmentCard(
         else -> KC.ClayBg
     }
 
-    KCard(Modifier.alpha(if (past) 0.75f else 1f)) {
+    // The card opens for correction, the way every other saved thing in the app does. A
+    // moved appointment is the normal case; deleting and re-adding it was the only way.
+    KCard(Modifier.alpha(if (past) 0.75f else 1f), onClick = onEdit) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(

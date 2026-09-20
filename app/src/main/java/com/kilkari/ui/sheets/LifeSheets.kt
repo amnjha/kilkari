@@ -30,6 +30,9 @@ import com.kilkari.data.db.ExpenseEntity
 import com.kilkari.data.db.TimelineEntity
 import com.kilkari.domain.Currency
 import com.kilkari.domain.ExpenseCategory
+import com.kilkari.data.db.AlbumEntity
+import com.kilkari.data.db.DocumentEntity
+import com.kilkari.data.db.EventEntity
 import com.kilkari.domain.Fmt
 import com.kilkari.ui.components.KChip
 import com.kilkari.ui.components.KSegmented
@@ -169,38 +172,54 @@ fun ColumnScope.MilestoneSheet(
 }
 
 @Composable
-fun ColumnScope.AlbumSheet(onSave: (String, String, String) -> Unit) {
-    var title by remember { mutableStateOf("") }
-    var subtitle by remember { mutableStateOf("") }
-    var url by remember { mutableStateOf("") }
+fun ColumnScope.AlbumSheet(
+    existing: AlbumEntity? = null,
+    onDelete: (() -> Unit)? = null,
+    onSave: (String, String, String) -> Unit,
+) {
+    var title by remember(existing) { mutableStateOf(existing?.title.orEmpty()) }
+    var subtitle by remember(existing) { mutableStateOf(existing?.subtitle.orEmpty()) }
+    var url by remember(existing) { mutableStateOf(existing?.url.orEmpty()) }
 
-    SheetTitle("Link a photo album")
+    SheetTitle(if (existing == null) "Link a photo album" else "Edit album")
     SheetHint("Albums stay in Google Photos — Kilkari only keeps the link.")
     SheetField("Title", title, "e.g. First month") { title = it }
     SheetField("Note", subtitle, "e.g. 184 photos") { subtitle = it }
     SheetField("Link", url, "https://photos.app.goo.gl/…") { url = it }
 
-    PrimaryButton("Save album", enabled = title.isNotBlank() && url.isNotBlank()) {
+    PrimaryButton(
+        if (existing == null) "Save album" else "Save changes",
+        enabled = title.isNotBlank() && url.isNotBlank(),
+    ) {
         onSave(title.trim(), subtitle.trim(), url.trim())
     }
+    if (onDelete != null) SheetDelete("Remove this album", onDelete)
 }
 
 @Composable
-fun ColumnScope.EventSheet(onSave: (String, String, LocalDate, Boolean) -> Unit) {
-    var title by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf<LocalDate?>(null) }
-    var annual by remember { mutableStateOf(false) }
+fun ColumnScope.EventSheet(
+    existing: EventEntity? = null,
+    onDelete: (() -> Unit)? = null,
+    onSave: (String, String, LocalDate, Boolean) -> Unit,
+) {
+    var title by remember(existing) { mutableStateOf(existing?.title.orEmpty()) }
+    var note by remember(existing) { mutableStateOf(existing?.subtitle.orEmpty()) }
+    var date by remember(existing) { mutableStateOf(existing?.date) }
+    var annual by remember(existing) { mutableStateOf(existing?.annual ?: false) }
 
-    SheetTitle("Add an event")
+    SheetTitle(if (existing == null) "Add an event" else "Edit event")
     SheetField("What", title, "e.g. Diwali") { title = it }
     KDateField("Date", date, format = { Fmt.relativeDate(it) }) { date = it }
     SheetField("Note", note, "Optional detail") { note = it }
     KSegmented(listOf("One-off", "Every year"), if (annual) 1 else 0) { annual = it == 1 }
 
-    PrimaryButton("Save event", enabled = title.isNotBlank() && date != null) {
+    PrimaryButton(
+        if (existing == null) "Save event" else "Save changes",
+        enabled = title.isNotBlank() && date != null,
+    ) {
         onSave(title.trim(), note.trim(), date!!, annual)
     }
+    if (onDelete != null) SheetDelete("Remove this event", onDelete)
 }
 
 @Composable
@@ -208,13 +227,17 @@ fun ColumnScope.DocumentSheet(
     pageCount: Int,
     /** Filled in when the scan was asked for by name — the Paperwork screen's "Scan it". */
     initialTitle: String = "",
+    /** Set when an already filed document is being corrected rather than a new one filed. */
+    existing: DocumentEntity? = null,
     onSave: (String, String, LocalDate) -> Unit,
 ) {
-    var title by remember(initialTitle) { mutableStateOf(initialTitle) }
-    var tags by remember { mutableStateOf("") }
-    var filed by remember { mutableStateOf(LocalDate.now()) }
+    var title by remember(initialTitle, existing) {
+        mutableStateOf(existing?.title ?: initialTitle)
+    }
+    var tags by remember(existing) { mutableStateOf(existing?.tags.orEmpty()) }
+    var filed by remember(existing) { mutableStateOf(existing?.filedOn ?: LocalDate.now()) }
 
-    SheetTitle("File this document")
+    SheetTitle(if (existing == null) "File this document" else "Edit document")
     SheetHint(
         // A page may have been photographed, picked from the gallery or attached as a file,
         // so the wording no longer assumes the camera.
@@ -225,7 +248,10 @@ fun ColumnScope.DocumentSheet(
     SheetField("Tags", tags, "Legal, ID") { tags = it }
     EntryDateField("Filed", filed) { filed = it }
 
-    PrimaryButton("Save document", enabled = title.isNotBlank() && pageCount > 0) {
+    PrimaryButton(
+        if (existing == null) "Save document" else "Save changes",
+        enabled = title.isNotBlank() && pageCount > 0,
+    ) {
         onSave(title.trim(), tags.trim(), filed)
     }
 }
