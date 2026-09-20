@@ -197,10 +197,11 @@ private fun TodayAgenda(
     val latest by vm.latestPerKind.collectAsStateWithLifecycle()
     val openSleep by vm.openSleep.collectAsStateWithLifecycle()
 
-    // Who this is, before what is due. It used to open with "Good evening", which was being
-    // said to a four-week-old who cannot read it; the person holding the phone wants to know
-    // whose day this is and how old they are today. The face belongs to the card below, where
-    // it is large enough to be a picture of somebody rather than a bullet point.
+    // Who this is, before what is due: the name, and how old they are today. It used to open
+    // with "Good evening", said to a four-week-old who cannot read it, and briefly with a
+    // "Tracking" label above the name — but the name is already the answer to what this
+    // screen is about, and a word over it only repeated the app. The face belongs to the card
+    // below, where it is large enough to be a picture of somebody rather than a bullet point.
     Row(
         Modifier.fillMaxWidth().padding(top = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -208,7 +209,6 @@ private fun TodayAgenda(
     ) {
         val accent = LocalAccent.current
         Column(Modifier.weight(1f)) {
-            Text("Tracking", fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
             Text(
                 name,
                 fontFamily = Display, fontWeight = FontWeight.ExtraBold, fontSize = 25.sp,
