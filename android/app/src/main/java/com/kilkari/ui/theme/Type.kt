@@ -2,32 +2,36 @@ package com.kilkari.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.kilkari.R
 
-private val provider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs,
-)
+/*
+ * The two faces the app is set in, bundled rather than fetched.
+ *
+ * These came from the Google Fonts provider, which needs Play Services and a network the
+ * first time a face is asked for. On a phone with neither — which is a phone this app is
+ * meant to work on, since it does everything else offline — Compose fell back to the system
+ * sans and the product looked like a different one. The files now ship inside the APK, synced
+ * from common/fonts by the syncFonts task so iOS is set in exactly the same ones.
+ */
 
-private fun family(name: String, vararg weights: FontWeight) = FontFamily(
-    weights.map { Font(GoogleFont(name), provider, it, FontStyle.Normal) }
+/** Display face — headings and numbers. */
+val Display = FontFamily(
+    Font(R.font.bricolage_grotesque_medium, FontWeight.Medium),
+    Font(R.font.bricolage_grotesque_bold, FontWeight.Bold),
+    Font(R.font.bricolage_grotesque_extra_bold, FontWeight.ExtraBold),
 )
-
-/** Display face — headings and numbers. Falls back to the platform sans if unavailable. */
-val Display = family("Bricolage Grotesque", FontWeight.Medium, FontWeight.Bold, FontWeight.ExtraBold)
 
 /** UI face — everything else. */
-val Sans = family(
-    "Plus Jakarta Sans",
-    FontWeight.Normal, FontWeight.Medium, FontWeight.SemiBold,
-    FontWeight.Bold, FontWeight.ExtraBold,
+val Sans = FontFamily(
+    Font(R.font.plus_jakarta_sans_regular, FontWeight.Normal),
+    Font(R.font.plus_jakarta_sans_medium, FontWeight.Medium),
+    Font(R.font.plus_jakarta_sans_semi_bold, FontWeight.SemiBold),
+    Font(R.font.plus_jakarta_sans_bold, FontWeight.Bold),
+    Font(R.font.plus_jakarta_sans_extra_bold, FontWeight.ExtraBold),
 )
 
 /** Screen titles: 26sp extra-bold display with the design's tight tracking. */

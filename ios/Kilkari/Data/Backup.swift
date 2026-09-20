@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import KilkariCore
 
 /// Everything the app holds, as one readable file.
 ///
@@ -134,6 +135,267 @@ enum Backup {
         try? json(context: context)?.write(to: folder.appendingPathComponent("check.json"))
         try? spendingCSV(context: context).data(using: .utf8)?
             .write(to: folder.appendingPathComponent("check.csv"))
+        #endif
+    }
+}
+
+// MARK: - Reading one back
+
+extension Backup {
+
+    /// What a file turned out to contain, before anything is done with it.
+    struct Preview {
+        let writtenBy: String
+        let writtenAt: String
+        let babyName: String?
+        let counts: [(String, Int)]
+        var total: Int { counts.reduce(0) { $0 + $1.1 } }
+    }
+
+    enum ImportError: LocalizedError {
+        case unreadable
+        case notABackup
+        case newerVersion(Int)
+
+        var errorDescription: String? {
+            switch self {
+            case .unreadable: return "That file could not be read as JSON."
+            case .notABackup: return "That is not a Kilkari backup."
+            case .newerVersion(let v):
+                return "That backup is version \(v), written by a newer Kilkari than this one."
+            }
+        }
+    }
+
+    static let formatVersion = 1
+
+    /// Reads a file far enough to say what is in it, without touching the store.
+    ///
+    /// Nothing is imported until the parent has seen this and said yes: a restore replaces
+    /// everything, and "everything" should be a number they have read rather than a promise.
+    static func preview(_ data: Data) throws -> (Preview, [String: Any]) {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw ImportError.unreadable
+        }
+        guard root["format"] as? String == "kilkari-backup" else { throw ImportError.notABackup }
+        let version = root["version"] as? Int ?? 0
+        guard version <= formatVersion else { throw ImportError.newerVersion(version) }
+
+        let arrays = [
+            "logEntries", "doses", "growth", "expenses", "deposits", "investments",
+            "appointments", "milestones", "events", "albums", "doctors", "reminders", "paperwork",
+        ]
+        let counts = arrays.compactMap { key -> (String, Int)? in
+            guard let rows = root[key] as? [[String: Any]], !rows.isEmpty else { return nil }
+            return (label(key), rows.count)
+        }
+        return (
+            Preview(
+                writtenBy: root["writtenBy"] as? String ?? "unknown",
+                writtenAt: root["writtenAt"] as? String ?? "",
+                babyName: (root["baby"] as? [String: Any])?["name"] as? String,
+                counts: counts
+            ),
+            root
+        )
+    }
+
+    private static func label(_ key: String) -> String {
+        switch key {
+        case "logEntries": return "Log entries"
+        case "doses": return "Doses given"
+        case "growth": return "Measurements"
+        case "expenses": return "Expenses"
+        case "deposits": return "Deposits"
+        case "investments": return "Holdings"
+        case "appointments": return "Appointments"
+        case "milestones": return "Moments"
+        case "events": return "Dates"
+        case "albums": return "Albums"
+        case "doctors": return "Doctors"
+        case "reminders": return "Reminders"
+        case "paperwork": return "Paperwork"
+        default: return key
+        }
+    }
+
+    /// Replaces everything in the store with what the file holds.
+    ///
+    /// A restore, not a merge. Merging two histories of the same baby produces duplicate feeds
+    /// nobody can tell apart, and the parent asked to put a backup back, not to add one to
+    /// what is already here. The screen says so plainly before this runs.
+    @MainActor
+    static func restore(_ root: [String: Any], into context: ModelContext,
+                        prefs: Preferences = .shared) {
+        let iso = ISO8601DateFormatter()
+        func date(_ any: Any?) -> Date? { (any as? String).flatMap(iso.date(from:)) }
+        func rows(_ key: String) -> [[String: Any]] { root[key] as? [[String: Any]] ?? [] }
+
+        // Everything goes first, so a restore cannot leave half of one history beside half of
+        // another. SwiftData has no truncate, so each type is fetched and deleted.
+        func wipe<T: PersistentModel>(_ type: T.Type) {
+            ((try? context.fetch(FetchDescriptor<T>())) ?? []).forEach(context.delete)
+        }
+        wipe(Baby.self); wipe(LogEntry.self); wipe(VaccineDose.self); wipe(GrowthRecord.self)
+        wipe(Expense.self); wipe(FundDeposit.self); wipe(Investment.self); wipe(Appointment.self)
+        wipe(Milestone.self); wipe(CalendarEvent.self); wipe(Album.self); wipe(Doctor.self)
+        wipe(Reminder.self); wipe(PaperworkRecord.self)
+
+        if let settings = root["settings"] as? [String: Any] {
+            if let code = settings["currency"] as? String,
+               let currency = Currency(rawValue: code) { prefs.currency = currency }
+            if let metric = settings["metric"] as? Bool { prefs.metric = metric }
+            if let schedule = settings["scheduleId"] as? String { prefs.scheduleId = schedule }
+        }
+
+        if let baby = root["baby"] as? [String: Any],
+           let name = baby["name"] as? String,
+           let dob = date(baby["dob"]) {
+            context.insert(Baby(name: name, dob: dob, sexRaw: baby["sex"] as? String))
+        }
+
+        for row in rows("logEntries") {
+            guard let kind = (row["kind"] as? String).flatMap(LogKind.init(rawValue:)),
+                  let startAt = date(row["startAt"]) else { continue }
+            context.insert(LogEntry(
+                kind: kind, startAt: startAt, endAt: date(row["endAt"]),
+                amount: row["amount"] as? Int, side: row["side"] as? String,
+                feedType: (row["feedType"] as? String).flatMap(FeedType.init(rawValue:)),
+                diaperKind: (row["diaperKind"] as? String).flatMap(DiaperKind.init(rawValue:)),
+                note: row["note"] as? String
+            ))
+        }
+        for row in rows("doses") {
+            guard let group = row["group"] as? String, let vaccine = row["vaccine"] as? String,
+                  let givenOn = date(row["givenOn"]) else { continue }
+            context.insert(VaccineDose(groupLabel: group, vaccineName: vaccine, givenOn: givenOn))
+        }
+        for row in rows("growth") {
+            guard let on = date(row["date"]) else { continue }
+            context.insert(GrowthRecord(date: on, weightKg: row["weightKg"] as? Double,
+                                        lengthCm: row["lengthCm"] as? Double,
+                                        headCm: row["headCm"] as? Double))
+        }
+        for row in rows("expenses") {
+            guard let title = row["title"] as? String, let amount = row["amount"] as? Int,
+                  let on = date(row["date"]) else { continue }
+            context.insert(Expense(
+                title: title, vendor: row["vendor"] as? String,
+                category: (row["category"] as? String).flatMap(ExpenseCategory.init(rawValue:)) ?? .general,
+                amount: amount, date: on, paidFromFund: row["paidFromFund"] as? Bool ?? true
+            ))
+        }
+        for row in rows("deposits") {
+            guard let amount = row["amount"] as? Int, let on = date(row["date"]) else { continue }
+            context.insert(FundDeposit(note: row["note"] as? String, amount: amount, date: on))
+        }
+        for row in rows("investments") {
+            guard let name = row["name"] as? String, let started = date(row["startedOn"]) else { continue }
+            context.insert(Investment(
+                name: name,
+                kind: (row["kind"] as? String).flatMap(InvestmentKind.init(rawValue:)) ?? .other,
+                investedAmount: row["invested"] as? Int ?? 0,
+                monthlyAmount: row["monthly"] as? Int,
+                ratePercent: row["rate"] as? Double,
+                startedOn: started, maturesOn: date(row["maturesOn"]),
+                currentValue: row["value"] as? Int, valuedOn: date(row["valuedOn"])
+            ))
+        }
+        for row in rows("appointments") {
+            guard let title = row["title"] as? String, let at = date(row["startAt"]) else { continue }
+            context.insert(Appointment(title: title, who: row["who"] as? String, startAt: at))
+        }
+        for row in rows("milestones") {
+            guard let title = row["title"] as? String, let on = date(row["date"]) else { continue }
+            context.insert(Milestone(title: title, note: row["note"] as? String, date: on))
+        }
+        for row in rows("events") {
+            guard let title = row["title"] as? String, let on = date(row["date"]) else { continue }
+            context.insert(CalendarEvent(title: title, note: row["note"] as? String,
+                                         date: on, annual: row["annual"] as? Bool ?? true))
+        }
+        for row in rows("albums") {
+            guard let title = row["title"] as? String, let url = row["url"] as? String else { continue }
+            context.insert(Album(title: title, note: row["note"] as? String, url: url))
+        }
+        for row in rows("doctors") {
+            guard let name = row["name"] as? String else { continue }
+            context.insert(Doctor(name: name, speciality: row["speciality"] as? String,
+                                  clinic: row["clinic"] as? String, phone: row["phone"] as? String))
+        }
+        var restoredReminders: [Reminder] = []
+        for row in rows("reminders") {
+            guard let title = row["title"] as? String,
+                  let minute = row["minuteOfDay"] as? Int else { continue }
+            let reminder = Reminder(
+                title: title, minuteOfDay: minute,
+                cadence: (row["cadence"] as? String).flatMap(Cadence.init(rawValue:)) ?? .daily,
+                weekday: row["weekday"] as? Int ?? 1,
+                enabled: row["enabled"] as? Bool ?? true
+            )
+            context.insert(reminder)
+            restoredReminders.append(reminder)
+        }
+        for row in rows("paperwork") {
+            guard let key = row["key"] as? String else { continue }
+            context.insert(PaperworkRecord(key: key, obtainedOn: date(row["obtainedOn"]),
+                                           skipped: row["skipped"] as? Bool ?? false))
+        }
+
+        // The notifications belonged to the reminders that were just deleted, so they are
+        // rebuilt rather than left pointing at rows that no longer exist.
+        let snapshot = restoredReminders
+        Task { await Notifications.reschedule(snapshot) }
+    }
+}
+
+extension Backup {
+
+    /// Export, wipe, restore, and write down what survived.
+    ///
+    /// The only honest test of an importer is whether a store put through it comes back the
+    /// same. Debug builds only, reached with `--roundtrip-check`; the result lands in the
+    /// app's Documents folder so it can be pulled off a simulator and compared.
+    @MainActor
+    static func roundTripCheck(context: ModelContext) {
+        #if DEBUG
+        func census() -> [String: Int] {
+            func n<T: PersistentModel>(_ type: T.Type) -> Int {
+                ((try? context.fetch(FetchDescriptor<T>())) ?? []).count
+            }
+            return [
+                "baby": n(Baby.self), "logEntries": n(LogEntry.self), "doses": n(VaccineDose.self),
+                "growth": n(GrowthRecord.self), "expenses": n(Expense.self),
+                "deposits": n(FundDeposit.self), "investments": n(Investment.self),
+                "appointments": n(Appointment.self), "milestones": n(Milestone.self),
+                "events": n(CalendarEvent.self), "albums": n(Album.self),
+                "doctors": n(Doctor.self), "reminders": n(Reminder.self),
+                "paperwork": n(PaperworkRecord.self),
+            ]
+        }
+
+        let before = census()
+        guard let exported = json(context: context),
+              let (_, root) = try? preview(exported) else { return }
+
+        restore(root, into: context)
+        let after = census()
+
+        // A couple of values as well as the counts: a restore that keeps the right number of
+        // rows and loses what is in them would pass a census.
+        let baby = (try? context.fetch(FetchDescriptor<Baby>()))?.first
+        let result: [String: Any] = [
+            "before": before,
+            "after": after,
+            "identical": before == after,
+            "babyName": baby?.name ?? "",
+            "babySex": baby?.sexRaw ?? "",
+            "firstExpense": ((try? context.fetch(FetchDescriptor<Expense>())) ?? [])
+                .sorted { $0.date < $1.date }.first.map { ["title": $0.title, "amount": $0.amount] } ?? [:],
+        ]
+        let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys])
+            .write(to: folder.appendingPathComponent("roundtrip.json"))
         #endif
     }
 }

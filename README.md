@@ -179,8 +179,13 @@ release/    Build output, gitignored.
 generated `drawable-nodpi` folder at compile time (see `syncIllustrations` in
 `android/app/build.gradle.kts`) rather than the tree holding a second set.
 
-`common/data/` is the one copy of the reference data — the WHO weight-for-age tables and the
-four vaccination schedules. iOS parses those files directly. Android compiles the same values
+`common/fonts/` holds the two typefaces both apps are set in, and `common/icons/` the few
+glyphs with no equivalent on both platforms. Android used to fetch its faces from the Google
+Fonts provider, which needs Play Services and a network the first time — on a phone with
+neither, an app that does everything else offline quietly fell back to the system sans.
+
+`common/data/` is the one copy of the reference data — the WHO weight-for-age tables, the four
+vaccination schedules and the paperwork chain. iOS parses those files directly. Android compiles the same values
 into Kotlin, because a device needs no JSON parser for data that never changes at runtime, and
 `SharedDataTest` fails the build if the two ever stop agreeing. A schedule that differs by a
 week between two phones is the kind of bug nobody notices until a parent compares them at a

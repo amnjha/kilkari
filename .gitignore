@@ -29,3 +29,4 @@ release/*
 
 # Synced from common/data by ios/tools/sync-common.sh; the masters live in common/.
 ios/KilkariCore/Sources/KilkariCore/Resources/
+ios/Kilkari/Info.plist

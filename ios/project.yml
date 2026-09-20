@@ -21,24 +21,39 @@ targets:
     platform: iOS
     sources:
       - path: Kilkari
+      # The faces themselves live in common/fonts so both platforms use the same files.
+      # Referenced rather than copied, so there is one set in the repo.
+      - path: ../common/fonts
+        name: Fonts
+        includes: ["*.ttf"]
     dependencies:
       - package: KilkariCore
     settings:
       base:
-        GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.kilkari
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDarkContent
         # Portrait only, like the Android app: this is used one-handed at 4am, and a rotating
         # layout is one more thing to get wrong for no one's benefit.
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        INFOPLIST_KEY_NSCameraUsageDescription: Kilkari uses the camera to take your baby's photo and to scan documents. Nothing leaves the phone.
-        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: Kilkari can use a photo you already have as your baby's picture. Nothing leaves the phone.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         SWIFT_VERSION: "5.0"
+    info:
+      path: Kilkari/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UIStatusBarStyle: UIStatusBarStyleDarkContent
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSCameraUsageDescription: Kilkari uses the camera to take your baby's photo and to scan documents. Nothing leaves the phone.
+        NSPhotoLibraryUsageDescription: Kilkari can use a photo you already have as your baby's picture. Nothing leaves the phone.
+        UIAppFonts:
+          - BricolageGrotesque-Medium.ttf
+          - BricolageGrotesque-Bold.ttf
+          - BricolageGrotesque-ExtraBold.ttf
+          - PlusJakartaSans-Regular.ttf
+          - PlusJakartaSans-Medium.ttf
+          - PlusJakartaSans-SemiBold.ttf
+          - PlusJakartaSans-Bold.ttf
+          - PlusJakartaSans-ExtraBold.ttf
     preBuildScripts:
       - name: Sync shared data
         script: "\"${PROJECT_DIR}/tools/sync-common.sh\""

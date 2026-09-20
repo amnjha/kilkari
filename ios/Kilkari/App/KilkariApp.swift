@@ -15,6 +15,12 @@ struct KilkariApp: App {
         WindowGroup {
             RootView()
                 .task {
+                    // A missing font does not fail loudly: SwiftUI draws the system face and
+                    // the app looks almost right, which is the worst kind of wrong.
+                    #if DEBUG
+                    let missing = KFont.missingFaces()
+                    assert(missing.isEmpty, "fonts not bundled: \(missing.joined(separator: ", "))")
+                    #endif
                     if SampleData.requested {
                         SampleData.seed(into: container.mainContext)
                     }
@@ -24,6 +30,9 @@ struct KilkariApp: App {
                     // point of keeping the writing out of the view.
                     if SampleData.exportOnLaunch {
                         Backup.writeForChecking(context: container.mainContext)
+                    }
+                    if SampleData.roundTripCheck {
+                        Backup.roundTripCheck(context: container.mainContext)
                     }
                 }
         }

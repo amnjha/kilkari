@@ -28,6 +28,9 @@ struct BackupScreen: View {
 
     @State private var exported: ExportFile?
     @State private var failure: String?
+    @State private var importing = false
+    @State private var pending: (Backup.Preview, [String: Any])?
+    @State private var restored = false
 
     var body: some View {
         ScrollView {
@@ -69,6 +72,12 @@ struct BackupScreen: View {
                 }
                 .buttonStyle(.plain)
 
+                SectionLabel("Put one back").padding(.top, 4)
+                Button { importing = true } label: {
+                    row("Restore from a file", "Replaces everything here with what the file holds.", "arrow.down.doc")
+                }
+                .buttonStyle(.plain)
+
                 Text("Photographs and scanned pages are not included. They are large, and they already live in the photo library and in the app's own storage.")
                     .font(KFont.sans(12)).foregroundStyle(KC.muted)
                     .padding(.horizontal, 4)
@@ -82,6 +91,55 @@ struct BackupScreen: View {
         }
         .sheet(item: $exported) { file in
             ShareSheet(items: [file.url])
+        }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
+            load(result)
+        }
+        // A restore is not undoable, so it asks once, in plain words, with the number of
+        // records that are about to replace the ones here.
+        .alert("Replace everything?", isPresented: .constant(pending != nil)) {
+            Button("Cancel", role: .cancel) { pending = nil }
+            Button("Replace", role: .destructive) {
+                if let (_, root) = pending {
+                    Backup.restore(root, into: context)
+                    restored = true
+                }
+                pending = nil
+            }
+        } message: {
+            if let (preview, _) = pending {
+                Text(restoreMessage(preview))
+            }
+        }
+        .alert("Restored", isPresented: $restored) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Everything from the file is now in the app.")
+        }
+    }
+
+    private func restoreMessage(_ preview: Backup.Preview) -> String {
+        let what = preview.counts.map { "\($0.1) \($0.0.lowercased())" }.joined(separator: ", ")
+        let whose = preview.babyName.map { " for \($0)" } ?? ""
+        return """
+        This backup was written by the \(preview.writtenBy) app and holds \(preview.total) \
+        records\(whose): \(what).
+
+        Everything currently in Kilkari will be removed first. This cannot be undone.
+        """
+    }
+
+    private func load(_ result: Result<URL, Error>) {
+        do {
+            let url = try result.get()
+            // A file from the picker arrives outside the app's sandbox; without this the read
+            // fails with a permission error that looks like a corrupt file.
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            pending = try Backup.preview(try Data(contentsOf: url))
+            failure = nil
+        } catch {
+            failure = error.localizedDescription
         }
     }
 

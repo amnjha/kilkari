@@ -16,8 +16,8 @@ standards, unit conversion, XIRR and maturity projection, and the vaccination sc
 reads the same `common/data` files the Android app is checked against, and 80 assertions run
 against WHO's published tables and the same expectations the Kotlin tests make.
 
-**Not started:** importing a backup, the multi-account side of the fund, the camera and the
-in-app crop (photos come from the library only), and the printable vaccination record.
+**Not started:** the multi-account side of the fund, the camera and the in-app crop (photos
+come from the library only), and the printable vaccination record.
 
 ## Building and running
 
@@ -66,6 +66,14 @@ xcrun simctl launch booted com.kilkari --sample-data --export-check
 python3 -m json.tool "$(xcrun simctl get_app_container booted com.kilkari data)/Documents/check.json"
 ```
 
+`--roundtrip-check` goes further: it exports the store, wipes it, restores from what it just
+wrote, and records whether everything came back. The only honest test of an importer.
+
+```bash
+xcrun simctl launch booted com.kilkari --sample-data --roundtrip-check
+python3 -m json.tool "$(xcrun simctl get_app_container booted com.kilkari data)/Documents/roundtrip.json"
+```
+
 ## Running the checks
 
 No Xcode needed — this package builds and runs with the Command Line Tools alone, which is
@@ -93,14 +101,16 @@ XCTest unchanged.
 | Screens | 27 Compose screens | 21 |
 | Reminders | WorkManager + AlarmManager | Done — `UNUserNotificationCenter`, repeating calendar triggers |
 | Photos | Camera, picker, in-app crop | `PhotosPicker` only; no camera and no crop |
-| Backup | Zip of the DB and photos | JSON and CSV export; see `common/BACKUP.md`. No import yet |
+| Backup | Zip of the DB and photos | JSON and CSV export, and restore; see `common/BACKUP.md` |
 | App icon | Adaptive, from the badge | Done — the same badge, same crop |
-| Fonts | Bricolage Grotesque, Plus Jakarta Sans | System faces at the same metrics, for now |
+| Fonts | Bricolage Grotesque, Plus Jakarta Sans | Done — the same files, from `common/fonts` |
 
-## A note on fonts
+## Fonts
 
-Android pulls Bricolage Grotesque and Plus Jakarta Sans through the Google Fonts provider. iOS
-has no equivalent, so the faces need bundling as files — ideally in `common/fonts` so both
-platforms use the same ones. Until then `KFont` falls back to the system face at the sizes,
-weights and tracking taken from `Type.kt`, so every layout here is built to the right metrics
-and swapping the real faces in is a change to two functions rather than to every screen.
+Bricolage Grotesque and Plus Jakarta Sans, bundled from `common/fonts` — the same files
+Android now ships, so the two apps are set in one typeface rather than two that look similar.
+Asked for by PostScript name, because SwiftUI cannot move along a variable font's weight axis
+and would render every weight identically.
+
+A missing font is the quiet kind of wrong: SwiftUI draws the system face and the app looks
+almost right. Debug builds assert at launch that every face the app asks for actually loaded.

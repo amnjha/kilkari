@@ -83,6 +83,16 @@ enum SampleData {
         #endif
     }
 
+    /// Exports the store, wipes it, restores it, and writes down whether it came back the
+    /// same. Reached with `--roundtrip-check`.
+    static var roundTripCheck: Bool {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("--roundtrip-check")
+        #else
+        return false
+        #endif
+    }
+
     @MainActor
     static func seed(into context: ModelContext) {
         let existing = (try? context.fetch(FetchDescriptor<Baby>())) ?? []

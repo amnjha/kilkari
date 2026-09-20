@@ -52,9 +52,49 @@ val syncIllustrations = tasks.register<SyncIllustrations>("syncIllustrations") {
     source.set(rootProject.file("../common/illustrations"))
 }
 
+/**
+ * Copies the shared typefaces into a generated font resource folder.
+ *
+ * These used to come from the Google Fonts provider, which needs Play Services and a network
+ * the first time a face is asked for — on a phone with neither, the app quietly fell back to
+ * the system sans and looked like a different product. The files now ship with it, from the
+ * same `common/fonts` the iOS app is built against.
+ *
+ * Android resource names allow only lowercase letters, digits and underscores, so
+ * `BricolageGrotesque-ExtraBold.ttf` is renamed on the way in.
+ */
+abstract class SyncFonts : DefaultTask() {
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val source: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val destination: DirectoryProperty
+
+    @TaskAction
+    fun sync() {
+        val into = destination.get().asFile.resolve("font")
+        into.deleteRecursively()
+        into.mkdirs()
+        source.get().asFile.listFiles { file -> file.extension == "ttf" }?.forEach { file ->
+            val name = file.nameWithoutExtension
+                .replace(Regex("([a-z0-9])([A-Z])"), "$1_$2")
+                .replace("-", "_")
+                .lowercase()
+            file.copyTo(into.resolve("$name.ttf"), overwrite = true)
+        }
+    }
+}
+
+val syncFonts = tasks.register<SyncFonts>("syncFonts") {
+    source.set(rootProject.file("../common/fonts"))
+}
+
 androidComponents {
     onVariants { variant ->
         variant.sources.res?.addGeneratedSourceDirectory(syncIllustrations, SyncIllustrations::destination)
+        variant.sources.res?.addGeneratedSourceDirectory(syncFonts, SyncFonts::destination)
     }
 }
 
@@ -154,7 +194,6 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
-    implementation(libs.androidx.ui.text.google.fonts)
     debugImplementation(libs.androidx.ui.tooling)
 
     implementation(libs.androidx.navigation.compose)
