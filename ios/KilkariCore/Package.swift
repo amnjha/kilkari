@@ -19,7 +19,7 @@ let package = Package(
             name: "KilkariCore",
             // Synced from common/data by ios/tools/sync-common.sh. Not committed here: the
             // master copies live in common/ and both platforms read those.
-            resources: [.copy("Resources")]
+            resources: [.process("Resources")]
         ),
         // Checks rather than XCTest: XCTest ships with Xcode, and this package is meant to
         // stay verifiable on a Mac that only has the command line tools. `swift run

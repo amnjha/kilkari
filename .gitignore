@@ -14,7 +14,9 @@ keystore.properties
 *.jks
 *.keystore
 
-# iOS
+# iOS. Kilkari.xcodeproj is generated from ios/project.yml by XcodeGen.
+ios/Kilkari.xcodeproj/
+ios/build/
 xcuserdata/
 *.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 DerivedData/
