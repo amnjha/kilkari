@@ -11,6 +11,11 @@ struct SettingsScreen: View {
     @Environment(\.modelContext) private var context
     @State private var prefs = Preferences.shared
     @State private var photoItem: PhotosPickerItem?
+    @State private var choosingSource = false
+    @State private var takingPhoto = false
+    @State private var pickingFromLibrary = false
+    /// Held between picking and framing: nothing is saved until the crop is confirmed.
+    @State private var toCrop: UIImage?
     @State private var name: String = ""
     @State private var dob: Date = .now
 
@@ -22,17 +27,12 @@ struct SettingsScreen: View {
                     VStack(spacing: 0) {
                         HStack(spacing: 14) {
                             ChildAvatar(photo: baby.photo, name: baby.name, size: 64, ring: accent.ring)
-                            VStack(alignment: .leading, spacing: 4) {
-                                PhotosPicker(selection: $photoItem, matching: .images) {
-                                    Text(baby.photo == nil ? "Add a photo" : "Change the photo")
-                                        .font(KFont.sans(14, .semibold))
-                                        .foregroundStyle(accent.deep)
-                                }
-                                if baby.photo != nil {
-                                    Button("Remove") { baby.photo = nil }
-                                        .font(KFont.sans(13))
-                                        .tint(KC.danger)
-                                }
+                            Button {
+                                choosingSource = true
+                            } label: {
+                                Text(baby.photo == nil ? "Add a photo" : "Change the photo")
+                                    .font(KFont.sans(14, .semibold))
+                                    .foregroundStyle(accent.deep)
                             }
                             Spacer()
                         }
@@ -157,12 +157,41 @@ struct SettingsScreen: View {
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
             Task {
-                // Loaded as data and kept in the store, so the picture survives the photo
+                // Loaded as data rather than referenced, so the picture survives the original
                 // being deleted from the library — a PHAsset identifier would not.
-                if let data = try? await item.loadTransferable(type: Data.self) {
-                    baby.photo = data
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    toCrop = image
                 }
+                photoItem = nil
             }
+        }
+        .sheet(isPresented: $choosingSource) {
+            PhotoSourceSheet(
+                hasPhoto: baby.photo != nil,
+                onCamera: { takingPhoto = true },
+                onLibrary: { pickingFromLibrary = true },
+                onRemove: { baby.photo = nil }
+            )
+            .presentationDetents([.height(280)])
+            .environment(\.accent, accent)
+        }
+        .fullScreenCover(isPresented: $takingPhoto) {
+            CameraPicker { image in toCrop = image }
+                .ignoresSafeArea()
+        }
+        .photosPicker(isPresented: $pickingFromLibrary, selection: $photoItem, matching: .images)
+        // Framed before it is kept: the avatar is a circle everywhere, and the parent should
+        // choose which part of the picture that circle holds.
+        .sheet(item: Binding(
+            get: { toCrop.map(CroppableImage.init) },
+            set: { if $0 == nil { toCrop = nil } }
+        )) { croppable in
+            CropView(image: croppable.image) { data in
+                baby.photo = data
+                toCrop = nil
+            }
+            .environment(\.accent, accent)
         }
     }
 
@@ -288,4 +317,12 @@ struct AddDoctorSheet: View {
             }
         }
     }
+}
+
+
+/// Wraps the picked image so a sheet can be presented by item rather than by a flag, which
+/// keeps the crop view from being built before there is anything to crop.
+private struct CroppableImage: Identifiable {
+    let image: UIImage
+    let id = UUID()
 }
