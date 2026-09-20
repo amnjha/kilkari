@@ -54,7 +54,6 @@ import com.kilkari.ui.sheets.MedicineSheet
 import com.kilkari.ui.sheets.SheetHint
 import com.kilkari.ui.sheets.SheetTitle
 import com.kilkari.ui.sheets.SleepSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.DayOfWeek
@@ -101,7 +100,7 @@ fun LogDayScreen(vm: KilkariViewModel, go: NavActions) {
         vm.showLogDay(minOf(bounded, today))
     }
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Daily log", go::back)
 

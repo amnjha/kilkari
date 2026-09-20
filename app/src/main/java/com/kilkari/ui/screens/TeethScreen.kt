@@ -39,7 +39,6 @@ import com.kilkari.ui.components.StatCell
 import com.kilkari.ui.components.StatRow
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.ToothSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -53,7 +52,7 @@ fun TeethScreen(vm: KilkariViewModel, go: NavActions) {
     /** The code of the tooth whose sheet is open. */
     var open by remember { mutableStateOf<String?>(null) }
 
-    Column(Modifier.fillMaxSize().headerWash()) {
+    Column(Modifier.fillMaxSize()) {
         DetailBar("Teeth", go::back)
 
         Column(

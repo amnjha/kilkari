@@ -44,7 +44,6 @@ import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.EventSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -61,7 +60,7 @@ fun EventsScreen(vm: KilkariViewModel, go: NavActions) {
     val today = LocalDate.now()
     val b = baby
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Birthdays & events", go::back) {
                 IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)

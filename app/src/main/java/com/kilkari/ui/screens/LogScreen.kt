@@ -57,7 +57,6 @@ import com.kilkari.ui.sheets.GrowthSheet
 import com.kilkari.ui.sheets.MedicineDoseSheet
 import com.kilkari.ui.sheets.MedicineSheet
 import com.kilkari.ui.sheets.SleepSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
@@ -90,7 +89,7 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
         if (LogKind.of(entry.kind) == LogKind.TOOTH) go.push(Routes.TEETH) else editing = entry
     }
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(
             Modifier
                 .fillMaxSize()

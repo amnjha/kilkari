@@ -1,5 +1,8 @@
 package com.kilkari.ui.theme
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -9,6 +12,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -97,6 +101,11 @@ fun AccentScope(accent: Accent, content: @Composable () -> Unit) {
  * same whether the screen is a Box, a scrolling Column, or a Column with a title bar on top.
  * The height is fixed in dp and the gradient reaches the cream inside it, so on a tall phone
  * the colour still stops where the content begins instead of stretching down the page.
+ *
+ * [height] is measured from the first line of content, and the status bar is added on top of
+ * it. The band is drawn by whatever sits behind that inset — so the clock and the battery sit
+ * on the screen's colour, and the colour runs off the top of the display rather than starting
+ * at a line underneath it.
  */
 @Composable
 fun Modifier.headerWash(
@@ -105,13 +114,25 @@ fun Modifier.headerWash(
 ): Modifier {
     // Half strength: [Accent.wash] is mixed for a tile the size of a thumb, and a band of it
     // across the whole top of the screen at full strength shouts.
-    val top = accent.wash.copy(alpha = 0.55f)
+    val tint = accent.wash.copy(alpha = 0.55f)
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val total = height + statusBar
     return this.drawBehind {
-        val band = height.toPx()
+        val band = total.toPx()
         drawRect(KC.Screen, size = Size(size.width, band))
         drawRect(
-            brush = Brush.verticalGradient(listOf(top, Color.Transparent), startY = 0f, endY = band),
+            brush = Brush.verticalGradient(listOf(tint, Color.Transparent), startY = 0f, endY = band),
             size = Size(size.width, band),
         )
     }
 }
+
+/**
+ * This colour mixed [amount] of the way out of the cream ground, as an opaque colour.
+ *
+ * Softening a tint with alpha looks right until the surface wearing it is raised: a card's
+ * shadow is drawn behind it, and a see-through fill lets that shadow bleed up through the
+ * middle, so a flat tint reads as a dirty gradient with a halo round the edge. Mixing the two
+ * colours and handing over the result keeps the card opaque and the tint flat.
+ */
+fun Color.onCream(amount: Float): Color = lerp(KC.Screen, this, amount)

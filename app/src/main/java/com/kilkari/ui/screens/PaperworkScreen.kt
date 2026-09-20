@@ -57,7 +57,6 @@ import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.sheets.PaperworkSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -106,7 +105,7 @@ fun PaperworkScreen(vm: KilkariViewModel, go: NavActions) {
     val obtained = steps.count { it.status == PaperworkStatus.OBTAINED }
     val docsReminder = reminders.firstOrNull { it.key == "docs" }
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Paperwork", go::back)
 

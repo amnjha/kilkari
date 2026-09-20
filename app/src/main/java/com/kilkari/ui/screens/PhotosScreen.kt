@@ -47,7 +47,6 @@ import com.kilkari.ui.components.deleteOwnFile
 import com.kilkari.ui.components.rememberImageSource
 import com.kilkari.ui.sheets.PhotoCheckInSheet
 import com.kilkari.ui.sheets.AlbumSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -75,7 +74,7 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
         }
     }
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Photo albums", go::back) {
                 IconButton44("add_link", KC.Coral, { sheetOpen = true }, iconSize = 26)

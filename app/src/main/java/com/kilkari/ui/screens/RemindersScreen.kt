@@ -40,7 +40,6 @@ import com.kilkari.ui.components.KSwitch
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.ReminderSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -71,7 +70,7 @@ fun RemindersScreen(vm: KilkariViewModel, go: NavActions) {
     val builtIn = reminders.filter { it.builtIn }
     val custom = reminders.filterNot { it.builtIn }
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Reminders", go::back) {
                 IconButton44("add", KC.Coral, { ensurePermission(); editing = null to true }, iconSize = 26)

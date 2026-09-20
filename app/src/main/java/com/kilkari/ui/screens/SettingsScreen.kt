@@ -28,7 +28,6 @@ import com.kilkari.ui.components.OverlineLabel
 import com.kilkari.ui.components.RadioRow
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -40,7 +39,7 @@ fun SettingsScreen(vm: KilkariViewModel, go: NavActions) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val baby by vm.baby.collectAsStateWithLifecycle()
 
-    Column(Modifier.fillMaxSize().headerWash()) {
+    Column(Modifier.fillMaxSize()) {
         DetailBar("Settings", go::back)
 
         Column(

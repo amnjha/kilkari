@@ -32,7 +32,6 @@ import com.kilkari.ui.components.Share
 import com.kilkari.ui.components.SplitBar
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
@@ -53,7 +52,7 @@ fun InsightsScreen(vm: KilkariViewModel, go: NavActions) {
     val days by vm.insightDays.collectAsStateWithLifecycle()
     val metric by vm.metricUnits.collectAsStateWithLifecycle()
 
-    Column(Modifier.fillMaxSize().headerWash()) {
+    Column(Modifier.fillMaxSize()) {
         DetailBar("Insights", go::back)
 
         Column(

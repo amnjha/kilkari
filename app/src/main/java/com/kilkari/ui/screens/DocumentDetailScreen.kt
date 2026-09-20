@@ -35,7 +35,6 @@ import com.kilkari.ui.components.KCard
 import com.kilkari.ui.components.PrimaryButton
 import com.kilkari.ui.components.SecondaryButton
 import com.kilkari.ui.nav.NavActions
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.io.File
@@ -50,7 +49,7 @@ fun DocumentDetailScreen(vm: KilkariViewModel, go: NavActions) {
     val pages = d.pageUris.split(",").filter { it.isNotBlank() }
     var editing by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().headerWash()) {
+    Column(Modifier.fillMaxSize()) {
         DetailBar(d.title, go::back)
 
         Column(

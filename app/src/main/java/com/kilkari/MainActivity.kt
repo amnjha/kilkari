@@ -1,13 +1,14 @@
 package com.kilkari
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.kilkari.ui.nav.KilkariNavHost
@@ -24,18 +25,21 @@ class MainActivity : ComponentActivity() {
         var ready = false
         splash.setKeepOnScreenCondition { !ready }
 
-        enableEdgeToEdge()
+        // Both bars fully transparent, with dark icons: the screen's colour runs all the way
+        // to the top of the display and the status bar sits on it, rather than the system
+        // laying its own scrim over the top and cutting the colour off in a line.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+        )
         super.onCreate(savedInstanceState)
 
         val repository = (application as KilkariApp).repository
         setContent {
             KilkariTheme {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(KC.Screen)
-                        .statusBarsPadding(),
-                ) {
+                // Edge to edge, with no inset here: the navigation host paints the screen's
+                // colour behind the status bar and insets its own content underneath it.
+                Box(Modifier.fillMaxSize().background(KC.Screen)) {
                     KilkariNavHost(repository, onReady = { ready = true })
                 }
             }

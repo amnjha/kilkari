@@ -63,7 +63,6 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.sheets.DocumentSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.io.File
@@ -124,7 +123,7 @@ fun DocumentsScreen(vm: KilkariViewModel, go: NavActions) {
         camera.launch(uri)
     }
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Documents", go::back)
 

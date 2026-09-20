@@ -41,7 +41,6 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.sheets.ScheduleSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -55,7 +54,7 @@ fun VaccinesScreen(vm: KilkariViewModel, go: NavActions) {
 
     val doneCount = groups.sumOf { it.doneCount }
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Vaccinations", go::back) {
                 Row(

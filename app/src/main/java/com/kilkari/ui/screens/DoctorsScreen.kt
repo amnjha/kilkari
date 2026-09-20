@@ -48,7 +48,6 @@ import com.kilkari.ui.components.SheetField
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.SheetHint
 import com.kilkari.ui.sheets.SheetTitle
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -64,7 +63,7 @@ fun DoctorsScreen(vm: KilkariViewModel, go: NavActions) {
     /** Non-null while the editor is open; the inner value is null for a new doctor. */
     var editing by remember { mutableStateOf<Pair<DoctorEntity?, Boolean>?>(null) }
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Doctors", go::back) {
                 IconButton44("add", KC.Coral, { editing = null to true }, iconSize = 26)

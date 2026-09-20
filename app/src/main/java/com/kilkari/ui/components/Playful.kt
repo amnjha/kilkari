@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import android.provider.Settings
 import com.kilkari.ui.theme.KC
+import com.kilkari.ui.theme.LocalAccent
 import com.kilkari.ui.theme.KGradients
 import com.kilkari.ui.theme.clay
 
@@ -39,6 +40,10 @@ import com.kilkari.ui.theme.clay
  * on every phone the app supports. The drift is slow enough to read as light moving rather
  * than as something demanding attention, and it stops entirely when the system asks for
  * reduced motion.
+ *
+ * The blooms take the screen's own colour, so an onboarding step asking about money glows
+ * gold and the one asking about the baby glows coral, rather than every step sitting in the
+ * same lilac haze.
  */
 @Composable
 fun BlobBackdrop(
@@ -47,6 +52,7 @@ fun BlobBackdrop(
     animated: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val accent = LocalAccent.current
     val drift = if (animated && !reducedMotion()) {
         val transition = rememberInfiniteTransition(label = "blobs")
         transition.animateFloat(
@@ -66,9 +72,9 @@ fun BlobBackdrop(
         Canvas(Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
-            bloom(KC.LilacLight.copy(alpha = 0.30f), Offset(w * 0.18f, h * (0.12f + drift * 0.04f)), w * 0.55f)
-            bloom(KC.CoralLight.copy(alpha = 0.22f), Offset(w * 0.92f, h * (0.30f - drift * 0.05f)), w * 0.50f)
-            bloom(KC.GoldLight.copy(alpha = 0.20f), Offset(w * 0.20f, h * (0.82f + drift * 0.03f)), w * 0.60f)
+            bloom(accent.light.copy(alpha = 0.30f), Offset(w * 0.18f, h * (0.12f + drift * 0.04f)), w * 0.55f)
+            bloom(accent.wash.copy(alpha = 0.55f), Offset(w * 0.92f, h * (0.30f - drift * 0.05f)), w * 0.50f)
+            bloom(accent.ring.copy(alpha = 0.45f), Offset(w * 0.20f, h * (0.82f + drift * 0.03f)), w * 0.60f)
         }
         content()
     }

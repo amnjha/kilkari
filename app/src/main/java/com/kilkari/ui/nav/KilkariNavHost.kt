@@ -3,6 +3,7 @@ package com.kilkari.ui.nav
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,6 +22,7 @@ import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.KBottomNav
 import com.kilkari.ui.components.KToast
 import com.kilkari.ui.theme.AccentScope
+import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.screens.AppointmentsScreen
 import com.kilkari.ui.screens.BackupScreen
 import com.kilkari.ui.screens.CatchUpScreen
@@ -88,8 +90,15 @@ fun KilkariNavHost(repository: KilkariRepository, onReady: () -> Unit = {}) {
     // buttons, chips, switches, tick rings, the FAB, the header wash — reads it from here, so
     // a screen changes hue as a whole rather than one widget at a time.
     AccentScope(Routes.accentFor(route)) {
-        Box(Modifier.fillMaxSize()) {
-            Column(Modifier.fillMaxSize()) {
+        // The wash is painted out here, outside the status-bar inset, so the colour reaches
+        // the top of the display and the bar sits on it. Onboarding paints its own full-bleed
+        // ground, so it insets itself rather than being inset from here.
+        Box(Modifier.fillMaxSize().headerWash()) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .let { if (route == Routes.ONBOARDING) it else it.statusBarsPadding() }
+            ) {
                 NavHost(
                     navController = nav,
                     startDestination = if (baby == null) Routes.ONBOARDING else Routes.TODAY,

@@ -457,11 +457,14 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         currency: Currency,
         givenGroups: Map<String, LocalDate>,
         milestones: Map<String, LocalDate>,
+        /** Optional, and framed during setup — the row has to exist before it can be set. */
+        photoUri: String? = null,
     ) = viewModelScope.launch {
         repo.onboard(
             name, dob, sex, birthTime, weightKg, lengthCm, headCm, place,
             scheduleId, currency, givenGroups, milestones,
         )
+        if (photoUri != null) repo.setChildPhoto(photoUri, LocalDate.now())
     }
 
 

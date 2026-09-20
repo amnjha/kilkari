@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.sp
 import com.kilkari.R
 import com.kilkari.ui.components.BlobBackdrop
 import com.kilkari.ui.theme.Display
+import com.kilkari.ui.theme.AccentScope
+import com.kilkari.ui.theme.KAccents
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -34,6 +36,9 @@ import com.kilkari.ui.theme.Sans
  */
 @Composable
 fun SplashScreen() {
+    // Named rather than inherited: the splash is drawn before there is a route to take a
+    // colour from, and it hands over to the welcome, which is lilac.
+    AccentScope(KAccents.Quiet) {
     BlobBackdrop(Modifier.fillMaxSize()) {
         Column(
             Modifier.fillMaxSize().padding(horizontal = 28.dp),
@@ -69,5 +74,6 @@ fun SplashScreen() {
                 textAlign = TextAlign.Center,
             )
         }
+    }
     }
 }

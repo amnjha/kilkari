@@ -1,5 +1,6 @@
 package com.kilkari.ui.screens
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -22,9 +23,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -43,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -52,17 +56,24 @@ import com.kilkari.R
 import com.kilkari.data.seed.MilestoneDef
 import com.kilkari.data.seed.Milestones
 import com.kilkari.data.seed.VaccineSchedules
+import com.kilkari.data.repo.PHOTO_DIR
 import com.kilkari.domain.Currency
 import com.kilkari.domain.Fmt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.Spot
+import com.kilkari.ui.components.ChildAvatar
+import com.kilkari.ui.components.ImageCropDialog
+import com.kilkari.ui.components.KSheet
+import com.kilkari.ui.components.deleteOwnFile
+import com.kilkari.ui.components.rememberImageSource
 import com.kilkari.ui.components.Illustration
 import com.kilkari.ui.components.CheckRing
 import com.kilkari.ui.components.Hint
 import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.BlobPortrait
 import com.kilkari.ui.components.BlobBackdrop
+import com.kilkari.ui.sheets.ChildPhotoSheet
 import com.kilkari.ui.theme.KAccents
 import com.kilkari.ui.theme.AccentScope
 import com.kilkari.ui.theme.Accent
@@ -88,6 +99,7 @@ import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.components.ValueField
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
+import com.kilkari.ui.theme.LocalAccent
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
 import java.time.LocalDate
@@ -99,6 +111,9 @@ private class OnboardingState(metric: Boolean) {
     var dob by mutableStateOf<LocalDate?>(null)
     var sex by mutableStateOf<Sex?>(null)
     var place by mutableStateOf("")
+
+    /** Optional. Already framed and sitting in the app's own photos folder. */
+    var photoUri by mutableStateOf<String?>(null)
 
     /** Typed in whichever units the phone is set to; read back in kg and cm. */
     val measurements = MeasurementState(null, null, null, metric)
@@ -147,6 +162,13 @@ fun OnboardingScreen(vm: KilkariViewModel) {
     }
     val current = steps[step.coerceIn(0, steps.lastIndex)]
 
+    // Hoisted out of the step: the sheet and the cropper have to outlive the animation that
+    // swaps one step for the next, and the camera launcher has to be registered before it.
+    val context = LocalContext.current
+    var photoSheet by remember { mutableStateOf(false) }
+    var cropping by remember { mutableStateOf<Uri?>(null) }
+    val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri -> cropping = uri }
+
     // The welcome sits on the warm gradient the splash hands over; the form steps after it go
     // back to the flat cream, where fields are easier to read.
     AccentScope(current.accent) {
@@ -155,11 +177,11 @@ fun OnboardingScreen(vm: KilkariViewModel) {
         brush = if (current == Step.WELCOME) KGradients.welcome else SolidColor(KC.Screen),
         animated = current == Step.WELCOME,
     ) {
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
         if (current != Step.WELCOME) {
             StepHeader(
                 index = step,
-                total = steps.size,
+                steps = steps,
                 onBack = { if (step > 0) step-- },
             )
         }
@@ -188,7 +210,7 @@ fun OnboardingScreen(vm: KilkariViewModel) {
                 }
                 when (target) {
                     Step.WELCOME -> WelcomeStep()
-                    Step.BABY -> BabyStep(state)
+                    Step.BABY -> BabyStep(state) { photoSheet = true }
                     Step.MEASUREMENTS -> MeasurementsStep(state)
                     Step.SCHEDULE -> ScheduleStep(state)
                     Step.CURRENCY -> CurrencyStep(state)
@@ -233,6 +255,7 @@ fun OnboardingScreen(vm: KilkariViewModel) {
                         currency = state.currency,
                         givenGroups = state.givenGroups.toMap(),
                         milestones = state.reachedMilestones.toMap(),
+                        photoUri = state.photoUri,
                     )
                 } else {
                     step++
@@ -252,6 +275,41 @@ fun OnboardingScreen(vm: KilkariViewModel) {
                 )
             }
         }
+
+        cropping?.let { source ->
+            ImageCropDialog(
+                source = source,
+                onCancel = {
+                    deleteOwnFile(context, source, PHOTO_DIR)
+                    cropping = null
+                },
+                onCropped = { framed ->
+                    // Replacing one: the picture being dropped is this app's own file, so it
+                    // goes rather than accumulating in the photos folder.
+                    state.photoUri?.let { deleteOwnFile(context, Uri.parse(it), PHOTO_DIR) }
+                    state.photoUri = framed.toString()
+                    deleteOwnFile(context, source, PHOTO_DIR)
+                    cropping = null
+                },
+            )
+        }
+
+        KSheet(photoSheet, onDismiss = { photoSheet = false }) {
+            ChildPhotoSheet(
+                // The monogram behind an empty photo takes the first letter of this, so it
+                // has to be the baby's name or something that reads as one.
+                childName = state.name.trim().ifBlank { "Baby" },
+                photoUri = state.photoUri,
+                onCamera = photo::camera,
+                onGallery = photo::gallery,
+                onRemove = {
+                    state.photoUri?.let { deleteOwnFile(context, Uri.parse(it), PHOTO_DIR) }
+                    state.photoUri = null
+                    photoSheet = false
+                },
+                onDone = { photoSheet = false },
+            )
+        }
     }
     }
     }
@@ -265,7 +323,8 @@ fun OnboardingScreen(vm: KilkariViewModel) {
  */
 private enum class Step(val accent: Accent, val art: Spot?) {
     WELCOME(KAccents.Quiet, null),
-    BABY(KAccents.Brand, Spot.ONBOARD_BABY),
+    // No generic art: the step draws either the illustration or the photo, whichever it has.
+    BABY(KAccents.Brand, null),
     MEASUREMENTS(KAccents.Growth, Spot.ONBOARD_MEASUREMENTS),
     SCHEDULE(KAccents.Health, Spot.ONBOARD_SCHEDULE),
     CURRENCY(KAccents.Money, Spot.ONBOARD_MONEY),
@@ -275,7 +334,8 @@ private enum class Step(val accent: Accent, val art: Spot?) {
 }
 
 @Composable
-private fun StepHeader(index: Int, total: Int, onBack: () -> Unit) {
+private fun StepHeader(index: Int, steps: List<Step>, onBack: () -> Unit) {
+    val total = steps.size
     Column(
         Modifier
             .fillMaxWidth()
@@ -303,13 +363,17 @@ private fun StepHeader(index: Int, total: Int, onBack: () -> Unit) {
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            // Each segment is filled in the colour of the step it stands for, so the bar
+            // ends up a record of where setting up took you rather than five coral dashes.
             repeat(total - 1) { i ->
                 Box(
                     Modifier
                         .weight(1f)
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(if (i < index) KC.Coral else KC.BorderStrong),
+                        .background(
+                            if (i < index) steps[i + 1].accent.main else KC.BorderStrong
+                        ),
                 )
             }
         }
@@ -411,7 +475,54 @@ private fun WelcomePill(icon: String, label: String) {
 }
 
 @Composable
-private fun ColumnScope.BabyStep(state: OnboardingState) {
+private fun ColumnScope.BabyStep(state: OnboardingState, onPickPhoto: () -> Unit) {
+    val accent = LocalAccent.current
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(contentAlignment = Alignment.BottomEnd) {
+            // Once there is a picture it takes the illustration's place: the step asks who
+            // this is, and the best answer to that is their face.
+            if (state.photoUri != null) {
+                ChildAvatar(
+                    state.photoUri,
+                    state.name.trim().ifBlank { "?" },
+                    Modifier.size(148.dp),
+                    ring = accent.ring,
+                    onClick = onPickPhoto,
+                )
+            } else {
+                Illustration(
+                    Spot.ONBOARD_BABY, 148.dp,
+                    Modifier.clip(CircleShape).clickable(onClick = onPickPhoto),
+                )
+            }
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(KC.Surface)
+                    .padding(3.dp)
+                    .clip(CircleShape)
+                    .background(accent.main)
+                    .clickable(onClick = onPickPhoto),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    KIcons["photo_camera"], "Add a photo",
+                    tint = Color.White, modifier = Modifier.size(21.dp),
+                )
+            }
+        }
+    }
+    Text(
+        if (state.photoUri == null) "Add a photo — optional" else "Change the photo",
+        modifier = Modifier
+            .align(Alignment.CenterHorizontally)
+            .clip(RoundedCornerShape(999.dp))
+            .clickable(onClick = onPickPhoto)
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
+        color = accent.deep,
+    )
     StepTitle("Who are we tracking?")
     Hint("Just a name and a birthday to begin with.")
     KCard {

@@ -34,7 +34,6 @@ import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KRow
 import com.kilkari.ui.components.KSwitch
 import com.kilkari.ui.nav.NavActions
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import kotlinx.coroutines.launch
@@ -100,7 +99,7 @@ fun BackupScreen(vm: KilkariViewModel, go: NavActions) {
         }
     }
 
-    Column(Modifier.fillMaxSize().headerWash()) {
+    Column(Modifier.fillMaxSize()) {
         DetailBar("Backup & export", go::back)
 
         Column(

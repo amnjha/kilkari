@@ -44,7 +44,6 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.AppointmentSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -63,7 +62,7 @@ fun AppointmentsScreen(vm: KilkariViewModel, go: NavActions) {
     val upcoming = appointments.filter { !it.startAt.isBefore(now) }
     val past = appointments.filter { it.startAt.isBefore(now) }.reversed()
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Appointments", go::back) {
                 IconButton44("add", KC.Coral, { sheetOpen = true }, iconSize = 26)

@@ -51,7 +51,6 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.MedicationSheet
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
@@ -74,7 +73,7 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
     val today = LocalDate.now()
     val week = remember(today) { (6 downTo 0).map { today.minusDays(it.toLong()) } }
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             DetailBar("Medications", go::back) {
                 IconButton44("add", KC.Coral, { editing = null; sheetOpen = true }, iconSize = 26)

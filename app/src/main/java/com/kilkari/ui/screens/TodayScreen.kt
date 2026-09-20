@@ -71,6 +71,7 @@ import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
+import com.kilkari.ui.theme.onCream
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
 import java.time.LocalDate
@@ -736,11 +737,12 @@ private fun DoneHeader(count: Int, expanded: Boolean, onToggle: () -> Unit) {
 private fun DueTaskRow(task: DueTask, vm: KilkariViewModel, go: NavActions) {
     val skin = taskSkin(task)
     // Half-strength: the tile washes are mixed for a card the size of a thumb, and six rows
-    // of one at full strength is a paint chart. Done rows drop back to white — the colour is
-    // there to say what a thing is while it still wants doing.
+    // of one at full strength is a paint chart. Mixed rather than faded, so the card stays
+    // opaque — see [onCream]. Done rows drop back to white: the colour is there to say what a
+    // thing is while it still wants doing.
     KCard(
         corner = 16,
-        background = if (task.done) KC.Surface else skin.second.copy(alpha = 0.5f),
+        background = if (task.done) KC.Surface else skin.second.onCream(0.5f),
         border = null,
     ) {
         Row(
@@ -767,7 +769,7 @@ private fun DueTaskRow(task: DueTask, vm: KilkariViewModel, go: NavActions) {
                 // plain ring rather than repeating an icon the row's text already says.
                 CheckRing(task.done, glyph = task.icon.takeIf { task.kind == DueTaskKind.REMINDER })
             } else {
-                IconBadge(task.icon, skin.first, Color.White.copy(alpha = 0.8f))
+                IconBadge(task.icon, skin.first, KC.Surface)
             }
             Column(Modifier.weight(1f)) {
                 Text(

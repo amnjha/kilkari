@@ -46,7 +46,6 @@ import com.kilkari.ui.components.Monogram
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.BabySheet
 import com.kilkari.ui.nav.Routes
-import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
@@ -69,7 +68,7 @@ fun MoreScreen(vm: KilkariViewModel, go: NavActions) {
     val birthdayDays = Fmt.daysUntil(Fmt.nextBirthday(b.dob))
     val remindersOn = reminders.count { it.enabled }
 
-    Box(Modifier.fillMaxSize().headerWash()) {
+    Box(Modifier.fillMaxSize()) {
     Column(
         Modifier
             .fillMaxSize()
