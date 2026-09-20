@@ -41,6 +41,7 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.sheets.ScheduleSheet
+import com.kilkari.ui.theme.KDepth
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -82,7 +83,7 @@ fun VaccinesScreen(vm: KilkariViewModel, go: NavActions) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
-                    .padding(top = 10.dp, bottom = 24.dp),
+                    .padding(top = 10.dp, bottom = KDepth.navClearance),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(

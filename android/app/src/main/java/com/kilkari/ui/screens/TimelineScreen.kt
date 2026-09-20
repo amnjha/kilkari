@@ -43,6 +43,7 @@ import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.MilestoneSheet
+import com.kilkari.ui.theme.KDepth
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -68,7 +69,7 @@ fun TimelineScreen(vm: KilkariViewModel, go: NavActions) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
-                    .padding(top = 10.dp, bottom = 24.dp),
+                    .padding(top = 10.dp, bottom = KDepth.navClearance),
             ) {
                 if (timeline.isEmpty()) {
                     EmptyState(

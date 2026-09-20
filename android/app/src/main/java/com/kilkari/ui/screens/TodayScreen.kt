@@ -68,6 +68,7 @@ import com.kilkari.ui.components.Monogram
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
+import com.kilkari.ui.theme.KDepth
 import com.kilkari.ui.theme.headerWash
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
@@ -107,7 +108,7 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
-                .padding(top = 12.dp, bottom = 24.dp),
+                .padding(top = 12.dp, bottom = KDepth.navClearance),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val editDetails = { editing = true }

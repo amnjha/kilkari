@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -136,7 +137,14 @@ fun KilkariNavHost(repository: KilkariRepository, onReady: () -> Unit = {}) {
                     composable(Routes.SETTINGS) { SettingsScreen(vm, go) }
                 }
 
-                if (Routes.showsNav(route)) {
+            }
+
+            // Over the content, not beside it. A bar that takes layout space is a shelf the
+            // page sits on; one that floats lets the list run under it, which is what makes
+            // the app feel like the soft, raised things it is built from. Screens leave
+            // KDepth.navClearance at the bottom so nothing ends up stranded underneath.
+            if (Routes.showsNav(route)) {
+                Box(Modifier.align(Alignment.BottomCenter)) {
                     KBottomNav(
                         tabs = Routes.tabs,
                         active = Routes.activeTab(route),

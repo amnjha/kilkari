@@ -51,6 +51,7 @@ import com.kilkari.ui.components.KSheet
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.sheets.MedicationSheet
+import com.kilkari.ui.theme.KDepth
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
@@ -84,7 +85,7 @@ fun MedsScreen(vm: KilkariViewModel, go: NavActions) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
-                    .padding(top = 10.dp, bottom = 24.dp),
+                    .padding(top = 10.dp, bottom = KDepth.navClearance),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // Only shown when the system is actually withholding exact alarms, so a phone

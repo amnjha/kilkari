@@ -241,8 +241,9 @@ fun BoxScope.KFab(icon: String, label: String? = null, onClick: () -> Unit) {
     Row(
         Modifier
             .align(Alignment.BottomEnd)
-            // Clear of the floating bar, which now stands off the bottom edge itself.
-            .padding(end = 16.dp, bottom = 22.dp)
+            // Clear of the floating bar, which the content now runs underneath.
+            .navigationBarsPadding()
+            .padding(end = 16.dp, bottom = 88.dp)
             .height(58.dp)
             .springPress(press)
             .clay(corner = 22, elevation = 16.dp, tint = accent.main)

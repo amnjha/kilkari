@@ -37,6 +37,16 @@ object KDepth {
     /** How far each surface lifts off the cream. */
     val restingElevation = 10.dp
     val heroElevation = 18.dp
+
+    /**
+     * How far a scrolling screen has to clear the bottom of the window.
+     *
+     * The navigation bar floats over the content rather than sitting in a strip of its own,
+     * so the last card would otherwise end up underneath it. The bar is about 86dp with its
+     * margins, and this leaves enough that the final row is comfortably clear rather than
+     * touching. Screens use this instead of each guessing a number.
+     */
+    val navClearance = 104.dp
 }
 
 /**

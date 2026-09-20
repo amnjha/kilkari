@@ -69,6 +69,7 @@ import com.kilkari.ui.sheets.FundSources
 import com.kilkari.ui.sheets.FundTxnSheet
 import com.kilkari.ui.sheets.InvestmentDetailSheet
 import com.kilkari.ui.sheets.InvestmentSheet
+import com.kilkari.ui.theme.KDepth
 import com.kilkari.ui.theme.Display
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
@@ -158,7 +159,7 @@ fun MoneyScreen(vm: KilkariViewModel, go: NavActions) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
-                    .padding(bottom = 96.dp),
+                    .padding(bottom = KDepth.navClearance),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 when (tab) {

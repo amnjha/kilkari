@@ -47,6 +47,7 @@ import com.kilkari.ui.components.deleteOwnFile
 import com.kilkari.ui.components.rememberImageSource
 import com.kilkari.ui.sheets.PhotoCheckInSheet
 import com.kilkari.ui.sheets.AlbumSheet
+import com.kilkari.ui.theme.KDepth
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -85,7 +86,7 @@ fun PhotosScreen(vm: KilkariViewModel, go: NavActions) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
-                    .padding(top = 10.dp, bottom = 24.dp),
+                    .padding(top = 10.dp, bottom = KDepth.navClearance),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(

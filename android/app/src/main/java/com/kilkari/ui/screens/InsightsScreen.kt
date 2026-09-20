@@ -32,6 +32,7 @@ import com.kilkari.ui.components.Share
 import com.kilkari.ui.components.SplitBar
 import com.kilkari.ui.nav.NavActions
 import com.kilkari.ui.nav.Routes
+import com.kilkari.ui.theme.KDepth
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
@@ -60,7 +61,7 @@ fun InsightsScreen(vm: KilkariViewModel, go: NavActions) {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
-                .padding(top = 8.dp, bottom = 28.dp),
+                .padding(top = 8.dp, bottom = KDepth.navClearance),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             // One control above everything it scopes, so every card below reads the same span.

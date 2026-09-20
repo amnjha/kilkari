@@ -54,6 +54,7 @@ import com.kilkari.ui.sheets.MedicineSheet
 import com.kilkari.ui.sheets.SheetHint
 import com.kilkari.ui.sheets.SheetTitle
 import com.kilkari.ui.sheets.SleepSheet
+import com.kilkari.ui.theme.KDepth
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.DayOfWeek
@@ -110,7 +111,7 @@ fun LogDayScreen(vm: KilkariViewModel, go: NavActions) {
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
                     // Clear of the add button, so the last entry can still be reached.
-                    .padding(top = 6.dp, bottom = 96.dp),
+                    .padding(top = 6.dp, bottom = KDepth.navClearance),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 WeekStrip(

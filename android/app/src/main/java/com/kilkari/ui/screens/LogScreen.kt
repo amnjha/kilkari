@@ -57,6 +57,7 @@ import com.kilkari.ui.sheets.GrowthSheet
 import com.kilkari.ui.sheets.MedicineDoseSheet
 import com.kilkari.ui.sheets.MedicineSheet
 import com.kilkari.ui.sheets.SleepSheet
+import com.kilkari.ui.theme.KDepth
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import com.kilkari.ui.theme.ScreenTitle
@@ -95,7 +96,7 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
-                .padding(top = 18.dp, bottom = 24.dp),
+                .padding(top = 18.dp, bottom = KDepth.navClearance),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
