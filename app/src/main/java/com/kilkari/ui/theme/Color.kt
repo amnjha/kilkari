@@ -89,6 +89,11 @@ object KC {
     /** The unfilled part of a meter: a light step of the fill's own ramp, not a grey track. */
     val ChartSeaTrack = Color(0xFFD9EFF0)
 
+    // Two steps of the one hue for the growth chart's percentile bands: the inner band has to
+    // read as clearly darker than the outer, while both stay behind the lines drawn over them.
+    val ChartBandOuter = Color(0xFFEAF4F5)
+    val ChartBandInner = Color(0xFFC4E1E4)
+
     /** Gridlines and axis rules: hairline, solid, one step off the card. */
     val ChartGrid = Color(0xFFEFE4D8)
     val DangerLight = Color(0xFFB04234)

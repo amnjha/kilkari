@@ -24,6 +24,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kilkari.domain.Fmt
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import com.kilkari.domain.GrowthStandards
 import com.kilkari.domain.Sex
 import com.kilkari.domain.Units
@@ -68,11 +71,24 @@ fun WeightChart(
     fun shown(kg: Double) = if (metric) kg else Units.kgToLb(kg)
 
     val plot = points.map { WeightPoint(it.ageMonths, shown(it.kg)) }
-    val reference = (0..xMax.roundToInt()).mapNotNull { m ->
-        GrowthStandards.medianWeightKg(m.toDouble(), sex)?.let { WeightPoint(m.toDouble(), shown(it)) }
+    val months = (0..xMax.roundToInt()).map { it.toDouble() }
+    val reference = months.mapNotNull { m ->
+        GrowthStandards.medianWeightKg(m, sex)?.let { WeightPoint(m, shown(it)) }
     }
 
-    val all = plot.map { it.kg } + reference.map { it.kg }
+    /** One percentile drawn across the visible ages. */
+    fun band(percentile: Int) = months.mapNotNull { m ->
+        GrowthStandards.weightAtPercentile(m, sex, percentile)?.let { WeightPoint(m, shown(it)) }
+    }
+
+    val p3 = band(3)
+    val p15 = band(15)
+    val p85 = band(85)
+    val p97 = band(97)
+
+    // The whole envelope is in the scale: a chart that framed only this child's readings would
+    // make an ordinary line look like it was climbing away from the population.
+    val all = plot.map { it.kg } + p3.map { it.kg } + p97.map { it.kg }
     val pad = shown(0.4)
     val (yLow, yHigh, yStep) = niceScale(
         (all.minOrNull() ?: 0.0) - pad,
@@ -92,6 +108,11 @@ fun WeightChart(
 
         drawGrid(measurer, labelStyle, yLow, yHigh, yStep, plotLeft, plotTop, plotBottom, size.width, ::y)
         drawMonthLabels(measurer, labelStyle, xMax, plotBottom, ::x)
+
+        // Widest band first, then the inner one, then the median, then the child: each layer
+        // sits on top of the one that is more general than it.
+        fillBetween(p3, p97, KC.ChartBandOuter, ::x, ::y)
+        fillBetween(p15, p85, KC.ChartBandInner, ::x, ::y)
 
         // The reference first, so a child's own line is never hidden behind it.
         if (reference.size >= 2) {
@@ -117,9 +138,28 @@ fun WeightChart(
 /** Which line is which. Without it the dotted curve is just an unexplained second line. */
 @Composable
 fun WeightChartLegend(childName: String) {
-    Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         LegendKey(childName, KC.Coral, dashed = false)
         LegendKey("WHO median", KC.Sea, dashed = true)
+        LegendSwatch("15th–85th", KC.ChartBandInner)
+        LegendSwatch("3rd–97th", KC.ChartBandOuter)
+    }
+}
+
+/** A filled key for the bands, which are areas rather than lines. */
+@Composable
+private fun LegendSwatch(label: String, color: Color) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(width = 14.dp, height = 10.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(color)
+        )
+        androidx.compose.material3.Text(label, fontFamily = Sans, fontSize = 11.sp, color = KC.Muted)
     }
 }
 
@@ -247,4 +287,26 @@ private fun DrawScope.drawMonthLabels(
             ),
         )
     }
+}
+
+/**
+ * The area between two percentile curves. Drawn as one closed shape rather than a stack of
+ * bars so the edge follows the curve rather than stepping down it.
+ */
+private fun DrawScope.fillBetween(
+    lower: List<WeightPoint>,
+    upper: List<WeightPoint>,
+    color: Color,
+    x: (Double) -> Float,
+    y: (Double) -> Float,
+) {
+    if (lower.size < 2 || upper.size < 2) return
+    val path = Path()
+    upper.forEachIndexed { i, p ->
+        val at = Offset(x(p.ageMonths), y(p.kg))
+        if (i == 0) path.moveTo(at.x, at.y) else path.lineTo(at.x, at.y)
+    }
+    lower.asReversed().forEach { p -> path.lineTo(x(p.ageMonths), y(p.kg)) }
+    path.close()
+    drawPath(path, color)
 }

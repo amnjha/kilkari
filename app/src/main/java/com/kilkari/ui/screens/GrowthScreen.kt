@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.db.GrowthEntity
 import com.kilkari.domain.Fmt
+import com.kilkari.domain.GrowthStandards
 import com.kilkari.domain.Sex
 import com.kilkari.domain.Units
 import com.kilkari.ui.components.MeasurementHints
@@ -129,20 +130,40 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                             val sex = Sex.of(baby?.sex)
                             WeightChart(series, sex, metric)
                             WeightChartLegend(baby?.name ?: "Weight")
+
+                            // Where the latest reading sits. Only with a sex on file: a
+                            // percentile averaged across boys and girls is a number about
+                            // nobody, and it reads as precise.
+                            val standing = sex?.let { s ->
+                                val last = series.lastOrNull()
+                                last?.let { GrowthStandards.percentileOf(it.kg, it.ageMonths, s) }
+                            }
+                            if (standing != null) {
+                                Text(
+                                    "The last weigh-in sits on the ${ordinal(standing)} percentile: " +
+                                        "of 100 ${if (sex == Sex.GIRL) "girls" else "boys"} that age, " +
+                                        "about $standing weigh less.",
+                                    fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+                                    fontSize = 12.sp, lineHeight = 17.sp, color = KC.MutedStrong,
+                                )
+                            }
+
                             Text(
                                 when (sex) {
                                     null ->
-                                        "The dotted line is the WHO median for a child this age, " +
+                                        "The bands are where the middle of the population sits, " +
                                             "averaged across boys and girls — add the child's sex " +
-                                            "in their details for the exact curve. Healthy " +
-                                            "children sit above and below it; only a clinician " +
-                                            "reading the full chart can say whether a reading " +
-                                            "matters."
+                                            "in their details for the exact curves. A healthy " +
+                                            "line can run anywhere in them, or just outside; only " +
+                                            "a clinician reading the full chart can say whether a " +
+                                            "reading matters."
                                     else ->
-                                        "The dotted line is the WHO median for a ${sex.label.lowercase()} " +
-                                            "this age. Healthy children sit above and below it; " +
-                                            "only a clinician reading the full chart can say " +
-                                            "whether a reading matters."
+                                        "The bands hold the middle 70% and 94% of " +
+                                            "${if (sex == Sex.GIRL) "girls" else "boys"} this age, " +
+                                            "and the dotted line is the WHO median. A healthy line " +
+                                            "can run anywhere in them, or just outside; what counts " +
+                                            "is that it keeps its own shape. Only a clinician " +
+                                            "reading the full chart can say whether a reading matters."
                                 },
                                 fontFamily = Sans, fontSize = 11.sp, lineHeight = 16.sp,
                                 color = KC.Muted,
@@ -196,3 +217,15 @@ internal fun growthHints(latest: GrowthEntity?) = MeasurementHints(
     lengthCm = latest?.lengthCm ?: 52.0,
     headCm = latest?.headCm ?: 36.0,
 )
+
+/** "1st", "2nd", "3rd", "11th", "62nd" — for a percentile written into a sentence. */
+internal fun ordinal(n: Int): String {
+    val suffix = when {
+        n % 100 in 11..13 -> "th"
+        n % 10 == 1 -> "st"
+        n % 10 == 2 -> "nd"
+        n % 10 == 3 -> "rd"
+        else -> "th"
+    }
+    return "$n$suffix"
+}

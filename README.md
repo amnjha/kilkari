@@ -34,7 +34,7 @@ diapers behind her.
 | Onboarding | A short wizard: welcome → baby → measurements → schedule → currency → **catch-up** → summary |
 | Today | Three interchangeable layouts: **Agenda** (default), **Hero**, **Checklist**, all rendering the same due-today list. Switch in Settings. |
 | Log | Six quick-log tiles (feed, sleep, diaper, medicine, growth, teeth) over the day's entries, plus **Daily log** (any earlier day) and **Insights** (7- and 30-day averages) |
-| Health | Hub → Vaccines, Vaccine group detail, Growth, Teeth, Medications, Appointments, Doctors |
+| Health | Hub → Vaccines, Vaccine group detail, Growth (WHO percentile bands and the reading's own percentile), Teeth, Medications, Appointments, Doctors |
 | Money | Three views: **Spending** (monthly split, ledger), **Fund** (the savings account everything is paid from), **Invest** (FD, RD, SIP, PPF, Sukanya Samriddhi, gold) |
 | More | Timeline, Documents, Document detail, **Paperwork**, Photo albums, Birthdays & events, Reminders, Backup & export, Settings |
 
@@ -124,7 +124,15 @@ it moves), and — for fixed instruments — what the bank says it will be worth
 does not project returns or invent numbers; it records what you tell it.
 
 **Currency** is a setting (₹ default, plus $ / € / £). Amounts are stored in whole rupees and
-converted for display, so switching currency reformats every screen at once.
+converted for display, so switching currency reformats every screen at once. **Units** work the
+same way: weights and lengths are stored in kilograms and centimetres — what the WHO tables
+speak — and drawn in pounds and inches when the setting says so, including the growth chart's
+axis and the forms, which then ask for pounds and ounces separately rather than a decimal.
+
+**The growth chart** draws the WHO percentile bands for the child's age and sex — the middle 70%
+and 94% of children — and says which percentile the last weigh-in sits on. The reference values
+are the WHO 2006 weight-for-age LMS parameters, and the percentile maths is checked against
+WHO's own published percentile tables in `GrowthStandardsTest`.
 
 ## Running it
 
@@ -229,11 +237,6 @@ Nothing leaves the device unless you export it.
 ## Not done yet
 
 - Multi-baby support — the schema has a `babyId` throughout but the UI assumes one baby.
-- Unit conversion. Settings exposes a kg·cm / lb·in toggle; the display formatters are still
-  metric-only, so switching it currently changes only the label.
-- Growth percentile bands. Weight is charted against the WHO median for the child's age and
-  sex, but the app does not draw the percentile envelope or state which percentile a reading
-  sits on — the design's "55th pct" copy is not implemented.
 - Editing existing entries — journal and money entries, the child's details, custom reminders
   and recorded teeth can all be edited. Appointments, filed documents, photo albums, birthdays
   and recorded vaccine doses still support add and delete only.
