@@ -46,18 +46,39 @@ final class Preferences {
         didSet { defaults.set(scheduleId, forKey: Keys.schedule) }
     }
 
+    /// What the parent calls the pot the child's costs come out of.
+    var fundName: String {
+        didSet { defaults.set(fundName, forKey: Keys.fundName) }
+    }
+
+    /// What they mean to move into it each month, and on which day. Zero means no plan, and
+    /// the screen asks for one rather than nagging about a figure nobody set.
+    var fundMonthly: Int {
+        didSet { defaults.set(fundMonthly, forKey: Keys.fundMonthly) }
+    }
+
+    var fundDepositDay: Int {
+        didSet { defaults.set(fundDepositDay, forKey: Keys.fundDay) }
+    }
+
     private let defaults = UserDefaults.standard
 
     private enum Keys {
         static let currency = "kilkari.currency"
         static let metric = "kilkari.metric"
         static let schedule = "kilkari.schedule"
+        static let fundName = "kilkari.fund.name"
+        static let fundMonthly = "kilkari.fund.monthly"
+        static let fundDay = "kilkari.fund.day"
     }
 
     private init() {
         currency = Currency(rawValue: defaults.string(forKey: Keys.currency) ?? "") ?? .inr
         metric = defaults.object(forKey: Keys.metric) as? Bool ?? true
         scheduleId = defaults.string(forKey: Keys.schedule) ?? "iap"
+        fundName = defaults.string(forKey: Keys.fundName) ?? "Baby fund"
+        fundMonthly = defaults.integer(forKey: Keys.fundMonthly)
+        fundDepositDay = max(1, min(defaults.object(forKey: Keys.fundDay) as? Int ?? 1, 28))
     }
 
     /// "₹1,899".

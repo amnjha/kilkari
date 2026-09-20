@@ -5,6 +5,7 @@ import KilkariCore
 /// A holding in the fund: a deposit, a recurring plan, a SIP.
 @Model
 final class Investment {
+    var uuid: String
     var name: String
     var kindRaw: String
     /// What went in up front, for a one-off.
@@ -17,6 +18,11 @@ final class Investment {
     /// The last value the parent wrote down, and when. There is no price feed.
     var currentValue: Int?
     var valuedOn: Date?
+    /// Whether the money for this comes out of the fund. When it does, each instalment shows
+    /// on the fund's ledger and comes off its balance, the same way an expense does.
+    var paidFromFund: Bool
+    /// Which account it comes out of, when it comes out of the fund at all.
+    var accountId: String?
 
     init(
         name: String,
@@ -27,8 +33,12 @@ final class Investment {
         startedOn: Date = .now,
         maturesOn: Date? = nil,
         currentValue: Int? = nil,
-        valuedOn: Date? = nil
+        valuedOn: Date? = nil,
+        paidFromFund: Bool = false,
+        accountId: String? = nil,
+        uuid: String = UUID().uuidString
     ) {
+        self.uuid = uuid
         self.name = name
         self.kindRaw = kind.rawValue
         self.investedAmount = investedAmount
@@ -38,6 +48,8 @@ final class Investment {
         self.maturesOn = maturesOn
         self.currentValue = currentValue
         self.valuedOn = valuedOn
+        self.paidFromFund = paidFromFund
+        self.accountId = accountId
     }
 
     var kind: InvestmentKind { InvestmentKind(rawValue: kindRaw) ?? .other }
@@ -135,7 +147,7 @@ struct InvestScreen: View {
                 }
 
                 HStack(spacing: 20) {
-                    figure("In", prefs.money(paidIn(holding)))
+                    figure("In", prefs.money(Money.paidIn(holding)))
                     if let value = holding.currentValue {
                         figure("Worth", prefs.money(value))
                     }
@@ -145,8 +157,8 @@ struct InvestScreen: View {
                     line("Annualised return",
                          String(format: "%@%.1f%%", xirr < 0 ? "−" : "+", abs(xirr) * 100),
                          xirr < 0 ? KC.danger : KC.leafDeep)
-                    let atValuation = paidIn(holding, upTo: valuedOn)
-                    Text(atValuation == paidIn(holding)
+                    let atValuation = Money.paidIn(holding, upTo: valuedOn)
+                    Text(atValuation == Money.paidIn(holding)
                          ? "Worked out from what went in and the value you last wrote down on \(Fmt.date(valuedOn)). Nothing is fetched."
                          : "On the \(prefs.money(atValuation)) that had gone in by \(Fmt.date(valuedOn)), the day you last wrote a value down. Nothing is fetched.")
                         .font(KFont.sans(11)).foregroundStyle(KC.faint)
@@ -180,29 +192,10 @@ struct InvestScreen: View {
 
     /// Every payment into a holding up to a date: the lump sum, or one instalment a month.
     ///
-    /// One definition, used twice with different end dates — what has gone in by today, and
-    /// what had gone in by the day the value was written down. Working those out separately
-    /// is how "in ₹55,000" ends up beside a return calculated on ₹50,000.
-    private func contributions(_ holding: Investment, upTo end: Date) -> [(date: Date, amountInr: Int64)] {
-        let cal = Calendar.current
-        guard holding.kind.recurring, let monthly = holding.monthlyAmount else {
-            return holding.startedOn <= end ? [(holding.startedOn, Int64(holding.investedAmount))] : []
-        }
-        let months = cal.dateComponents([.month], from: holding.startedOn, to: end).month ?? 0
-        guard months >= 0 else { return [] }
-        return (0...months).compactMap { m in
-            cal.date(byAdding: .month, value: m, to: holding.startedOn).map { ($0, Int64(monthly)) }
-        }
-    }
-
-    private func paidIn(_ holding: Investment, upTo end: Date = .now) -> Int {
-        Int(contributions(holding, upTo: end).reduce(0) { $0 + $1.amountInr })
-    }
-
     private func annualised(_ holding: Investment) -> Double? {
         guard let value = holding.currentValue, let valuedOn = holding.valuedOn else { return nil }
         return Returns.holdingReturn(
-            contributions: contributions(holding, upTo: valuedOn),
+            contributions: Money.contributions(of: holding, upTo: valuedOn),
             valueInr: Int64(value),
             valuedOn: valuedOn
         )

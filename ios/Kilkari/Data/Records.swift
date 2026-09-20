@@ -56,6 +56,9 @@ enum ExpenseCategory: String, Codable, CaseIterable, Identifiable {
 /// is not 0.01 of anything and a total of a hundred expenses should not drift.
 @Model
 final class Expense {
+    /// An id of its own, so a ledger line built from this row can point back at it. See the
+    /// note on FundAccount for why persistentModelID will not do.
+    var uuid: String
     var title: String
     var vendor: String?
     var categoryRaw: String
@@ -72,8 +75,10 @@ final class Expense {
         amount: Int,
         date: Date = .now,
         paidFromFund: Bool = true,
-        accountId: String? = nil
+        accountId: String? = nil,
+        uuid: String = UUID().uuidString
     ) {
+        self.uuid = uuid
         self.title = title
         self.vendor = vendor
         self.categoryRaw = category.rawValue
@@ -93,6 +98,7 @@ final class Expense {
 /// undoing it is one delete of a pair.
 @Model
 final class FundDeposit {
+    var uuid: String
     var note: String?
     /// Positive in, negative out. A withdrawal is not a separate kind of thing.
     var amount: Int
@@ -100,14 +106,19 @@ final class FundDeposit {
     var accountId: String?
     /// Pairs the two halves of a transfer.
     var transferGroup: String?
+    /// The statement date this line was ticked off against, if it has been.
+    var reconciledOn: Date?
 
     init(note: String? = nil, amount: Int, date: Date = .now,
-         accountId: String? = nil, transferGroup: String? = nil) {
+         accountId: String? = nil, transferGroup: String? = nil, reconciledOn: Date? = nil,
+         uuid: String = UUID().uuidString) {
+        self.uuid = uuid
         self.note = note
         self.amount = amount
         self.date = date
         self.accountId = accountId
         self.transferGroup = transferGroup
+        self.reconciledOn = reconciledOn
     }
 }
 

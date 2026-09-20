@@ -197,6 +197,23 @@ enum SampleData {
                                    accountId: savingsId, transferGroup: moved))
         context.insert(FundDeposit(note: "From SBI savings", amount: 3_000, date: movedOn,
                                    accountId: cashId, transferGroup: moved))
+        context.insert(FundDeposit(note: "Pram, second hand", amount: -2_400,
+                                   date: cal.date(byAdding: .day, value: -4, to: .now)!,
+                                   accountId: cashId))
+
+        // One holding funded from the fund, so the ledger shows all four kinds of line: its
+        // instalments are derived from the plan rather than entered, and come off the balance.
+        context.insert(Investment(
+            name: "Sukanya Samriddhi", kind: .ssy, investedAmount: 0, monthlyAmount: 1_000,
+            ratePercent: 8.2,
+            startedOn: cal.date(byAdding: .month, value: -3, to: .now)!,
+            paidFromFund: true, accountId: savingsId
+        ))
+
+        // A plan, so the card on the fund reads as it will once one is set.
+        Preferences.shared.fundName = "Ira's fund"
+        Preferences.shared.fundMonthly = 15_000
+        Preferences.shared.fundDepositDay = 8
         [
             ("Nappies, pack of 72", "Local pharmacy", ExpenseCategory.general, 1_899, -11),
             ("Paediatric visit", "Rainbow Clinic", ExpenseCategory.medical, 800, -9),
