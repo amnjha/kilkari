@@ -54,11 +54,15 @@ import com.kilkari.data.seed.Milestones
 import com.kilkari.data.seed.VaccineSchedules
 import com.kilkari.domain.Currency
 import com.kilkari.domain.Fmt
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.CheckRing
 import com.kilkari.ui.components.Hint
 import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.KCard
+import com.kilkari.ui.components.MeasurementRows
+import com.kilkari.ui.components.MEASUREMENT_KEYBOARD
+import com.kilkari.ui.components.MeasurementState
 import com.kilkari.domain.Sex
 import com.kilkari.ui.components.KSegmented
 import com.kilkari.ui.components.KDateField
@@ -75,14 +79,14 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 /** Everything the wizard collects, held in one place so steps stay declarative. */
-private class OnboardingState {
+private class OnboardingState(metric: Boolean) {
     var name by mutableStateOf("")
     var dob by mutableStateOf<LocalDate?>(null)
     var sex by mutableStateOf<Sex?>(null)
     var place by mutableStateOf("")
-    var weight by mutableStateOf("")
-    var length by mutableStateOf("")
-    var head by mutableStateOf("")
+
+    /** Typed in whichever units the phone is set to; read back in kg and cm. */
+    val measurements = MeasurementState(null, null, null, metric)
     var scheduleId by mutableStateOf("iap")
     var currency by mutableStateOf(Currency.INR)
 
@@ -102,7 +106,8 @@ private class OnboardingState {
  */
 @Composable
 fun OnboardingScreen(vm: KilkariViewModel) {
-    val state = remember { OnboardingState() }
+    val metric by vm.metricUnits.collectAsStateWithLifecycle()
+    val state = remember(metric) { OnboardingState(metric) }
     var step by remember { mutableIntStateOf(0) }
 
     val dob = state.dob
@@ -195,9 +200,9 @@ fun OnboardingScreen(vm: KilkariViewModel) {
                         name = state.name.trim(),
                         dob = dob!!,
                         birthTime = null,
-                        weightKg = state.weight.toDoubleOrNull(),
-                        lengthCm = state.length.toDoubleOrNull(),
-                        headCm = state.head.toDoubleOrNull(),
+                        weightKg = state.measurements.weightKg,
+                        lengthCm = state.measurements.lengthCm,
+                        headCm = state.measurements.headCm,
                         sex = state.sex,
                         place = state.place.trim().ifBlank { null },
                         scheduleId = state.scheduleId,
@@ -340,11 +345,10 @@ private fun ColumnScope.BabyStep(state: OnboardingState) {
 private fun ColumnScope.MeasurementsStep(state: OnboardingState) {
     StepTitle("Birth measurements")
     Hint("Optional — it gives the growth chart a starting point.")
-    val decimal = KeyboardOptions(keyboardType = KeyboardType.Decimal)
     KCard {
-        ValueField("Weight (kg)", state.weight, "3.1", keyboard = decimal) { state.weight = it }
-        ValueField("Length (cm)", state.length, "50", keyboard = decimal) { state.length = it }
-        ValueField("Head (cm)", state.head, "35", divider = false, keyboard = decimal) { state.head = it }
+        MeasurementRows(state.measurements) { label, value, hint, last, onChange ->
+            ValueField(label, value, hint, divider = !last, keyboard = MEASUREMENT_KEYBOARD, onChange = onChange)
+        }
     }
 }
 

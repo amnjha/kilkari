@@ -22,8 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kilkari.data.db.GrowthEntity
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.Sex
+import com.kilkari.domain.Units
+import com.kilkari.ui.components.MeasurementHints
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.WeightChart
 import com.kilkari.ui.components.WeightChartLegend
@@ -46,6 +49,7 @@ import java.time.temporal.ChronoUnit
 fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
     val baby by vm.baby.collectAsStateWithLifecycle()
     val growth by vm.growth.collectAsStateWithLifecycle()
+    val metric by vm.metricUnits.collectAsStateWithLifecycle()
     var sheetOpen by remember { mutableStateOf(false) }
 
     // Arriving from the Today prompt should land straight on the entry sheet.
@@ -80,18 +84,18 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
             ) {
                 StatRow {
                     StatCell(
-                        "Weight", Fmt.weight(latest?.weightKg),
-                        weightDelta?.let { Fmt.grams(it) },
+                        "Weight", Fmt.weight(latest?.weightKg, metric),
+                        weightDelta?.let { Fmt.grams(it, metric) },
                         if ((weightDelta ?: 0.0) >= 0) KC.Teal else KC.Danger,
                         Modifier.weight(1f),
                     )
                     StatCell(
-                        "Length", Fmt.length(latest?.lengthCm),
-                        lengthDelta?.let { "${if (it >= 0) "+" else ""}${Fmt.trimNum(it)} cm" },
+                        "Length", Fmt.length(latest?.lengthCm, metric),
+                        lengthDelta?.let { Units.lengthDelta(it, metric) },
                         KC.Teal, Modifier.weight(1f),
                     )
                     StatCell(
-                        "Head", latest?.headCm?.let { "${Fmt.trimNum(it)} cm" } ?: "—",
+                        "Head", Fmt.length(latest?.headCm, metric),
                         null, KC.Muted, Modifier.weight(1f),
                     )
                 }
@@ -111,7 +115,10 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                                 "Weight over time", fontFamily = Sans,
                                 fontWeight = FontWeight.Bold, fontSize = 14.sp, color = KC.Ink,
                             )
-                            Text("kg", fontFamily = Sans, fontSize = 11.sp, color = KC.Muted)
+                            Text(
+                                Fmt.weightUnit(metric),
+                                fontFamily = Sans, fontSize = 11.sp, color = KC.Muted,
+                            )
                         }
                         if (series.isEmpty()) {
                             Text(
@@ -120,7 +127,7 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
                             )
                         } else {
                             val sex = Sex.of(baby?.sex)
-                            WeightChart(series, sex)
+                            WeightChart(series, sex, metric)
                             WeightChartLegend(baby?.name ?: "Weight")
                             Text(
                                 when (sex) {
@@ -156,9 +163,8 @@ fun GrowthScreen(vm: KilkariViewModel, go: NavActions) {
 
         KSheet(sheetOpen, onDismiss = { sheetOpen = false }) {
             GrowthSheet(
-                weightHint = latest?.weightKg?.let(Fmt::trimNum) ?: "3.9",
-                lengthHint = latest?.lengthCm?.let(Fmt::trimNum) ?: "52",
-                headHint = latest?.headCm?.let(Fmt::trimNum) ?: "36",
+                hints = growthHints(latest),
+                metric = metric,
                 earliest = baby?.dob,
             ) { date, w, l, h ->
                 vm.addGrowth(date, w, l, h)
@@ -180,3 +186,13 @@ private fun weightSeries(points: List<Pair<Double, LocalDate>>, dob: LocalDate?)
 
 /** Average length of a month, so days convert to the months the WHO table is indexed by. */
 private const val DAYS_PER_MONTH = 30.4375
+
+/**
+ * Placeholders for the next measurement: the last one recorded, or a rough newborn where
+ * there is nothing yet. They are converted along with everything else.
+ */
+internal fun growthHints(latest: GrowthEntity?) = MeasurementHints(
+    weight = latest?.weightKg ?: 3.9,
+    lengthCm = latest?.lengthCm ?: 52.0,
+    headCm = latest?.headCm ?: 36.0,
+)

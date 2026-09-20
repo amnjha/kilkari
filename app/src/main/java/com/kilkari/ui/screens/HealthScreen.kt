@@ -123,9 +123,9 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
                 "monitor_weight", KC.TealLight, "Growth",
                 latestGrowth?.let {
                     listOfNotNull(
-                        it.weightKg?.let(Fmt::weight),
-                        it.lengthCm?.let(Fmt::length),
-                        it.headCm?.let { h -> "${Fmt.trimNum(h)} cm" },
+                        it.weightKg?.let { w -> Fmt.weight(w, settings.metricUnits) },
+                        it.lengthCm?.let { l -> Fmt.length(l, settings.metricUnits) },
+                        it.headCm?.let { h -> Fmt.length(h, settings.metricUnits) },
                     ).joinToString(" · ")
                 }?.ifBlank { "No measurements yet" } ?: "No measurements yet",
                 Modifier.weight(1f),
@@ -170,8 +170,16 @@ fun HealthScreen(vm: KilkariViewModel, go: NavActions) {
             val recent = buildList {
                 growth.takeLast(2).reversed().forEach { g ->
                     val prev = growth.getOrNull(growth.indexOf(g) - 1)?.weightKg
-                    val delta = if (prev != null && g.weightKg != null) " (${Fmt.grams(g.weightKg - prev)})" else ""
-                    add(Triple("monitor_weight" to KC.TealLight, "Weight ${Fmt.weight(g.weightKg)}$delta", g.date))
+                    val delta = if (prev != null && g.weightKg != null) {
+                        " (${Fmt.grams(g.weightKg - prev, settings.metricUnits)})"
+                    } else ""
+                    add(
+                        Triple(
+                            "monitor_weight" to KC.TealLight,
+                            "Weight ${Fmt.weight(g.weightKg, settings.metricUnits)}$delta",
+                            g.date,
+                        )
+                    )
                 }
                 meds.take(2).forEach { m ->
                     add(Triple("pill" to KC.DangerLight, "${m.name} started, ${m.dose}", m.startDate))

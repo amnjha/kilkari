@@ -86,6 +86,7 @@ fun LogDayScreen(vm: KilkariViewModel, go: NavActions) {
     val medications by vm.medications.collectAsStateWithLifecycle()
     val growth by vm.growth.collectAsStateWithLifecycle()
     val openSleep by vm.openSleep.collectAsStateWithLifecycle()
+    val metric by vm.metricUnits.collectAsStateWithLifecycle()
 
     val today = LocalDate.now()
     val earliest = baby?.dob
@@ -189,7 +190,7 @@ fun LogDayScreen(vm: KilkariViewModel, go: NavActions) {
 
         val edit = editing
         KSheet(edit != null, onDismiss = { editing = null }) {
-            if (edit != null) EditEntrySheet(vm, edit, baby?.dob, medications, growth) { editing = null }
+            if (edit != null) EditEntrySheet(vm, edit, baby?.dob, medications, growth, metric) { editing = null }
         }
 
         // New entries start on the chosen day at the current clock time. On today that is

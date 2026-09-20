@@ -69,6 +69,7 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
     val growth by vm.growth.collectAsStateWithLifecycle()
     val medications by vm.medications.collectAsStateWithLifecycle()
     val baby by vm.baby.collectAsStateWithLifecycle()
+    val metric by vm.metricUnits.collectAsStateWithLifecycle()
 
     var sheet by remember { mutableStateOf<LogKind?>(null) }
 
@@ -119,8 +120,8 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
                                 ?.let { "${it.name} · ${it.dose}" } ?: "No active medicine"
                             LogKind.GROWTH -> latestGrowth?.let {
                                 listOfNotNull(
-                                    it.weightKg?.let(Fmt::weight),
-                                    it.lengthCm?.let(Fmt::length),
+                                    it.weightKg?.let { w -> Fmt.weight(w, metric) },
+                                    it.lengthCm?.let { l -> Fmt.length(l, metric) },
                                 ).joinToString(" · ").ifBlank { "No measurements" }
                             } ?: "No measurements"
                             LogKind.TOOTH -> "${teeth.size} of 20 erupted"
@@ -182,9 +183,8 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
                     onManage = { sheet = null; go.push(Routes.MEDS) },
                 )
                 LogKind.GROWTH -> GrowthSheet(
-                    weightHint = latestGrowth?.weightKg?.let(Fmt::trimNum) ?: "3.9",
-                    lengthHint = latestGrowth?.lengthCm?.let(Fmt::trimNum) ?: "52",
-                    headHint = latestGrowth?.headCm?.let(Fmt::trimNum) ?: "36",
+                    hints = growthHints(latestGrowth),
+                    metric = metric,
                     earliest = baby?.dob,
                 ) { date, w, l, h ->
                     vm.addGrowth(date, w, l, h); sheet = null
@@ -195,7 +195,7 @@ fun LogScreen(vm: KilkariViewModel, go: NavActions) {
 
         val edit = editing
         KSheet(edit != null, onDismiss = { editing = null }) {
-            if (edit != null) EditEntrySheet(vm, edit, baby?.dob, medications, growth) { editing = null }
+            if (edit != null) EditEntrySheet(vm, edit, baby?.dob, medications, growth, metric) { editing = null }
         }
     }
 }
@@ -212,6 +212,7 @@ internal fun ColumnScope.EditEntrySheet(
     dob: LocalDate?,
     medications: List<MedicationEntity>,
     growth: List<GrowthEntity>,
+    metric: Boolean,
     onClose: () -> Unit,
 ) {
     when (LogKind.of(entry.kind)) {
@@ -253,9 +254,8 @@ internal fun ColumnScope.EditEntrySheet(
             val measurement = growth.lastOrNull { it.date == entry.startAt.toLocalDate() }
             val latest = growth.lastOrNull()
             GrowthSheet(
-                weightHint = latest?.weightKg?.let(Fmt::trimNum) ?: "3.9",
-                lengthHint = latest?.lengthCm?.let(Fmt::trimNum) ?: "52",
-                headHint = latest?.headCm?.let(Fmt::trimNum) ?: "36",
+                hints = growthHints(latest),
+                metric = metric,
                 earliest = dob,
                 existing = measurement,
                 onDelete = { vm.deleteGrowth(entry, measurement); onClose() },

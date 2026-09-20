@@ -888,7 +888,8 @@ class KilkariRepository(
                         id = id, name = name, dob = dob, birthTime = birthTime,
                         birthWeightKg = weightKg, birthLengthCm = lengthCm,
                         birthHeadCm = headCm, birthPlace = place,
-                    )
+                    ),
+                    metric = settingsStore.settings.first().metricUnits,
                 ),
                 icon = BIRTH_ICON,
             )
@@ -979,6 +980,7 @@ class KilkariRepository(
         val previous = db.babyDao().get()
         db.babyDao().update(updated)
         if (previous == null || previous == updated) return
+        val metric = settingsStore.settings.first().metricUnits
 
         db.timelineDao().allForExport(updated.id)
             .firstOrNull { it.icon == BIRTH_ICON && it.date == previous.dob }
@@ -987,8 +989,8 @@ class KilkariRepository(
                     row.copy(
                         date = updated.dob,
                         title = if (row.title == arrivalTitle(previous)) arrivalTitle(updated) else row.title,
-                        subtitle = if (row.subtitle == birthSubtitle(previous)) {
-                            birthSubtitle(updated)
+                        subtitle = if (isBirthSubtitle(row.subtitle, previous)) {
+                            birthSubtitle(updated, metric)
                         } else {
                             row.subtitle
                         },
@@ -1044,12 +1046,20 @@ class KilkariRepository(
     private fun birthdayTitle(baby: BabyEntity) = "${baby.name}'s birthday"
 
     /** The line under the arrival entry: whatever of the birth details was given. */
-    private fun birthSubtitle(baby: BabyEntity) = listOfNotNull(
+    private fun birthSubtitle(baby: BabyEntity, metric: Boolean) = listOfNotNull(
         baby.birthTime?.let { Fmt.time(it) },
-        baby.birthWeightKg?.let { Fmt.weight(it) },
-        baby.birthLengthCm?.let { Fmt.length(it) },
+        baby.birthWeightKg?.let { Fmt.weight(it, metric) },
+        baby.birthLengthCm?.let { Fmt.length(it, metric) },
         baby.birthPlace,
     ).joinToString(" · ")
+
+    /**
+     * Whether [text] is still the line this code wrote, in either unit system. The stored line
+     * is plain text, so switching to pounds would otherwise make it look hand-edited and it
+     * would stop being kept up to date.
+     */
+    private fun isBirthSubtitle(text: String, baby: BabyEntity) =
+        text == birthSubtitle(baby, metric = true) || text == birthSubtitle(baby, metric = false)
 
     /**
      * Keeps the growth chart's first point in step with the birth measurements, which the edit
@@ -1093,7 +1103,18 @@ class KilkariRepository(
 
     suspend fun setCurrency(c: Currency) = settingsStore.setCurrency(c)
     suspend fun setSchedule(id: String) = settingsStore.setSchedule(id)
-    suspend fun setMetric(metric: Boolean) = settingsStore.setMetric(metric)
+    /**
+     * Switching units also rewrites the arrival line on the timeline, which is stored as text
+     * rather than numbers. Every other measurement on screen is formatted as it is drawn and
+     * follows the setting on its own.
+     */
+    suspend fun setMetric(metric: Boolean) {
+        settingsStore.setMetric(metric)
+        val baby = db.babyDao().get() ?: return
+        db.timelineDao().allForExport(baby.id)
+            .firstOrNull { it.icon == BIRTH_ICON && isBirthSubtitle(it.subtitle, baby) }
+            ?.let { db.timelineDao().update(it.copy(subtitle = birthSubtitle(baby, metric))) }
+    }
     suspend fun setOnboarded(v: Boolean) = settingsStore.setOnboarded(v)
     suspend fun setTodayVariant(v: String) = settingsStore.setTodayVariant(v)
     suspend fun setAutoBackup(v: Boolean) = settingsStore.setAutoBackup(v)

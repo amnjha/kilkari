@@ -95,6 +95,9 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
 
     val currency: StateFlow<Currency> = settings.map { it.currency }.state(Currency.INR)
 
+    /** Kilograms and centimetres, or pounds and inches. Storage stays metric either way. */
+    val metricUnits: StateFlow<Boolean> = settings.map { it.metricUnits }.state(true)
+
     // ── Today / Log ─────────────────────────────────────────────────────────
 
     val todayLogs: StateFlow<List<LogEntryEntity>> =

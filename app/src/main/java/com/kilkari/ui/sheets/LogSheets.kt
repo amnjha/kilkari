@@ -30,6 +30,10 @@ import com.kilkari.domain.Fmt
 import com.kilkari.ui.components.KChip
 import com.kilkari.ui.components.KDateField
 import com.kilkari.ui.components.KSegmented
+import com.kilkari.ui.components.rememberMeasurements
+import com.kilkari.ui.components.MeasurementRows
+import com.kilkari.ui.components.MeasurementHints
+import com.kilkari.ui.components.MEASUREMENT_KEYBOARD
 import com.kilkari.ui.components.KTimeField
 import com.kilkari.ui.components.MomentFields
 import com.kilkari.ui.components.PrimaryButton
@@ -258,33 +262,31 @@ fun ColumnScope.MedicineDoseSheet(
 
 @Composable
 fun ColumnScope.GrowthSheet(
-    weightHint: String,
-    lengthHint: String,
-    headHint: String,
+    hints: MeasurementHints,
+    metric: Boolean,
     earliest: LocalDate? = null,
     existing: GrowthEntity? = null,
     onDelete: (() -> Unit)? = null,
     onSave: (LocalDate, Double?, Double?, Double?) -> Unit,
 ) {
-    var weight by remember(existing) { mutableStateOf(existing?.weightKg?.let(Fmt::trimNum).orEmpty()) }
-    var length by remember(existing) { mutableStateOf(existing?.lengthCm?.let(Fmt::trimNum).orEmpty()) }
-    var head by remember(existing) { mutableStateOf(existing?.headCm?.let(Fmt::trimNum).orEmpty()) }
+    val m = rememberMeasurements(
+        existing?.weightKg, existing?.lengthCm, existing?.headCm, metric, key = existing,
+    )
     var date by remember(existing) { mutableStateOf(existing?.date ?: LocalDate.now()) }
-    val decimal = KeyboardOptions(keyboardType = KeyboardType.Decimal)
 
     SheetTitle(if (existing == null) "Add measurement" else "Edit measurement")
-    SheetField("Weight (kg)", weight, weightHint, decimal) { weight = it }
-    SheetField("Length (cm)", length, lengthHint, decimal) { length = it }
-    SheetField("Head (cm)", head, headHint, decimal) { head = it }
+    MeasurementRows(m, hints) { label, value, hint, _, onChange ->
+        SheetField(label, value, hint, MEASUREMENT_KEYBOARD, onChange = onChange)
+    }
     KDateField(
         "Date", date, selectableFrom = earliest, selectableTo = LocalDate.now(),
         format = { Fmt.relativeDate(it) },
     ) { date = it }
     PrimaryButton(
         if (existing == null) "Save measurement" else "Save changes",
-        enabled = listOf(weight, length, head).any { it.toDoubleOrNull() != null },
+        enabled = m.anyEntered,
     ) {
-        onSave(date, weight.toDoubleOrNull(), length.toDoubleOrNull(), head.toDoubleOrNull())
+        onSave(date, m.weightKg, m.lengthCm, m.headCm)
     }
     if (onDelete != null) SheetDelete("Delete this measurement", onDelete)
 }

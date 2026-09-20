@@ -120,7 +120,7 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
         }
 
         KSheet(editing, onDismiss = { editing = false }) {
-            BabySheet(b) { name, dob, sex, place, weight, length, head ->
+            BabySheet(b, settings.metricUnits) { name, dob, sex, place, weight, length, head ->
                 vm.updateBabyDetails(name, dob, sex, place, weight, length, head)
                 editing = false
             }
@@ -352,6 +352,7 @@ private fun TodayHero(
     val nextVac by vm.nextVaccine.collectAsStateWithLifecycle()
     val growth by vm.growth.collectAsStateWithLifecycle()
     val timeline by vm.timeline.collectAsStateWithLifecycle()
+    val metric by vm.metricUnits.collectAsStateWithLifecycle()
 
     val ageDays = Fmt.daysSince(dob)
     val latestWeight = growth.lastOrNull { it.weightKg != null }?.weightKg
@@ -406,7 +407,7 @@ private fun TodayHero(
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                HeroStat("Weight", Fmt.weight(latestWeight), Modifier.weight(1f))
+                HeroStat("Weight", Fmt.weight(latestWeight, metric), Modifier.weight(1f))
                 HeroStat(
                     "Next vaccine",
                     nextVac?.let { "${it.inDays.coerceAtLeast(0)} days" } ?: "—",

@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.domain.FeedType
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.InsightReport
+import com.kilkari.domain.Units
 import com.kilkari.ui.KilkariViewModel
 import com.kilkari.ui.components.DailyColumns
 import com.kilkari.ui.components.DetailBar
@@ -34,6 +35,7 @@ import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private val WINDOWS = listOf(7, 30)
@@ -48,6 +50,7 @@ private val WINDOWS = listOf(7, 30)
 fun InsightsScreen(vm: KilkariViewModel, go: NavActions) {
     val report by vm.insights.collectAsStateWithLifecycle()
     val days by vm.insightDays.collectAsStateWithLifecycle()
+    val metric by vm.metricUnits.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize()) {
         DetailBar("Insights", go::back)
@@ -98,7 +101,7 @@ fun InsightsScreen(vm: KilkariViewModel, go: NavActions) {
             SleepCard(r, previous, openDay)
             DiaperCard(r, previous, openDay)
             if (r.medicines.isNotEmpty()) MedicineCard(r)
-            r.growth?.let { GrowthCard(it.gramsPerWeek, it.since) }
+            r.growth?.let { GrowthCard(it.gramsPerWeek, it.since, metric) }
         }
     }
 }
@@ -261,15 +264,17 @@ private fun MedicineCard(r: InsightReport) {
 }
 
 @Composable
-private fun GrowthCard(gramsPerWeek: Double, since: java.time.LocalDate) {
+private fun GrowthCard(gramsPerWeek: Double, since: java.time.LocalDate, metricUnits: Boolean) {
     KCard {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Growth", fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = KC.Ink)
-            val grams = gramsPerWeek.roundToInt()
+            // Ounces rather than pounds: a week's gain in pounds would round to nothing.
+            val shown = if (metricUnits) gramsPerWeek else gramsPerWeek / Units.G_PER_OZ
+            val rounded = shown.roundToInt()
             InsightFigure(
                 label = "Weight change a week",
-                value = (if (grams > 0) "+" else if (grams < 0) "−" else "") + kotlin.math.abs(grams),
-                unit = "g",
+                value = (if (rounded > 0) "+" else if (rounded < 0) "−" else "") + abs(rounded),
+                unit = if (metricUnits) "g" else "oz",
                 metric = null,
                 previousLabel = "",
             )

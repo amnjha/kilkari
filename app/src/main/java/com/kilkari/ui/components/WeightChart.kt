@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.GrowthStandards
 import com.kilkari.domain.Sex
+import com.kilkari.domain.Units
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import kotlin.math.ceil
@@ -48,7 +49,12 @@ private const val TOP_PAD = 10f
  * the whole question with growth — and gives the reference curve something to be read against.
  */
 @Composable
-fun WeightChart(points: List<WeightPoint>, sex: Sex?, modifier: Modifier = Modifier) {
+fun WeightChart(
+    points: List<WeightPoint>,
+    sex: Sex?,
+    metric: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val measurer = rememberTextMeasurer()
     val labelStyle = TextStyle(fontFamily = Sans, fontSize = 10.sp, color = KC.Muted)
 
@@ -57,14 +63,20 @@ fun WeightChart(points: List<WeightPoint>, sex: Sex?, modifier: Modifier = Modif
     val oldest = points.maxOfOrNull { it.ageMonths } ?: 0.0
     val xMax = ceil(maxOf(oldest, 3.0) * 1.15).coerceAtMost(GrowthStandards.MAX_MONTHS.toDouble())
 
+    // Everything is held in kilograms and drawn in whatever the parent reads, so the axis,
+    // the curve and the readings can never be in different units.
+    fun shown(kg: Double) = if (metric) kg else Units.kgToLb(kg)
+
+    val plot = points.map { WeightPoint(it.ageMonths, shown(it.kg)) }
     val reference = (0..xMax.roundToInt()).mapNotNull { m ->
-        GrowthStandards.medianWeightKg(m.toDouble(), sex)?.let { WeightPoint(m.toDouble(), it) }
+        GrowthStandards.medianWeightKg(m.toDouble(), sex)?.let { WeightPoint(m.toDouble(), shown(it)) }
     }
 
-    val all = points.map { it.kg } + reference.map { it.kg }
+    val all = plot.map { it.kg } + reference.map { it.kg }
+    val pad = shown(0.4)
     val (yLow, yHigh, yStep) = niceScale(
-        (all.minOrNull() ?: 0.0) - 0.4,
-        (all.maxOrNull() ?: 10.0) + 0.4,
+        (all.minOrNull() ?: 0.0) - pad,
+        (all.maxOrNull() ?: shown(10.0)) + pad,
     )
 
     Canvas(modifier.fillMaxWidth().height(CHART_HEIGHT_DP.dp)) {
@@ -91,7 +103,7 @@ fun WeightChart(points: List<WeightPoint>, sex: Sex?, modifier: Modifier = Modif
             )
         }
 
-        val plotted = points.sortedBy { it.ageMonths }.map { Offset(x(it.ageMonths), y(it.kg)) }
+        val plotted = plot.sortedBy { it.ageMonths }.map { Offset(x(it.ageMonths), y(it.kg)) }
         if (plotted.size >= 2) {
             drawPolyline(plotted, color = KC.Coral, strokeWidth = 2.5.dp.toPx(), dashed = false)
         }

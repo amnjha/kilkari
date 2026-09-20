@@ -144,14 +144,23 @@ object Fmt {
         return if (currency == Currency.INR) v.roundToLong().toString() else trimNum(v)
     }
 
-    fun weight(kg: Double?): String = kg?.let { trimNum(it) + " kg" } ?: "—"
+    /**
+     * Weight as the parent reads it. Stored kilograms either way — [metric] only decides what
+     * the screen says, so a phone switched to pounds is showing the same number differently.
+     */
+    fun weight(kg: Double?, metric: Boolean): String = kg?.let {
+        if (metric) trimNum(it) + " kg" else Units.weightLabel(it)
+    } ?: "—"
 
-    fun length(cm: Double?): String = cm?.let { trimNum(it) + " cm" } ?: "—"
+    fun length(cm: Double?, metric: Boolean): String = cm?.let {
+        if (metric) trimNum(it) + " cm" else Units.lengthLabel(it)
+    } ?: "—"
 
-    fun grams(delta: Double): String {
-        val g = (delta * 1000).roundToLong()
-        return (if (g >= 0) "+" else "") + "$g g"
-    }
+    /** A gain or a loss between two weigh-ins: "+150 g" or "+5.3 oz". */
+    fun grams(delta: Double, metric: Boolean): String = Units.deltaLabel(delta, metric)
+
+    /** The unit a measurement is written in, for an axis or a column heading. */
+    fun weightUnit(metric: Boolean): String = if (metric) "kg" else "lb"
 
     fun trimNum(v: Double): String =
         if (v == v.roundToLong().toDouble()) v.roundToLong().toString()
