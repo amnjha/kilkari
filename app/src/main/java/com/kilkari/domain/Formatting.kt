@@ -162,6 +162,13 @@ object Fmt {
     /** The unit a measurement is written in, for an axis or a column heading. */
     fun weightUnit(metric: Boolean): String = if (metric) "kg" else "lb"
 
+    /** A rate as a percentage: "7.2% a year" reads as "7.2%". Signed, because losses happen. */
+    fun percent(fraction: Double): String {
+        val pct = fraction * 100
+        val sign = if (pct > 0) "+" else if (pct < 0) "−" else ""
+        return sign + String.format(Locale.US, "%.1f", kotlin.math.abs(pct)) + "%"
+    }
+
     fun trimNum(v: Double): String =
         if (v == v.roundToLong().toDouble()) v.roundToLong().toString()
         else String.format(Locale.US, "%.1f", v)

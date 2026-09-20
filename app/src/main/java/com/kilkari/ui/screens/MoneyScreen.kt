@@ -916,6 +916,13 @@ private fun InvestmentCard(item: InvestmentSummary, currency: Currency, onClick:
                             color = if (gain > 0) KC.Teal else KC.Danger,
                         )
                     }
+                    // Annualised, so a plan paid monthly can be read against a lump sum.
+                    item.annualReturn?.let { rate ->
+                        Text(
+                            "${Fmt.percent(rate)} a year",
+                            fontFamily = Sans, fontSize = 11.sp, color = KC.Muted,
+                        )
+                    }
                 }
             }
             Row(

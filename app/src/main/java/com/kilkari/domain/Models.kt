@@ -197,6 +197,15 @@ data class InvestmentSummary(
     val monthlyInr: Long?,
     val active: Boolean,
     val contributedThisMonth: Boolean,
+    /**
+     * Annualised return on the dated contributions against the value last written down, or
+     * null when there is too little to go on. It is only as current as that value.
+     */
+    val annualReturn: Double? = null,
+    /** What the rate entered comes to at maturity, compounded quarterly. */
+    val projectedMaturityInr: Long? = null,
+    /** The day the value it is measured against was recorded. */
+    val valuedOn: LocalDate? = null,
 ) {
     /** What the holding is worth today as far as the app knows. */
     val valueInr: Long get() = currentValueInr ?: investedInr

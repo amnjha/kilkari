@@ -146,6 +146,12 @@ what has been put in (its contribution ledger), what it is worth now (you restat
 it moves), and — for fixed instruments — what the bank says it will be worth at maturity. The app
 does not project returns or invent numbers; it records what you tell it.
 
+**What a holding has earned** is an annualised return (XIRR) over the dates money actually went
+in, so a plan paid monthly can be read against a lump sum, and it is withheld below a month of
+holding, where it would be arithmetic noise. Fixed instruments also show what the rate entered
+comes to at maturity, compounded quarterly as Indian deposits are quoted, alongside — never
+instead of — the bank's own figure. The arithmetic is checked in `ReturnsTest`.
+
 **Currency** is a setting (₹ default, plus $ / € / £). Amounts are stored in whole rupees and
 converted for display, so switching currency reformats every screen at once. **Units** work the
 same way: weights and lengths are stored in kilograms and centimetres — what the WHO tables
@@ -260,8 +266,8 @@ Nothing leaves the device unless you export it.
 ## Not done yet
 
 - Multi-baby support — the schema has a `babyId` throughout but the UI assumes one baby.
-- Investment values are whatever you last entered. There is no price feed, no XIRR, and no
-  maturity projection — an FD's maturity value is a field you fill in from the bank, not a
-  calculation.
+- Investment values are whatever you last entered. The app is offline by design, so there is no
+  price feed: a holding's return is only as current as the value last written down, and the
+  screen says so.
 - Tests cover the insights arithmetic only (`app/src/test`, 18 JUnit cases). There are no UI
   tests and no tests around the database, scheduling or money.

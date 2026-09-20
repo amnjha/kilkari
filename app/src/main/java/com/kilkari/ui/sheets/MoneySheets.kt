@@ -361,8 +361,24 @@ fun ColumnScope.InvestmentDetailSheet(
 
     SheetStatic("Invested", Fmt.money(investment.investedInr, currency))
     investment.currentValueInr?.let { SheetStatic("Current value", Fmt.money(it, currency)) }
-    investment.maturityValueInr?.let { SheetStatic("At maturity", Fmt.money(it, currency)) }
+
+    // The return is annualised across the dates money went in, so a monthly plan can be read
+    // against a lump sum. It moves only when a new value is entered, and says as much.
+    investment.annualReturn?.let { rate ->
+        SheetStatic("Return a year", Fmt.percent(rate))
+        investment.valuedOn?.let {
+            SheetHint("On the value recorded on ${Fmt.date(it)} — the app has no price feed.")
+        }
+    }
+
+    investment.maturityValueInr?.let { SheetStatic("At maturity, per the bank", Fmt.money(it, currency)) }
+    investment.projectedMaturityInr?.let {
+        SheetStatic("At maturity, on that rate", Fmt.money(it, currency))
+    }
     investment.maturityDate?.let { SheetStatic("Matures", Fmt.dateFull(it)) }
+    if (investment.projectedMaturityInr != null) {
+        SheetHint("The projection compounds the rate you entered quarterly. It is arithmetic, not a promise.")
+    }
 
     if (contributions.isNotEmpty()) {
         val shown = contributions.take(CONTRIBUTIONS_SHOWN)

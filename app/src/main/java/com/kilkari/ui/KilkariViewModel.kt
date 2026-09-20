@@ -30,6 +30,7 @@ import com.kilkari.data.db.TaskStateEntity
 import com.kilkari.domain.DueTask
 import com.kilkari.domain.ReminderDraft
 import com.kilkari.domain.RepeatRule
+import com.kilkari.domain.Returns
 import com.kilkari.domain.Sex
 import com.kilkari.domain.ExpenseCategory
 import com.kilkari.domain.FeedType
@@ -376,6 +377,22 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
                     monthlyInr = row.monthlyInr,
                     active = row.active,
                     contributedThisMonth = own.any { YearMonth.from(it.date) == thisMonth },
+                    annualReturn = row.currentValueInr?.let { value ->
+                        Returns.holdingReturn(
+                            contributions = own.map { it.date to it.amountInr },
+                            valueInr = value,
+                            valuedOn = row.valueAsOf ?: LocalDate.now(),
+                        )
+                    },
+                    projectedMaturityInr = Returns.projectedMaturityInr(
+                        kind = InvestmentKind.of(row.kind),
+                        investedInr = own.sumOf { it.amountInr },
+                        monthlyInr = row.monthlyInr,
+                        ratePercent = row.interestRate,
+                        start = row.startDate,
+                        maturity = row.maturityDate,
+                    ),
+                    valuedOn = row.valueAsOf,
                 )
             }
         }.state(emptyList())
