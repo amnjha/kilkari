@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.EventAvailable
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Home
@@ -152,6 +153,7 @@ object KIcons {
         "chevron_left" to Icons.Filled.ChevronLeft,
         "chevron_right" to Icons.Filled.ChevronRight,
         "insights" to Icons.Filled.Insights,
+        "history" to Icons.Filled.History,
         "check" to Icons.Filled.Check,
         "check_circle" to Icons.Filled.CheckCircle,
         "priority_high" to Icons.Filled.PriorityHigh,

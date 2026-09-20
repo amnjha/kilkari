@@ -60,6 +60,10 @@ import com.kilkari.ui.components.CheckRing
 import com.kilkari.ui.components.Hint
 import com.kilkari.ui.components.IconBadge
 import com.kilkari.ui.components.KCard
+import com.kilkari.data.seed.VaccineGroupDef
+import com.kilkari.ui.components.milestoneAge
+import com.kilkari.ui.components.VaccineCatchUpList
+import com.kilkari.ui.components.MilestoneCatchUpList
 import com.kilkari.ui.components.MeasurementRows
 import com.kilkari.ui.components.MEASUREMENT_KEYBOARD
 import com.kilkari.ui.components.MeasurementState
@@ -387,7 +391,7 @@ private fun ColumnScope.CurrencyStep(state: OnboardingState) {
 @Composable
 private fun ColumnScope.VaccineCatchUpStep(
     state: OnboardingState,
-    overdue: List<Pair<com.kilkari.data.seed.VaccineGroupDef, LocalDate>>,
+    overdue: List<Pair<VaccineGroupDef, LocalDate>>,
 ) {
     StepTitle("Already had these?")
     Hint(
@@ -403,46 +407,7 @@ private fun ColumnScope.VaccineCatchUpStep(
         }
         KChip("Clear", false) { state.givenGroups.clear() }
     }
-    KCard {
-        overdue.forEachIndexed { i, (group, due) ->
-            val checked = state.givenGroups.containsKey(group.label)
-            Column {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            if (checked) state.givenGroups.remove(group.label)
-                            else state.givenGroups[group.label] = due
-                        }
-                        .padding(horizontal = 14.dp, vertical = 13.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CheckRing(checked, rounded = true)
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            group.label,
-                            fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp, color = KC.Ink,
-                        )
-                        Text(
-                            "Due ${Fmt.date(due)} · ${group.vaccines.joinToString(", ") { it.name }}",
-                            fontFamily = Sans, fontSize = 12.sp, lineHeight = 17.sp, color = KC.Muted,
-                        )
-                    }
-                }
-                if (checked) {
-                    KDateField(
-                        "Given on", state.givenGroups[group.label], sheetStyle = false,
-                        divider = false, selectableTo = LocalDate.now(),
-                    ) { state.givenGroups[group.label] = it }
-                }
-                if (i != overdue.lastIndex) {
-                    Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Divider))
-                }
-            }
-        }
-    }
+    VaccineCatchUpList(overdue, state.givenGroups)
 }
 
 @Composable
@@ -453,50 +418,8 @@ private fun ColumnScope.MilestoneCatchUpStep(
 ) {
     StepTitle("Anything already happened?")
     Hint("Tick what you remember. Each one becomes an entry on the timeline.")
-    KCard {
-        passed.forEachIndexed { i, def ->
-            val checked = state.reachedMilestones.containsKey(def.key)
-            val typical = dob?.plusDays((def.typicalMonths * 30.44).toLong()) ?: LocalDate.now()
-            Column {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            if (checked) state.reachedMilestones.remove(def.key)
-                            else state.reachedMilestones[def.key] = typical
-                        }
-                        .padding(horizontal = 14.dp, vertical = 13.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CheckRing(checked)
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            def.label,
-                            fontFamily = Sans, fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp, color = KC.Ink,
-                        )
-                        Text(
-                            "Usually around ${monthsLabel(def.typicalMonths)}",
-                            fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
-                        )
-                    }
-                    IconBadge(def.icon, KC.GoldDeep, KC.GoldBg, size = 32, corner = 10, iconSize = 18)
-                }
-                if (checked) {
-                    KDateField(
-                        "Happened on", state.reachedMilestones[def.key], sheetStyle = false,
-                        divider = false, selectableTo = LocalDate.now(),
-                    ) { state.reachedMilestones[def.key] = it }
-                }
-                if (i != passed.lastIndex) {
-                    Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Divider))
-                }
-            }
-        }
-    }
+    MilestoneCatchUpList(passed, dob, state.reachedMilestones)
 }
-
 @Composable
 private fun ColumnScope.DoneStep(state: OnboardingState, overdue: Int, passed: Int) {
     val dob = state.dob
@@ -580,12 +503,6 @@ private fun SummaryRow(icon: String, title: String, subtitle: String, divider: B
         }
         if (divider) Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Divider))
     }
-}
-
-private fun monthsLabel(months: Double): String = when {
-    months < 1.0 -> "${(months * 4.35).toInt()} weeks"
-    months < 2.0 -> "6 weeks"
-    else -> "${months.toInt()} months"
 }
 
 /** Accepts DD-MM-YYYY with `-`, `/` or `.` separators. */

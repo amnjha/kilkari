@@ -22,6 +22,7 @@ import com.kilkari.ui.components.KBottomNav
 import com.kilkari.ui.components.KToast
 import com.kilkari.ui.screens.AppointmentsScreen
 import com.kilkari.ui.screens.BackupScreen
+import com.kilkari.ui.screens.CatchUpScreen
 import com.kilkari.ui.screens.DoctorsScreen
 import com.kilkari.ui.screens.PaperworkScreen
 import com.kilkari.ui.screens.InsightsScreen
@@ -104,6 +105,7 @@ fun KilkariNavHost(repository: KilkariRepository, onReady: () -> Unit = {}) {
                 composable(Routes.APPOINTMENTS) { AppointmentsScreen(vm, go) }
                 composable(Routes.DOCTORS) { DoctorsScreen(vm, go) }
 
+                composable(Routes.CATCH_UP) { CatchUpScreen(vm, go) }
                 composable(Routes.LOG_DAY) { LogDayScreen(vm, go) }
                 composable(Routes.INSIGHTS) { InsightsScreen(vm, go) }
 

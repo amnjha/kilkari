@@ -893,6 +893,17 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         toast("Schedule set to ${com.kilkari.data.seed.VaccineSchedules.byId(id).name}")
     }
 
+    /** Records a later catch-up: vaccine groups by label, milestones by key, each with a date. */
+    fun recordCatchUp(groups: Map<String, LocalDate>, milestones: Map<String, LocalDate>) =
+        viewModelScope.launch {
+            repo.recordCatchUp(groups, milestones)
+            val counted = groups.size + milestones.size
+            toast("Recorded $counted ${if (counted == 1) "entry" else "entries"}")
+        }
+
+    /** Which milestones are already on the timeline, so catch-up does not offer them again. */
+    suspend fun recordedMilestoneKeys(): Set<String> = repo.recordedMilestoneKeys()
+
     fun setMetric(metric: Boolean) = viewModelScope.launch { repo.setMetric(metric) }
     fun setTodayVariant(v: String) = viewModelScope.launch { repo.setTodayVariant(v) }
     fun setAutoBackup(v: Boolean) = viewModelScope.launch { repo.setAutoBackup(v) }

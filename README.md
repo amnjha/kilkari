@@ -38,6 +38,11 @@ diapers behind her.
 | Money | Three views: **Spending** (monthly split, ledger), **Fund** (the savings account everything is paid from), **Invest** (FD, RD, SIP, PPF, Sukanya Samriddhi, gold) |
 | More | Timeline, Documents, Document detail, **Paperwork**, Photo albums, Birthdays & events, Reminders, Backup & export, Settings |
 
+**Catch-up runs whenever you need it** — at onboarding, and again from Settings afterwards, for
+anyone who set the app up in a hurry or switched schedule later. Only what is genuinely
+outstanding is offered: a vaccine group with any dose already recorded is left alone rather than
+overwritten, and a milestone already on the timeline is not offered twice.
+
 **Starting late is the normal case.** Once onboarding knows the date of birth and the schedule,
 it works out which vaccine groups and which typical milestones are already behind you, and offers
 to record them — each with an editable date, defaulted to when it was due. A newborn sees only the
@@ -240,8 +245,6 @@ Nothing leaves the device unless you export it.
 - Editing existing entries — journal and money entries, the child's details, custom reminders
   and recorded teeth can all be edited. Appointments, filed documents, photo albums, birthdays
   and recorded vaccine doses still support add and delete only.
-- Catch-up runs at onboarding only. Individual entries can be back-dated from their own sheets,
-  but there is no way to bulk-backfill a whole schedule later from Settings.
 - The fund assumes a single account. Multiple accounts, transfers between them, and reconciling
   against a bank statement are not modelled.
 - Investment values are whatever you last entered. There is no price feed, no XIRR, and no

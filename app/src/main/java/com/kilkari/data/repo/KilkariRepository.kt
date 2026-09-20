@@ -929,6 +929,35 @@ class KilkariRepository(
         settingsStore.setCurrency(currency)
         val babyId = createBaby(name, dob, sex, birthTime, weightKg, lengthCm, headCm, place)
 
+        writeCatchUp(babyId, scheduleId, place, givenGroups, milestones)
+
+        settingsStore.setOnboarded(true)
+    }
+
+    /**
+     * The same catch-up, run later from Settings rather than at first launch.
+     *
+     * Someone who set the app up in a hurry, or switched schedule afterwards, still has doses
+     * and moments behind them. Nothing is overwritten: a group with any dose already recorded
+     * is not offered, and a milestone already on the timeline is left where it is.
+     */
+    suspend fun recordCatchUp(
+        givenGroups: Map<String, LocalDate>,
+        milestones: Map<String, LocalDate>,
+    ) {
+        val baby = db.babyDao().get() ?: return
+        val scheduleId = settingsStore.settings.first().scheduleId
+        writeCatchUp(baby.id, scheduleId, baby.birthPlace, givenGroups, milestones)
+    }
+
+    /** Doses and moments, written the one way whether it is first run or later. */
+    private suspend fun writeCatchUp(
+        babyId: Long,
+        scheduleId: String,
+        place: String?,
+        givenGroups: Map<String, LocalDate>,
+        milestones: Map<String, LocalDate>,
+    ) {
         val schedule = VaccineSchedules.byId(scheduleId)
         givenGroups.forEach { (label, on) ->
             val group = schedule.groups.firstOrNull { it.label == label } ?: return@forEach
@@ -955,13 +984,18 @@ class KilkariRepository(
                     babyId = babyId,
                     date = on,
                     title = def.label,
-                    subtitle = "Recorded while setting up",
+                    subtitle = "Recorded as already happened",
                     icon = def.icon,
                 )
             )
         }
+    }
 
-        settingsStore.setOnboarded(true)
+    /** Milestone labels already on the timeline, so catch-up does not offer them twice. */
+    suspend fun recordedMilestoneKeys(): Set<String> {
+        val baby = db.babyDao().get() ?: return emptySet()
+        val titles = db.timelineDao().allForExport(baby.id).map { it.title }.toSet()
+        return Milestones.all.filter { it.label in titles }.map { it.key }.toSet()
     }
 
     /**

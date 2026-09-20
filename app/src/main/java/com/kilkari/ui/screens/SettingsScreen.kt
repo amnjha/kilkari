@@ -27,6 +27,7 @@ import com.kilkari.ui.components.KSegmented
 import com.kilkari.ui.components.OverlineLabel
 import com.kilkari.ui.components.RadioRow
 import com.kilkari.ui.nav.NavActions
+import com.kilkari.ui.nav.Routes
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 
@@ -72,6 +73,18 @@ fun SettingsScreen(vm: KilkariViewModel, go: NavActions) {
                     "Due dates regenerate from ${it.name}'s date of birth, ${Fmt.dateFull(it.dob)}. " +
                         "Doses already recorded stay marked.",
                     fontFamily = Sans, fontSize = 12.sp, lineHeight = 18.sp, color = KC.Muted,
+                )
+            }
+
+            // Onboarding asks once, at the moment there is least to say. Switching schedule, or
+            // simply setting the app up in a hurry, leaves doses and moments behind it.
+            KCard {
+                KRow(
+                    title = "Catch up on earlier doses",
+                    subtitle = "Record vaccines and moments from before you started",
+                    icon = "history",
+                    divider = false,
+                    onClick = { go.push(Routes.CATCH_UP) },
                 )
             }
 
