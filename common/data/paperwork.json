@@ -1,0 +1,54 @@
+{
+  "note": "The four documents an Indian child needs, in the order the offices insist on. leadDays counts from the day the one before it was settled, except the first, which counts from birth.",
+  "documents": [
+    {
+      "key": "birth_cert",
+      "title": "Birth certificate",
+      "why": "Registers the birth with the municipality. Everything that follows asks for it.",
+      "leadDays": 45,
+      "leadText": "45 days from birth",
+      "needs": [
+        "The hospital's discharge summary or birth letter",
+        "Both parents' ID and address proof",
+        "Registration within 21 days is free; after that a late fee, and past a year an affidavit"
+      ]
+    },
+    {
+      "key": "aadhaar",
+      "title": "Aadhaar",
+      "why": "Baal Aadhaar, linked to a parent's. No fingerprints until the child is five.",
+      "leadDays": 30,
+      "leadText": "30 days after the birth certificate",
+      "needs": [
+        "Birth certificate",
+        "One parent's Aadhaar",
+        "The child, for a photograph"
+      ]
+    },
+    {
+      "key": "passport",
+      "title": "Passport",
+      "why": "Applied for at a Passport Seva Kendra. A minor's passport runs five years.",
+      "leadDays": 60,
+      "leadText": "60 days after Aadhaar",
+      "needs": [
+        "Birth certificate",
+        "Both parents' passports or Aadhaar",
+        "Address proof in a parent's name",
+        "Annexure D, signed by both parents"
+      ]
+    },
+    {
+      "key": "pan",
+      "title": "PAN card",
+      "why": "Needed once anything is invested in the child's name. A parent applies as the representative.",
+      "leadDays": 30,
+      "leadText": "30 days after the passport",
+      "needs": [
+        "Birth certificate, as proof of date of birth",
+        "Aadhaar, as proof of identity",
+        "The applying parent's PAN"
+      ]
+    }
+  ]
+}

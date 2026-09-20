@@ -7,7 +7,8 @@ struct KilkariApp: App {
     private let container = try! ModelContainer(
         for: Baby.self, LogEntry.self, VaccineDose.self, GrowthRecord.self,
         Expense.self, FundDeposit.self, Appointment.self, Milestone.self, Doctor.self,
-        Reminder.self, Investment.self
+        Reminder.self, Investment.self,
+        PaperworkRecord.self, ScannedDocument.self, Album.self, CalendarEvent.self
     )
 
     var body: some Scene {
@@ -16,6 +17,13 @@ struct KilkariApp: App {
                 .task {
                     if SampleData.requested {
                         SampleData.seed(into: container.mainContext)
+                    }
+                }
+                .task {
+                    // Runs against the store rather than a rendered screen, which is the
+                    // point of keeping the writing out of the view.
+                    if SampleData.exportOnLaunch {
+                        Backup.writeForChecking(context: container.mainContext)
                     }
                 }
         }

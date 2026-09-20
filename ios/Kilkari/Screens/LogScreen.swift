@@ -98,8 +98,7 @@ struct LogScreen: View {
                         .fill(.white.opacity(0.85))
                         .frame(width: 44, height: 44)
                         .overlay {
-                            Image(systemName: kind.symbol)
-                                .font(.system(size: 20, weight: .semibold))
+                            GlyphView(glyph: kind.glyph, size: 20)
                                 .foregroundStyle(kind.foreground)
                         }
                     Spacer()

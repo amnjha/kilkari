@@ -11,6 +11,11 @@ enum Route: Hashable {
     case timeline
     case insights
     case reminders
+    case paperwork
+    case documents
+    case albums
+    case events
+    case backup
     case settings
 
     /// The colour the destination wears, grouped by what the screen is about rather than by
@@ -20,8 +25,8 @@ enum Route: Hashable {
         case .vaccines, .appointments: return KAccents.health
         case .growth, .teeth: return KAccents.growth
         case .meds: return KAccents.care
-        case .doctors: return KAccents.records
-        case .timeline: return KAccents.memories
+        case .doctors, .paperwork, .documents, .backup: return KAccents.records
+        case .timeline, .albums, .events: return KAccents.memories
         case .insights, .reminders: return KAccents.quiet
         case .settings: return KAccents.quiet
         }
@@ -38,6 +43,11 @@ enum Route: Hashable {
         case .timeline: return "Timeline"
         case .insights: return "Insights"
         case .reminders: return "Reminders"
+        case .paperwork: return "Paperwork"
+        case .documents: return "Documents"
+        case .albums: return "Photo albums"
+        case .events: return "Birthdays & events"
+        case .backup: return "Backup & export"
         case .settings: return "Settings"
         }
     }
@@ -61,6 +71,11 @@ struct RouteView: View {
             case .timeline: TimelineScreen()
             case .insights: InsightsScreen()
             case .reminders: RemindersScreen()
+            case .paperwork: PaperworkScreen(baby: baby)
+            case .documents: DocumentsScreen()
+            case .albums: AlbumsScreen()
+            case .events: EventsScreen(baby: baby)
+            case .backup: BackupScreen(baby: baby)
             case .settings: SettingsScreen(baby: baby)
             }
         }

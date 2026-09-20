@@ -4,19 +4,20 @@ A native SwiftUI port, sharing reference data with the Android app rather than c
 
 ## Where it is
 
-**Running in the Simulator:** the app builds, launches, and persists what you log. All five
-tabs are built, along with Vaccinations, Growth, Teeth, Medications, Appointments, Doctors,
-the Timeline, Insights, Reminders and Settings. Reminders schedule real system notifications;
-Settings changes units, currency, the schedule and the growth curve, and everything reads
-back in whatever is chosen.
+**Running in the Simulator:** the app builds, launches, and persists what you log. Every
+screen the Android app has is here bar one: five tabs, and Vaccinations, Growth, Teeth,
+Medications, Appointments, Doctors, Paperwork, Documents, Photo albums, Birthdays, the
+Timeline, Insights, Reminders, Settings and Backup behind them. Reminders schedule real
+system notifications; Settings changes units, currency, the schedule and the growth curve,
+and everything reads back in whatever is chosen.
 
 **Done and verified:** `KilkariCore`, the arithmetic half of the app — the WHO growth
 standards, unit conversion, XIRR and maturity projection, and the vaccination schedules. It
 reads the same `common/data` files the Android app is checked against, and 80 assertions run
 against WHO's published tables and the same expectations the Kotlin tests make.
 
-**Not started:** backup and export, paperwork, documents, photo albums, events, and the
-multi-account side of the fund.
+**Not started:** importing a backup, the multi-account side of the fund, the camera and the
+in-app crop (photos come from the library only), and the printable vaccination record.
 
 ## Building and running
 
@@ -55,7 +56,15 @@ that represents nothing.
 
 `--tab` opens on one of `today`, `log`, `health`, `money`, `more`. `--route` pushes one of
 `vaccines`, `growth`, `teeth`, `meds`, `appointments`, `doctors`, `timeline`, `insights`,
-`reminders`, `settings` on top of it. `--money` picks `spending`, `fund` or `invest`.
+`reminders`, `paperwork`, `documents`, `albums`, `events`, `backup`, `settings` on top of it.
+`--money` picks `spending`, `fund` or `invest`. `--export-check` writes both exports into the
+app's Documents folder at launch, so the output can be pulled off the simulator and validated
+rather than taken on trust:
+
+```bash
+xcrun simctl launch booted com.kilkari --sample-data --export-check
+python3 -m json.tool "$(xcrun simctl get_app_container booted com.kilkari data)/Documents/check.json"
+```
 
 ## Running the checks
 
@@ -81,10 +90,11 @@ XCTest unchanged.
 | App target | Gradle + AGP | Done — XcodeGen from `project.yml` |
 | Design system | `ui/theme` + `Accent` | Done — the same 87 colours, read out of the Kotlin |
 | Persistence | Room, schema at v12 | SwiftData: eleven models, no migration story yet |
-| Screens | 27 Compose screens | 15 |
+| Screens | 27 Compose screens | 21 |
 | Reminders | WorkManager + AlarmManager | Done — `UNUserNotificationCenter`, repeating calendar triggers |
 | Photos | Camera, picker, in-app crop | `PhotosPicker` only; no camera and no crop |
-| Backup | Zip of the DB and photos | An importer for the Android format |
+| Backup | Zip of the DB and photos | JSON and CSV export; see `common/BACKUP.md`. No import yet |
+| App icon | Adaptive, from the badge | Done — the same badge, same crop |
 | Fonts | Bricolage Grotesque, Plus Jakarta Sans | System faces at the same metrics, for now |
 
 ## A note on fonts

@@ -149,8 +149,7 @@ struct TodayScreen: View {
                                 .fill(.white.opacity(0.85))
                                 .frame(width: 46, height: 46)
                                 .overlay {
-                                    Image(systemName: kind.symbol)
-                                        .font(.system(size: 20, weight: .semibold))
+                                    GlyphView(glyph: kind.glyph, size: 20)
                                         .foregroundStyle(kind.foreground)
                                 }
                             // Says the card does something, without a button competing with it.
@@ -295,8 +294,7 @@ struct LogRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: entry.kind.symbol)
-                .font(.system(size: 17, weight: .semibold))
+            GlyphView(glyph: entry.kind.glyph, size: 17)
                 .foregroundStyle(entry.kind.foreground)
                 .frame(width: 22)
             Text(entry.summary)

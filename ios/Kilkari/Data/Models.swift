@@ -2,6 +2,36 @@ import Foundation
 import SwiftData
 import SwiftUI
 
+/// Where an icon comes from: the system's set, or one of the few bundled in `common/icons`
+/// because the two platforms have no glyph in common for it.
+enum Glyph {
+    case system(String)
+    case asset(String)
+}
+
+/// One icon, from wherever it comes from, tinted and sized like any other.
+struct GlyphView: View {
+    let glyph: Glyph
+    var size: CGFloat = 20
+    var weight: Font.Weight = .semibold
+
+    var body: some View {
+        switch glyph {
+        case .system(let name):
+            Image(systemName: name).font(.system(size: size, weight: weight))
+        case .asset(let name):
+            Image(name)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                // A Material glyph is drawn edge to edge in its box while an SF Symbol leaves
+                // optical padding, so matching them by height makes the Material one look
+                // bigger. The ratio brings the two back to the same visual weight.
+                .frame(width: size * 1.12, height: size * 1.12)
+        }
+    }
+}
+
 /// The six kinds of entry the Log tab records, matching the Android app's `LogKind` keys so a
 /// backup written on one platform can be read by the other.
 enum LogKind: String, Codable, CaseIterable, Identifiable {
@@ -20,15 +50,18 @@ enum LogKind: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// SF Symbols standing in for the Material glyphs the Android app uses.
-    var symbol: String {
+    /// SF Symbols where they say the same thing as the Material glyph Android draws, and the
+    /// Material glyph itself where they do not — see `common/icons`.
+    var glyph: Glyph {
         switch self {
-        case .feed: return "drop.fill"
-        case .sleep: return "moon.fill"
-        case .diaper: return "figure.child"
-        case .medicine: return "pills.fill"
-        case .growth: return "scalemass.fill"
-        case .tooth: return "mouth.fill"
+        case .feed: return .system("drop.fill")
+        case .sleep: return .system("moon.fill")
+        // SF Symbols has no changing station, and the nearest is a walking child, which reads
+        // as something else entirely. This is the same file Android's icon comes from.
+        case .diaper: return .asset("baby_changing_station")
+        case .medicine: return .system("pills.fill")
+        case .growth: return .system("scalemass.fill")
+        case .tooth: return .system("mouth.fill")
         }
     }
 

@@ -210,3 +210,61 @@ enum CoreChecks {
         }
     }
 }
+
+extension CoreChecks {
+
+    static func runPaperwork() {
+        Check.group("the shared paperwork chain is the one Android compiles") {
+            Check.equal(Paperwork.kinds.map(\.key), ["birth_cert", "aadhaar", "passport", "pan"], "keys")
+            Check.equal(Paperwork.kinds.map(\.leadDays), [45, 30, 60, 30], "lead days")
+            Check.equal(Paperwork.kinds.map { $0.needs.count }, [3, 3, 4, 3], "what each one needs")
+            Check.equal(Paperwork.byKey("aadhaar")?.title, "Aadhaar", "lookup by key")
+            Check.isNil(Paperwork.byKey("nonsense"), "unknown key")
+        }
+
+        let cal = Calendar(identifier: .gregorian)
+        let birth = date(2026, 1, 1)
+
+        Check.group("only the first document is asked for at the start") {
+            let chain = Paperwork.chain(birth: birth, settled: [:], today: date(2026, 1, 10))
+            Check.equal(chain[0].status, .active, "birth certificate is up")
+            Check.equal(chain[0].inDays, 36, "45 days from birth, 9 gone")
+            Check.equal(chain[1].status, .waiting, "aadhaar waits")
+            Check.equal(chain[2].status, .waiting, "passport waits")
+            Check.equal(chain[3].status, .waiting, "pan waits")
+        }
+
+        Check.group("the clock on the next one starts when the last was settled") {
+            let chain = Paperwork.chain(
+                birth: birth,
+                settled: ["birth_cert": date(2026, 2, 1)],
+                today: date(2026, 2, 5)
+            )
+            Check.equal(chain[0].status, .obtained, "birth certificate done")
+            Check.equal(chain[1].status, .active, "aadhaar is up")
+            // 30 days after 1 Feb is 3 March; 5 Feb leaves 26.
+            Check.equal(chain[1].inDays, 26, "counted from the settlement, not from birth")
+        }
+
+        Check.group("a document past its date reads as overdue") {
+            let chain = Paperwork.chain(birth: birth, settled: [:], today: date(2026, 3, 1))
+            Check.equal(chain[0].status, .overdue, "birth certificate")
+            Check.isTrue((chain[0].inDays ?? 0) < 0, "negative days")
+        }
+
+        Check.group("skipping one lets the next through") {
+            let chain = Paperwork.chain(
+                birth: birth,
+                settled: ["birth_cert": date(2026, 2, 1), "aadhaar": date(2026, 2, 20)],
+                skipped: ["passport"],
+                today: date(2026, 3, 1)
+            )
+            Check.equal(chain[2].status, .skipped, "passport set aside")
+            Check.equal(chain[3].status, .active, "pan is up anyway")
+            // The offices will not wait for a passport nobody is applying for: the PAN's
+            // clock runs from Aadhaar, the last thing actually settled.
+            Check.equal(chain[3].dueOn.map { cal.startOfDay(for: $0) },
+                        cal.startOfDay(for: date(2026, 3, 22)), "30 days after aadhaar")
+        }
+    }
+}

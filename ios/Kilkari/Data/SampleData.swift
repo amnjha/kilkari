@@ -49,6 +49,11 @@ enum SampleData {
         case "timeline": return .timeline
         case "insights": return .insights
         case "reminders": return .reminders
+        case "paperwork": return .paperwork
+        case "documents": return .documents
+        case "albums": return .albums
+        case "events": return .events
+        case "backup": return .backup
         case "settings": return .settings
         default: return nil
         }
@@ -65,6 +70,16 @@ enum SampleData {
         return ["spending": 0, "fund": 1, "invest": 2][args[i + 1]] ?? 0
         #else
         return 0
+        #endif
+    }
+
+    /// Runs the backup export straight into the app's Documents folder at launch, so the
+    /// output can be pulled off a simulator and checked rather than taken on trust.
+    static var exportOnLaunch: Bool {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("--export-check")
+        #else
+        return false
         #endif
     }
 
@@ -136,6 +151,10 @@ enum SampleData {
 
         context.insert(Doctor(name: "Dr Meera Nair", speciality: "Paediatrician",
                               clinic: "Rainbow Clinic", phone: "+91 98450 11223"))
+        context.insert(Album(title: "First month", note: "184 photos",
+                             url: "https://photos.app.goo.gl/example"))
+        context.insert(CalendarEvent(title: "Diwali", note: "First one",
+                                     date: cal.date(from: DateComponents(year: 2026, month: 11, day: 8))!))
 
         // The birth group given, the six-week one still outstanding, so both halves of the
         // vaccine screen have something to show.

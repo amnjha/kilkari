@@ -76,6 +76,27 @@ class SharedDataTest {
         }
     }
 
+    @Test
+    fun `the compiled paperwork chain is what common data says`() {
+        val documents = read("paperwork.json").getJSONArray("documents")
+        assertEquals("document count", documents.length(), Paperwork.KINDS.size)
+        for (i in 0 until documents.length()) {
+            val want = documents.getJSONObject(i)
+            val got = Paperwork.KINDS[i]
+            assertEquals("document $i key", want.getString("key"), got.key)
+            assertEquals("${got.key} title", want.getString("title"), got.title)
+            assertEquals("${got.key} why", want.getString("why"), got.why)
+            assertEquals("${got.key} lead days", want.getLong("leadDays"), got.leadDays)
+            assertEquals("${got.key} lead text", want.getString("leadText"), got.leadText)
+
+            val needs = want.getJSONArray("needs")
+            assertEquals("${got.key} needs count", needs.length(), got.needs.size)
+            for (n in 0 until needs.length()) {
+                assertEquals("${got.key} need $n", needs.getString(n), got.needs[n])
+            }
+        }
+    }
+
     /**
      * L, M and S are private, so each row is pinned through the two public functions that use
      * them: the median is M outright, and a percentile weight recomputed here from the
