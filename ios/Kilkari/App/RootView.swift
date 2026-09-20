@@ -43,6 +43,8 @@ struct RootView: View {
     @Environment(\.modelContext) private var context
     @Query private var babies: [Baby]
     @State private var tab: Tab = SampleData.initialTab ?? .today
+    @State private var paths: [Tab: [Route]] = SampleData.initialRoute
+        .map { [SampleData.initialTab ?? .today: [$0]] } ?? [:]
 
     var body: some View {
         Group {
@@ -61,21 +63,38 @@ struct RootView: View {
         ZStack(alignment: .bottom) {
             KC.screen.ignoresSafeArea()
 
-            Group {
-                switch tab {
-                case .today: TodayScreen(baby: baby)
-                case .log: LogScreen(baby: baby)
-                case .health: ComingSoonScreen(title: "Health")
-                case .money: ComingSoonScreen(title: "Money")
-                case .more: ComingSoonScreen(title: "More")
-                }
+            // One stack per tab, so a pushed screen belongs to the tab it came from and
+            // switching away and back does not lose where you were.
+            NavigationStack(path: binding(for: tab)) {
+                screen(for: tab, baby: baby)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .headerWash(tab.accent)
+                    .background(KC.screen.ignoresSafeArea())
+                    .navigationDestination(for: Route.self) { RouteView(route: $0, baby: baby) }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .headerWash(tab.accent)
+            .tint(tab.accent.deep)
 
             KBottomNav(selected: $tab)
         }
         .environment(\.accent, tab.accent)
+    }
+
+    @ViewBuilder
+    private func screen(for tab: Tab, baby: Baby) -> some View {
+        switch tab {
+        case .today: TodayScreen(baby: baby)
+        case .log: LogScreen(baby: baby)
+        case .health: HealthScreen(baby: baby)
+        case .money: MoneyScreen()
+        case .more: MoreScreen(baby: baby)
+        }
+    }
+
+    private func binding(for tab: Tab) -> Binding<[Route]> {
+        Binding(
+            get: { paths[tab] ?? [] },
+            set: { paths[tab] = $0 }
+        )
     }
 }
 
@@ -119,37 +138,5 @@ struct KBottomNav: View {
         .clay(corner: 28, elevation: 16)
         .padding(.horizontal, 12)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selected)
-    }
-}
-
-/// Honest placeholder. The tab is there, its colour is there, and the screen says what is
-/// missing rather than pretending to be finished.
-struct ComingSoonScreen: View {
-    let title: String
-    @Environment(\.accent) private var accent
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(title)
-                    .font(KFont.screenTitle)
-                    .foregroundStyle(KC.ink)
-
-                KCard {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Not built yet")
-                            .font(KFont.display(17, .bold))
-                            .foregroundStyle(KC.ink)
-                        Text("The Android app has this screen. It is next on the iOS side.")
-                            .font(KFont.sans(13))
-                            .foregroundStyle(KC.muted)
-                    }
-                    .padding(16)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 18)
-            .padding(.bottom, 110)
-        }
     }
 }

@@ -4,16 +4,18 @@ A native SwiftUI port, sharing reference data with the Android app rather than c
 
 ## Where it is
 
-**Running in the Simulator:** the app builds, launches, and persists what you log. Welcome,
-Today and Log are built; Health, Money and More are honest placeholders that say so.
+**Running in the Simulator:** the app builds, launches, and persists what you log. All five
+tabs are built — Today, Log, Health, Money, More — along with Vaccinations, Growth, Teeth,
+Medications, Appointments and the Timeline behind them. Doctors and Settings say plainly that
+they are not built rather than being left out of the navigation and looking like dead ends.
 
 **Done and verified:** `KilkariCore`, the arithmetic half of the app — the WHO growth
 standards, unit conversion, XIRR and maturity projection, and the vaccination schedules. It
 reads the same `common/data` files the Android app is checked against, and 80 assertions run
 against WHO's published tables and the same expectations the Kotlin tests make.
 
-**Not started:** notifications, photos, backup, and the twenty-odd screens behind the last
-three tabs.
+**Not started:** notifications, photos, backup, insights, paperwork, documents, albums,
+events, reminders, the investment side of Money, and unit switching.
 
 ## Building and running
 
@@ -41,11 +43,13 @@ Two debug-only launch arguments, compiled out of release builds, so any screen i
 away without tapping through the app to reach it:
 
 ```bash
-xcrun simctl launch booted com.kilkari --sample-data --tab log
+xcrun simctl launch booted com.kilkari --sample-data --tab health --route growth
 ```
 
-`--sample-data` fills an empty store with a baby and a day's entries. `--tab` opens on one of
-`today`, `log`, `health`, `money`, `more`.
+`--sample-data` fills an empty store with a baby, a day's entries, three weigh-ins, the birth
+vaccines, a month of spending and a milestone. `--tab` opens on one of `today`, `log`,
+`health`, `money`, `more`. `--route` pushes one of `vaccines`, `growth`, `teeth`, `meds`,
+`appointments`, `doctors`, `timeline`, `settings` on top of it.
 
 ## Running the checks
 
@@ -70,8 +74,8 @@ XCTest unchanged.
 |---|---|---|
 | App target | Gradle + AGP | Done — XcodeGen from `project.yml` |
 | Design system | `ui/theme` + `Accent` | Done — the same 87 colours, read out of the Kotlin |
-| Persistence | Room, schema at v12 | SwiftData, with `Baby` and `LogEntry` so far |
-| Screens | 27 Compose screens | Welcome, Today and Log |
+| Persistence | Room, schema at v12 | SwiftData: baby, log, doses, growth, money, visits, moments |
+| Screens | 27 Compose screens | 11, plus two that say they are not built |
 | Reminders | WorkManager + AlarmManager | `UNUserNotificationCenter`, `BGTaskScheduler` |
 | Photos | Camera, picker, in-app crop | `PhotosPicker`, `AVCapture`, a crop view |
 | Backup | Zip of the DB and photos | An importer for the Android format |
