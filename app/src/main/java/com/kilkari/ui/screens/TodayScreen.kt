@@ -99,7 +99,7 @@ fun TodayScreen(vm: KilkariViewModel, go: NavActions) {
     var cropping by remember { mutableStateOf<Uri?>(null) }
     val photo = rememberImageSource(PHOTO_DIR, "portrait") { uri -> cropping = uri }
 
-    // A wash of the screen's own colour behind the greeting, fading into the cream — the page
+    // A wash of the screen's own colour behind the header, fading into the cream — the page
     // starts with colour rather than with a wall of cards.
     Box(Modifier.fillMaxSize().headerWash(height = 260.dp)) {
         Column(
@@ -197,17 +197,18 @@ private fun TodayAgenda(
     val latest by vm.latestPerKind.collectAsStateWithLifecycle()
     val openSleep by vm.openSleep.collectAsStateWithLifecycle()
 
-    // Who this is, before what is due: the child's face, the time of day, and how old they are
-    // today — the line a parent reads out loud when someone asks.
+    // Who this is, before what is due. It used to open with "Good evening", which was being
+    // said to a four-week-old who cannot read it; the person holding the phone wants to know
+    // whose day this is and how old they are today. The face belongs to the card below, where
+    // it is large enough to be a picture of somebody rather than a bullet point.
     Row(
         Modifier.fillMaxWidth().padding(top = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val accent = LocalAccent.current
-        ChildAvatar(photoUri, name, Modifier.size(52.dp), ring = accent.ring, onClick = onEditPhoto)
         Column(Modifier.weight(1f)) {
-            Text(greeting(), fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
+            Text("Tracking", fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
             Text(
                 name,
                 fontFamily = Display, fontWeight = FontWeight.ExtraBold, fontSize = 25.sp,
@@ -227,7 +228,9 @@ private fun TodayAgenda(
     }
 
     // What is happening now outranks what is due later. A nap started ten minutes ago wants
-    // ending; the next vaccine may be six months off and can wait for the card below it.
+    // ending; the next vaccine may be six months off and can wait for the card below it. And
+    // when neither is true the card stays, saying so: a parent checking at 4am wants to be
+    // told there is nothing, not left to work it out from an absence.
     val napping = openSleep
     when {
         napping != null -> NextUpCard(
@@ -236,7 +239,10 @@ private fun TodayAgenda(
             title = "Asleep since ${Fmt.time(napping.startAt)}",
             subtitle = napping.place?.takeIf { it.isNotBlank() } ?: "Tap to wake and record it",
             action = "End the nap",
+            photoUri = photoUri,
+            name = name,
             onAction = { onQuickLog(LogKind.SLEEP) },
+            onEditPhoto = onEditPhoto,
             onCard = { onQuickLog(LogKind.SLEEP) },
         )
 
@@ -247,10 +253,29 @@ private fun TodayAgenda(
                 title = "${g.label} vaccines · ${g.count} ${Fmt.plural(g.count.toLong(), "dose")}",
                 subtitle = "${Fmt.date(g.dueDate)} · ${g.names}",
                 action = "See schedule",
+                photoUri = photoUri,
+                name = name,
                 onAction = { go.push(Routes.VACCINES) },
+                onEditPhoto = onEditPhoto,
                 onCard = { go.push(Routes.VACCINES) },
             )
         }
+
+        // Green, not the brand's coral. Coral is what the app uses for anything asking
+        // something of a parent, and this card's whole point is that nothing is.
+        else -> NextUpCard(
+            label = "NOTHING PLANNED",
+            badge = "All clear",
+            title = "Nothing due today",
+            subtitle = "No doses, no visits, nothing overdue.",
+            action = "See schedule",
+            colors = listOf(KC.LeafDeep, KC.Leaf),
+            photoUri = photoUri,
+            name = name,
+            onAction = { go.push(Routes.VACCINES) },
+            onEditPhoto = onEditPhoto,
+            onCard = { go.push(Routes.VACCINES) },
+        )
     }
 
     // One card, two jobs: what it says is when this last happened, what it does is log the
@@ -331,10 +356,14 @@ private fun NextUpCard(
     title: String,
     subtitle: String,
     action: String,
+    photoUri: String?,
+    name: String,
+    colors: List<Color> = listOf(KC.Coral, KC.Clay),
     onAction: () -> Unit,
+    onEditPhoto: () -> Unit,
     onCard: () -> Unit,
 ) {
-    GradientCard(listOf(KC.Coral, KC.Clay), onClick = onCard) {
+    GradientCard(colors, onClick = onCard) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -348,22 +377,35 @@ private fun NextUpCard(
             Pill(badge)
         }
 
-        // No picture here. The greeting above this card already carries the child's photo,
-        // and two of the same face a thumb apart reads as a mistake — the card gets the width
-        // back, which is what the title wanted anyway.
-        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                title,
-                fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 20.sp,
-                color = Color.White,
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(0.7f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    title,
+                    fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 20.sp,
+                    color = Color.White,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    subtitle,
+                    fontFamily = Sans, fontSize = 13.sp, color = Color.White.copy(alpha = 0.9f),
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+                WhiteButton(action, tint = colors.first(), onClick = onAction)
+            }
+
+            // Its own tap target inside a card that does something else: the picture is the
+            // way to change the picture.
+            ChildAvatar(
+                photoUri = photoUri,
+                name = name,
+                modifier = Modifier.weight(0.3f).aspectRatio(1f),
+                ring = Color.White.copy(alpha = 0.55f),
+                onClick = onEditPhoto,
             )
-            Text(
-                subtitle,
-                fontFamily = Sans, fontSize = 13.sp, color = Color.White.copy(alpha = 0.9f),
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
-            )
-            WhiteButton(action, Modifier.padding(top = 2.dp), onClick = onAction)
         }
     }
 }
@@ -821,7 +863,13 @@ private fun Pill(text: String) {
 }
 
 @Composable
-private fun WhiteButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun WhiteButton(
+    label: String,
+    modifier: Modifier = Modifier,
+    /** Taken from the card it sits on, so a coral label never turns up on a green card. */
+    tint: Color = KC.Coral,
+    onClick: () -> Unit,
+) {
     Box(
         modifier
             .clip(RoundedCornerShape(999.dp))
@@ -829,16 +877,7 @@ private fun WhiteButton(label: String, modifier: Modifier = Modifier, onClick: (
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp),
     ) {
-        Text(label, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = KC.Coral)
-    }
-}
-
-private fun greeting(): String {
-    val h = LocalDateTime.now().hour
-    return when {
-        h < 12 -> "Good morning"
-        h < 17 -> "Good afternoon"
-        else -> "Good evening"
+        Text(label, fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = tint)
     }
 }
 
