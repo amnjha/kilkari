@@ -13,11 +13,18 @@ final class VaccineDose {
     var groupLabel: String
     var vaccineName: String
     var givenOn: Date
+    /// Where it was given, and which brand. Both optional: a parent recording a dose at 9pm
+    /// from memory should not be made to invent them.
+    var clinic: String?
+    var brand: String?
 
-    init(groupLabel: String, vaccineName: String, givenOn: Date = .now) {
+    init(groupLabel: String, vaccineName: String, givenOn: Date = .now,
+         clinic: String? = nil, brand: String? = nil) {
         self.groupLabel = groupLabel
         self.vaccineName = vaccineName
         self.givenOn = givenOn
+        self.clinic = clinic
+        self.brand = brand
     }
 }
 

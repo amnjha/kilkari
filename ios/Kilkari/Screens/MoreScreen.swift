@@ -15,22 +15,78 @@ struct MoreScreen: View {
     @State private var prefs = Preferences.shared
     @Query private var milestones: [Milestone]
 
+    @Query private var albums: [Album]
+    @Query private var documents: [ScannedDocument]
+    @Query private var events: [CalendarEvent]
+    @Query private var reminders: [Reminder]
+    @Query private var paperwork: [PaperworkRecord]
+
+    /// The same eight, in the same order, with the same live subtitles as Android. Two apps
+    /// that disagree about what is in a drawer are two apps.
     private var items: [(route: Route, symbol: String, title: String, subtitle: String, tint: Color, bg: Color)] {
-        [
+        let birthdayDays = Calendar.current.dateComponents(
+            [.day], from: Calendar.current.startOfDay(for: .now),
+            to: Calendar.current.startOfDay(for: nextBirthday)
+        ).day ?? 0
+        let obtained = paperwork.filter { $0.obtainedOn != nil }.count
+
+        return [
             (.timeline, "chart.line.uptrend.xyaxis", "Timeline",
-             milestones.isEmpty ? "Milestones and moments" : "\(milestones.count) \(Fmt.plural(milestones.count, "moment"))",
+             milestones.isEmpty ? "Milestones, events, photo moments"
+                                : "\(milestones.count) \(Fmt.plural(milestones.count, "moment"))",
              KC.roseDeep, KC.roseWash),
-            (.albums, "photo.stack.fill", "Photo albums", "Links to where they live", KC.roseDeep, KC.roseWash),
-            (.events, "birthday.cake.fill", "Birthdays & events", "Dates that come round", KC.roseDeep, KC.roseWash),
-            (.paperwork, "checkmark.seal.fill", "Paperwork", "The four documents, in order", KC.seaDeep, KC.seaWash),
-            (.documents, "folder.fill", "Documents", "Scans you have filed", KC.seaDeep, KC.seaWash),
-            (.doctors, "cross.case.fill", "Doctors", "The people you see", KC.seaDeep, KC.seaWash),
-            (.backup, "arrow.down.doc.fill", "Backup & export", "A copy you keep", KC.seaDeep, KC.seaWash),
-            (.reminders, "bell.fill", "Reminders", "Times you want telling", KC.lilacDeep, KC.lilacWash),
+            (.albums, "photo.stack.fill", "Photo albums",
+             albums.isEmpty ? "Link an album" : "\(albums.count) \(Fmt.plural(albums.count, "album")) linked",
+             KC.roseDeep, KC.roseWash),
+            (.events, "birthday.cake.fill", "Birthdays & events",
+             birthdayDays == 0 ? "\(baby.name)'s birthday is today"
+                               : "Birthday in \(birthdayDays) \(Fmt.plural(birthdayDays, "day"))",
+             KC.roseDeep, KC.roseWash),
+            (.documents, "folder.fill", "Documents",
+             documents.isEmpty ? "File certificates and prescriptions"
+                               : "\(documents.count) \(Fmt.plural(documents.count, "document")) filed",
+             KC.seaDeep, KC.seaWash),
+            (.paperwork, "checkmark.seal.fill", "Paperwork",
+             paperworkSubtitle(obtained),
+             KC.seaDeep, KC.seaWash),
+            (.backup, "arrow.down.doc.fill", "Backup & export",
+             "Everything stays on this phone", KC.seaDeep, KC.seaWash),
+            (.reminders, "bell.fill", "Reminders",
+             remindersSubtitle, KC.lilacDeep, KC.lilacWash),
             (.settings, "gearshape.fill", "Settings",
              "\(prefs.currency.symbol) \(prefs.currency.code) · \(VaccineSchedules.byId(prefs.scheduleId).shortName) schedule",
              KC.lilacDeep, KC.lilacWash),
         ]
+    }
+
+    private var nextBirthday: Date {
+        let cal = Calendar.current
+        var parts = cal.dateComponents([.month, .day], from: baby.dob)
+        parts.year = cal.component(.year, from: .now)
+        let thisYear = cal.date(from: parts) ?? baby.dob
+        if cal.startOfDay(for: thisYear) >= cal.startOfDay(for: .now) { return thisYear }
+        parts.year = (parts.year ?? 0) + 1
+        return cal.date(from: parts) ?? thisYear
+    }
+
+    private func paperworkSubtitle(_ obtained: Int) -> String {
+        let steps = Paperwork.chain(
+            birth: baby.dob,
+            settled: Dictionary(paperwork.compactMap { r in r.obtainedOn.map { (r.key, $0) } },
+                                uniquingKeysWith: { a, _ in a }),
+            skipped: Set(paperwork.filter(\.skipped).map(\.key))
+        )
+        if let next = steps.first(where: { $0.status == .active || $0.status == .overdue }) {
+            return "\(next.kind.title) \(next.status == .overdue ? "overdue" : "next")"
+        }
+        return obtained == Paperwork.kinds.count
+            ? "Birth certificate, Aadhaar, passport, PAN — all in hand"
+            : "\(obtained) of \(Paperwork.kinds.count) obtained"
+    }
+
+    private var remindersSubtitle: String {
+        let on = reminders.filter(\.enabled).count
+        return on == 0 ? "None on" : "\(on) on"
     }
 
     var body: some View {

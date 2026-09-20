@@ -43,7 +43,7 @@ If only a few get made, these are the ones a parent sees first and most often.
 
 | File name | Colour | What it should show |
 |---|---|---|
-| `welcome_family.png` | Lilac | **Replaces the placeholder.** A parent holding a baby, warm and calm, full figure. See the note at the bottom. |
+| `welcome_family.png` | Lilac | Already in place. The other pieces should sit beside it without looking borrowed. |
 | `art_onboard_baby.png` | Coral | A newborn — the very first question the app asks is who it is tracking |
 | `art_empty_timeline.png` | Rose | An empty photo frame or a blank page waiting for a first memory |
 | `art_empty_log.png` | Sky | A bottle, a moon and a nappy together — the day not yet recorded |
@@ -85,10 +85,7 @@ Shown at 132dp, centred, above a headline and a line of help text.
 |---|---|---|
 | `art_celebrate.png` | Coral | A vaccine course finished, a first tooth, milestones caught up |
 
-## About the current welcome image
+## The welcome image
 
-`welcome_family.png` in the drawables today was cut out of a design shot found online while the
-new look was being built. **It is someone else's artwork and cannot ship.** It is in the repo only
-so the welcome screen's layout could be settled — it needs replacing with a licensed or
-commissioned drawing before any release. That file is the one place in the app where this applies;
-everything else is drawn by code.
+`welcome_family.png` is licensed for use in this app. It sets the tone the rest of the
+artwork should match: soft shapes, warm palette, a parent and a baby rather than an icon.

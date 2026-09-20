@@ -41,6 +41,8 @@ struct VaccineGroupState: Identifiable {
     let def: VaccineGroupDef
     let dueDate: Date
     let given: Set<String>
+    /// What was recorded about each given dose, by vaccine name.
+    let records: [String: VaccineDose]
 
     var id: String { def.label }
     var total: Int { def.vaccines.count }
@@ -87,10 +89,12 @@ enum VaccinePlan {
         let cal = Calendar.current
         let byGroup = Dictionary(grouping: doses, by: \.groupLabel)
         return VaccineSchedules.byId(scheduleId).groups.map { def in
-            VaccineGroupState(
+            let mine = byGroup[def.label] ?? []
+            return VaccineGroupState(
                 def: def,
                 dueDate: cal.date(byAdding: .day, value: def.dayOffset, to: baby.dob) ?? baby.dob,
-                given: Set((byGroup[def.label] ?? []).map(\.vaccineName))
+                given: Set(mine.map(\.vaccineName)),
+                records: Dictionary(mine.map { ($0.vaccineName, $0) }, uniquingKeysWith: { a, _ in a })
             )
         }
     }
