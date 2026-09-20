@@ -293,6 +293,27 @@ interface ReminderDao {
 }
 
 @Dao
+interface FundAccountDao {
+    @Query("SELECT * FROM fund_account WHERE babyId = :babyId ORDER BY archived ASC, sortOrder ASC, id ASC")
+    fun observeAll(babyId: Long): Flow<List<FundAccountEntity>>
+
+    @Query("SELECT * FROM fund_account WHERE babyId = :babyId ORDER BY sortOrder ASC, id ASC LIMIT 1")
+    suspend fun first(babyId: Long): FundAccountEntity?
+
+    @Query("SELECT COUNT(*) FROM fund_account WHERE babyId = :babyId")
+    suspend fun count(babyId: Long): Int
+
+    @Insert
+    suspend fun insert(row: FundAccountEntity): Long
+
+    @Update
+    suspend fun update(row: FundAccountEntity)
+
+    @Delete
+    suspend fun delete(row: FundAccountEntity)
+}
+
+@Dao
 interface FundDao {
     @Query("SELECT * FROM fund_txn WHERE babyId = :babyId ORDER BY date DESC, id DESC")
     fun observeAll(babyId: Long): Flow<List<FundTxnEntity>>

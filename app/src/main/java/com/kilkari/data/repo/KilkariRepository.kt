@@ -9,6 +9,7 @@ import com.kilkari.data.db.DoctorEntity
 import com.kilkari.data.db.DocumentEntity
 import com.kilkari.data.db.EventEntity
 import com.kilkari.data.db.ExpenseEntity
+import com.kilkari.data.db.FundAccountEntity
 import com.kilkari.data.db.FundTxnEntity
 import com.kilkari.data.db.GrowthEntity
 import com.kilkari.data.db.InvestmentEntity
@@ -497,13 +498,13 @@ class KilkariRepository(
         category: ExpenseCategory,
         amountInr: Long,
         date: LocalDate,
-        paidFromFund: Boolean = true,
+        fundAccountId: Long?,
     ) {
         val id = babyId() ?: return
         db.expenseDao().insert(
             ExpenseEntity(
                 babyId = id, title = title, vendor = vendor, category = category.key,
-                amountInr = amountInr, date = date, paidFromFund = paidFromFund,
+                amountInr = amountInr, date = date, fundAccountId = fundAccountId,
                 icon = if (category == ExpenseCategory.MEDICAL) "medical_services" else "shopping_bag",
             )
         )
@@ -517,7 +518,7 @@ class KilkariRepository(
         category: ExpenseCategory,
         amountInr: Long,
         date: LocalDate,
-        paidFromFund: Boolean,
+        fundAccountId: Long?,
     ) = db.expenseDao().update(
         row.copy(
             title = title,
@@ -525,7 +526,7 @@ class KilkariRepository(
             category = category.key,
             amountInr = amountInr,
             date = date,
-            paidFromFund = paidFromFund,
+            fundAccountId = fundAccountId,
             icon = if (category.key == row.category) {
                 row.icon
             } else if (category == ExpenseCategory.MEDICAL) {
@@ -569,10 +570,88 @@ class KilkariRepository(
 
     fun fundTransactions(): Flow<List<FundTxnEntity>> = forBaby { db.fundDao().observeAll(it) }
 
-    suspend fun addFundTransaction(kind: FundTxnKind, amountInr: Long, date: LocalDate, note: String?) {
+    fun fundAccounts(): Flow<List<FundAccountEntity>> = forBaby { db.fundAccountDao().observeAll(it) }
+
+    /**
+     * The account everything lands in unless another is chosen, created on demand.
+     *
+     * A family that never opens a second account should never meet the idea of accounts at
+     * all, so the first one is made the moment money is first recorded rather than asked for.
+     */
+    suspend fun defaultAccountId(): Long? {
+        val id = babyId() ?: return null
+        db.fundAccountDao().first(id)?.let { return it.id }
+        return db.fundAccountDao().insert(FundAccountEntity(babyId = id, name = "Baby fund"))
+    }
+
+    suspend fun addFundAccount(name: String, note: String?): Long {
+        val id = babyId() ?: return 0
+        val order = db.fundAccountDao().count(id)
+        return db.fundAccountDao().insert(
+            FundAccountEntity(babyId = id, name = name, note = note, sortOrder = order)
+        )
+    }
+
+    suspend fun updateFundAccount(row: FundAccountEntity) = db.fundAccountDao().update(row)
+
+    /**
+     * Removes an account only when nothing points at it. Deleting one with movements behind it
+     * would leave deposits and expenses attached to an account that no longer exists, so the
+     * caller is told no and can archive it instead.
+     */
+    suspend fun deleteFundAccount(row: FundAccountEntity): Boolean {
+        val id = babyId() ?: return false
+        val used = db.fundDao().observeAll(id).first().any { it.accountId == row.id } ||
+            db.expenseDao().observeAll(id).first().any { it.fundAccountId == row.id } ||
+            db.investmentDao().observeContributions(id).first().any { it.fundAccountId == row.id }
+        if (used) return false
+        db.fundAccountDao().delete(row)
+        return true
+    }
+
+    suspend fun addFundTransaction(
+        kind: FundTxnKind,
+        amountInr: Long,
+        date: LocalDate,
+        note: String?,
+        accountId: Long? = null,
+    ) {
         val id = babyId() ?: return
         db.fundDao().insert(
-            FundTxnEntity(babyId = id, kind = kind.key, amountInr = amountInr, date = date, note = note)
+            FundTxnEntity(
+                babyId = id, kind = kind.key, amountInr = amountInr, date = date, note = note,
+                accountId = accountId ?: defaultAccountId() ?: 0,
+            )
+        )
+    }
+
+    /**
+     * Moves money between two accounts as a matched pair of lines sharing a group id.
+     *
+     * Written as two ordinary movements rather than one special row, so each account's balance
+     * is still nothing more than the sum of what went through it.
+     */
+    suspend fun transferBetweenAccounts(
+        fromId: Long,
+        toId: Long,
+        amountInr: Long,
+        date: LocalDate,
+        note: String?,
+    ) {
+        val id = babyId() ?: return
+        if (fromId == toId || amountInr <= 0) return
+        val group = "tf-" + System.currentTimeMillis()
+        db.fundDao().insert(
+            FundTxnEntity(
+                babyId = id, kind = FundTxnKind.WITHDRAWAL.key, amountInr = amountInr, date = date,
+                note = note, accountId = fromId, transferGroup = group,
+            )
+        )
+        db.fundDao().insert(
+            FundTxnEntity(
+                babyId = id, kind = FundTxnKind.DEPOSIT.key, amountInr = amountInr, date = date,
+                note = note, accountId = toId, transferGroup = group,
+            )
         )
     }
 
@@ -582,11 +661,35 @@ class KilkariRepository(
         amountInr: Long,
         date: LocalDate,
         note: String?,
+        accountId: Long = row.accountId,
     ) = db.fundDao().update(
-        row.copy(kind = kind.key, amountInr = amountInr, date = date, note = note)
+        row.copy(kind = kind.key, amountInr = amountInr, date = date, note = note, accountId = accountId)
     )
 
-    suspend fun deleteFundTransaction(row: FundTxnEntity) = db.fundDao().delete(row)
+    /**
+     * Ticks a line off against a bank statement, or unticks it.
+     *
+     * One side at a time, even for a transfer: the two halves appear on two different
+     * statements, and stamping the far side would mark it checked against a statement nobody
+     * has looked at. Deleting a transfer still takes both halves — that is one decision, not
+     * two — but reconciling is per account.
+     */
+    suspend fun setReconciled(row: FundTxnEntity, on: LocalDate?) {
+        db.fundDao().update(row.copy(reconciledOn = on))
+    }
+
+    /** Deleting half a transfer would leave the other half stranded, so both go. */
+    suspend fun deleteFundTransaction(row: FundTxnEntity) {
+        val group = row.transferGroup
+        val id = babyId()
+        if (group == null || id == null) {
+            db.fundDao().delete(row)
+            return
+        }
+        db.fundDao().observeAll(id).first()
+            .filter { it.transferGroup == group }
+            .forEach { db.fundDao().delete(it) }
+    }
 
     /** Date of the most recent deposit, so the UI can tell whether this month's is done. */
     suspend fun lastDepositDate(): LocalDate? = babyId()?.let { db.fundDao().lastDeposit(it)?.date }
@@ -612,7 +715,7 @@ class KilkariRepository(
         startDate: LocalDate,
         maturityDate: LocalDate?,
         maturityValueInr: Long?,
-        paidFromFund: Boolean,
+        fundAccountId: Long?,
     ): Long {
         val babyId = babyId() ?: return 0
         val id = db.investmentDao().insert(
@@ -635,20 +738,20 @@ class KilkariRepository(
                     investmentId = id,
                     amountInr = opening,
                     date = startDate,
-                    paidFromFund = paidFromFund,
+                    fundAccountId = fundAccountId,
                 )
             )
         }
         return id
     }
 
-    suspend fun addContribution(investmentId: Long, amountInr: Long, date: LocalDate, paidFromFund: Boolean) {
+    suspend fun addContribution(investmentId: Long, amountInr: Long, date: LocalDate, fundAccountId: Long?) {
         db.investmentDao().insertContribution(
             ContributionEntity(
                 investmentId = investmentId,
                 amountInr = amountInr,
                 date = date,
-                paidFromFund = paidFromFund,
+                fundAccountId = fundAccountId,
             )
         )
     }
@@ -658,9 +761,9 @@ class KilkariRepository(
         row: ContributionEntity,
         amountInr: Long,
         date: LocalDate,
-        paidFromFund: Boolean,
+        fundAccountId: Long?,
     ) = db.investmentDao().updateContribution(
-        row.copy(amountInr = amountInr, date = date, paidFromFund = paidFromFund)
+        row.copy(amountInr = amountInr, date = date, fundAccountId = fundAccountId)
     )
 
     suspend fun deleteContribution(row: ContributionEntity) =

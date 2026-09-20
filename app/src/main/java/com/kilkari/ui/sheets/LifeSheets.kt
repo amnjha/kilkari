@@ -49,9 +49,10 @@ import java.time.LocalDate
 fun ColumnScope.ExpenseSheet(
     currency: Currency,
     fundName: String,
+    sources: FundSources = FundSources(),
     existing: ExpenseEntity? = null,
     onDelete: (() -> Unit)? = null,
-    onSave: (String, String?, ExpenseCategory, Double, LocalDate, Boolean) -> Unit,
+    onSave: (String, String?, ExpenseCategory, Double, LocalDate, Boolean, Long?) -> Unit,
 ) {
     var categoryIndex by remember(existing) {
         mutableIntStateOf(
@@ -65,6 +66,7 @@ fun ColumnScope.ExpenseSheet(
     var vendor by remember(existing) { mutableStateOf(existing?.vendor.orEmpty()) }
     var date by remember(existing) { mutableStateOf(existing?.date ?: LocalDate.now()) }
     var paidFromFund by remember(existing) { mutableStateOf(existing?.paidFromFund ?: true) }
+    var accountId by remember(existing) { mutableStateOf(existing?.fundAccountId) }
 
     SheetTitle(if (existing == null) "Add expense" else "Edit expense")
     KSegmented(ExpenseCategory.entries.map { it.label }, categoryIndex) { categoryIndex = it }
@@ -76,22 +78,9 @@ fun ColumnScope.ExpenseSheet(
     SheetField("Where", vendor, "Shop or clinic") { vendor = it }
     EntryDateField("Date", date) { date = it }
 
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable { paidFromFund = !paidFromFund }
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                "Paid from $fundName", fontFamily = Sans,
-                fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = KC.Ink,
-            )
-            Text("Comes off the balance", fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
-        }
-        KSwitch(paidFromFund)
+    FundSourceField(sources.copy(fundName = fundName), currency, paidFromFund, accountId) { on, id ->
+        paidFromFund = on
+        accountId = id
     }
 
     val value = amount.toDoubleOrNull()
@@ -107,6 +96,7 @@ fun ColumnScope.ExpenseSheet(
             value!!,
             date,
             paidFromFund,
+            accountId,
         )
     }
     if (onDelete != null) SheetDelete("Delete this expense", onDelete)

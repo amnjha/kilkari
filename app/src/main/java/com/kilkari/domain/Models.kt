@@ -172,6 +172,12 @@ data class FundLedgerRow(
     val incoming: Boolean,
     val icon: String,
     val origin: FundLedgerOrigin,
+    /** Which account the movement went through, so a multi-account ledger can say. */
+    val accountId: Long? = null,
+    /** True once the line has been ticked off against a statement. */
+    val reconciled: Boolean = false,
+    /** True for the two halves of a transfer, which are movements between accounts. */
+    val transfer: Boolean = false,
 )
 
 enum class FundLedgerOrigin { DEPOSIT, WITHDRAWAL, EXPENSE, INVESTMENT }

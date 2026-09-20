@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kilkari.data.db.ContributionEntity
 import com.kilkari.data.db.FundTxnEntity
+import com.kilkari.data.db.FundAccountEntity
+import com.kilkari.ui.components.RadioDot
 import com.kilkari.domain.Currency
 import com.kilkari.domain.Fmt
 import com.kilkari.domain.FundTxnKind
@@ -48,27 +50,51 @@ private val decimal = KeyboardOptions(keyboardType = KeyboardType.Decimal)
 private val number = KeyboardOptions(keyboardType = KeyboardType.Number)
 
 /** Reusable "came out of the savings account" switch. */
+/**
+ * The accounts a sheet can spend from, and what is in them. Passed as one thing so every money
+ * sheet asks the same question the same way.
+ */
+data class FundSources(
+    val accounts: List<FundAccountEntity> = emptyList(),
+    val balances: Map<Long, Long> = emptyMap(),
+    val fundName: String = "the fund",
+)
+
 @Composable
-private fun FromFundToggle(fundName: String, checked: Boolean, onToggle: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                "Paid from $fundName", fontFamily = Sans,
-                fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = KC.Ink,
-            )
-            Text(
-                "Comes off the balance",
-                fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
-            )
+/**
+ * Where the money came from: one of the fund's accounts, or somewhere else entirely.
+ *
+ * With a single account this is the switch it has always been — a family that never opens a
+ * second one should not have to meet the idea of accounts. With more than one, the accounts
+ * appear underneath it, because "paid from the fund" no longer says which.
+ */
+fun ColumnScope.FundSourceField(
+    sources: FundSources,
+    currency: Currency,
+    fromFund: Boolean,
+    accountId: Long?,
+    onChange: (fromFund: Boolean, accountId: Long?) -> Unit,
+) {
+    val fundName = sources.fundName
+    val balances = sources.balances
+    val named = sources.accounts.filterNot { it.archived }.ifEmpty { sources.accounts }
+    val chosen = accountId ?: named.firstOrNull()?.id
+
+    SheetToggleRow(
+        title = if (named.size > 1) "Paid from the fund" else "Paid from $fundName",
+        subtitle = "Comes off the balance",
+        checked = fromFund,
+    ) { onChange(!fromFund, chosen) }
+
+    if (fromFund && named.size > 1) {
+        named.forEach { account ->
+            SheetChoiceRow(
+                title = account.name,
+                subtitle = Fmt.money(balances[account.id] ?: 0, currency),
+                selected = account.id == chosen,
+                onPick = { onChange(true, account.id) },
+            ) { RadioDot(account.id == chosen) }
         }
-        KSwitch(checked)
     }
 }
 
@@ -81,9 +107,10 @@ fun ColumnScope.FundTxnSheet(
     currency: Currency,
     fundName: String,
     suggestedDeposit: Long,
+    sources: FundSources = FundSources(),
     existing: FundTxnEntity? = null,
     onDelete: (() -> Unit)? = null,
-    onSave: (deposit: Boolean, amount: Double, date: LocalDate, note: String?) -> Unit,
+    onSave: (deposit: Boolean, amount: Double, date: LocalDate, note: String?, accountId: Long?) -> Unit,
 ) {
     var kindIndex by remember(existing) {
         mutableIntStateOf(if (FundTxnKind.of(existing?.kind) == FundTxnKind.WITHDRAWAL) 1 else 0)
@@ -99,6 +126,10 @@ fun ColumnScope.FundTxnSheet(
     }
     var note by remember(existing) { mutableStateOf(existing?.note.orEmpty()) }
     var date by remember(existing) { mutableStateOf(existing?.date ?: LocalDate.now()) }
+    val open = sources.accounts.filterNot { it.archived }
+    var accountId by remember(existing, sources.accounts) {
+        mutableStateOf(existing?.accountId ?: open.firstOrNull()?.id)
+    }
 
     val deposit = kindIndex == 0
 
@@ -114,6 +145,19 @@ fun ColumnScope.FundTxnSheet(
     SheetField("Note", note, if (deposit) "Monthly top-up" else "What it was for") { note = it }
     MovementDateField("Date", date) { date = it }
 
+    // Only worth asking once there is more than one place the money could sit.
+    if (open.size > 1) {
+        SheetLabel(if (deposit) "Into" else "Out of")
+        open.forEach { account ->
+            SheetChoiceRow(
+                title = account.name,
+                subtitle = Fmt.money(sources.balances[account.id] ?: 0, currency),
+                selected = account.id == accountId,
+                onPick = { accountId = account.id },
+            ) { RadioDot(account.id == accountId) }
+        }
+    }
+
     val value = amount.toDoubleOrNull()
     PrimaryButton(
         when {
@@ -123,7 +167,7 @@ fun ColumnScope.FundTxnSheet(
         },
         enabled = value != null && value > 0,
     ) {
-        onSave(deposit, value!!, date, note.trim().ifBlank { null })
+        onSave(deposit, value!!, date, note.trim().ifBlank { null }, accountId)
     }
     if (onDelete != null) SheetDelete("Delete this entry", onDelete)
 }
@@ -140,23 +184,28 @@ fun ColumnScope.ContributionSheet(
     fundName: String,
     earliest: LocalDate? = null,
     onDelete: () -> Unit,
-    onSave: (amount: Double, date: LocalDate, paidFromFund: Boolean) -> Unit,
+    sources: FundSources = FundSources(),
+    onSave: (amount: Double, date: LocalDate, fromFund: Boolean, accountId: Long?) -> Unit,
 ) {
     var amount by remember(contribution) {
         mutableStateOf(Fmt.plain(contribution.amountInr, currency))
     }
     var date by remember(contribution) { mutableStateOf(contribution.date) }
     var paidFromFund by remember(contribution) { mutableStateOf(contribution.paidFromFund) }
+    var accountId by remember(contribution) { mutableStateOf(contribution.fundAccountId) }
 
     SheetTitle("Edit contribution")
     SheetHint(investmentName)
     SheetField("Amount (${currency.symbol})", amount, "0", decimal, big = true) { amount = it }
     MovementDateField("Paid on", date, earliest = earliest) { date = it }
-    FromFundToggle(fundName, paidFromFund) { paidFromFund = !paidFromFund }
+    FundSourceField(sources, currency, paidFromFund, accountId) { on, id ->
+        paidFromFund = on
+        accountId = id
+    }
 
     val value = amount.toDoubleOrNull()
     PrimaryButton("Save changes", enabled = value != null && value > 0) {
-        onSave(value!!, date, paidFromFund)
+        onSave(value!!, date, paidFromFund, accountId)
     }
     SheetDelete("Delete this contribution", onDelete)
 }
@@ -198,6 +247,7 @@ fun ColumnScope.FundPlanSheet(
 fun ColumnScope.InvestmentSheet(
     currency: Currency,
     fundName: String,
+    sources: FundSources = FundSources(),
     onSave: (
         name: String,
         kind: InvestmentKind,
@@ -208,7 +258,8 @@ fun ColumnScope.InvestmentSheet(
         start: LocalDate,
         maturity: LocalDate?,
         maturityValue: Double?,
-        paidFromFund: Boolean,
+        fromFund: Boolean,
+        accountId: Long?,
     ) -> Unit,
 ) {
     var kind by remember { mutableStateOf(InvestmentKind.SIP) }
@@ -220,6 +271,7 @@ fun ColumnScope.InvestmentSheet(
     var maturity by remember { mutableStateOf<LocalDate?>(null) }
     var maturityValue by remember { mutableStateOf("") }
     var paidFromFund by remember { mutableStateOf(true) }
+    var accountId by remember { mutableStateOf<Long?>(null) }
 
     val value = amount.toDoubleOrNull()
 
@@ -249,7 +301,10 @@ fun ColumnScope.InvestmentSheet(
             "Value at maturity (${currency.symbol})", maturityValue, "Optional", decimal,
         ) { maturityValue = it }
     }
-    FromFundToggle(fundName, paidFromFund) { paidFromFund = !paidFromFund }
+    FundSourceField(sources, currency, paidFromFund, accountId) { on, id ->
+        paidFromFund = on
+        accountId = id
+    }
 
     PrimaryButton("Save investment", enabled = name.isNotBlank() && value != null && value > 0) {
         onSave(
@@ -263,6 +318,7 @@ fun ColumnScope.InvestmentSheet(
             maturity,
             maturityValue.toDoubleOrNull(),
             paidFromFund,
+            accountId,
         )
     }
 }
@@ -278,7 +334,8 @@ fun ColumnScope.InvestmentDetailSheet(
     currency: Currency,
     fundName: String,
     contributions: List<ContributionEntity> = emptyList(),
-    onContribute: (amount: Double, date: LocalDate, paidFromFund: Boolean) -> Unit,
+    sources: FundSources = FundSources(),
+    onContribute: (amount: Double, date: LocalDate, fromFund: Boolean, accountId: Long?) -> Unit,
     onUpdateValue: (value: Double, asOf: LocalDate) -> Unit,
     onEditContribution: (ContributionEntity) -> Unit = {},
     onSetActive: (Boolean) -> Unit,
@@ -289,6 +346,7 @@ fun ColumnScope.InvestmentDetailSheet(
     }
     var newValue by remember { mutableStateOf("") }
     var paidFromFund by remember { mutableStateOf(true) }
+    var accountId by remember { mutableStateOf<Long?>(null) }
     var contributedOn by remember { mutableStateOf(LocalDate.now()) }
     var valuedOn by remember { mutableStateOf(LocalDate.now()) }
 
@@ -319,10 +377,13 @@ fun ColumnScope.InvestmentDetailSheet(
 
     SheetField("Add contribution (${currency.symbol})", amount, "0", decimal, big = true) { amount = it }
     MovementDateField("Paid on", contributedOn, earliest = investment.startDate) { contributedOn = it }
-    FromFundToggle(fundName, paidFromFund) { paidFromFund = !paidFromFund }
+    FundSourceField(sources, currency, paidFromFund, accountId) { on, id ->
+        paidFromFund = on
+        accountId = id
+    }
     val contribution = amount.toDoubleOrNull()
     PrimaryButton("Record contribution", enabled = contribution != null && contribution > 0) {
-        onContribute(contribution!!, contributedOn, paidFromFund)
+        onContribute(contribution!!, contributedOn, paidFromFund, accountId)
     }
 
     SheetField("Update value to (${currency.symbol})", newValue, "0", decimal) { newValue = it }

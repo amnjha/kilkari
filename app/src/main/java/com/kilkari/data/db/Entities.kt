@@ -139,9 +139,16 @@ data class ExpenseEntity(
     val amountInr: Long,
     val date: LocalDate,
     val icon: String = "shopping_bag",
-    /** Whether this came out of the savings account rather than from elsewhere. */
-    val paidFromFund: Boolean = true,
-)
+    /**
+     * Which savings account this came out of, or null when it was paid from elsewhere. It
+     * replaced a bare "from the fund" flag, which could not say which account once there was
+     * more than one.
+     */
+    val fundAccountId: Long? = null,
+) {
+    /** Kept for every screen that only cares whether the fund paid, not which account did. */
+    val paidFromFund: Boolean get() = fundAccountId != null
+}
 
 @Entity(tableName = "timeline", indices = [Index("babyId", "date")])
 data class TimelineEntity(
@@ -258,6 +265,34 @@ data class FundTxnEntity(
     val amountInr: Long,
     val date: LocalDate,
     val note: String? = null,
+    /** Which account the money moved through. */
+    val accountId: Long = 0,
+    /**
+     * Pairs the two halves of a transfer — a withdrawal from one account and a deposit into
+     * another — so the ledger can show it as one movement and undo it as one.
+     */
+    val transferGroup: String? = null,
+    /** The statement date this line was ticked off against, or null while it is unchecked. */
+    val reconciledOn: LocalDate? = null,
+)
+
+/**
+ * An account the child's money sits in.
+ *
+ * One is enough for most families and the app starts with exactly one, but a grandparent's
+ * envelope or a gift account kept separately is common enough that forcing everything into a
+ * single balance meant either lying or keeping it outside the app.
+ */
+@Entity(tableName = "fund_account", indices = [Index("babyId")])
+data class FundAccountEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val babyId: Long,
+    val name: String,
+    /** Bank, cash tin, whatever the parent calls it — free text, shown under the name. */
+    val note: String? = null,
+    /** Kept in the list but out of the way; its balance still counts towards the total. */
+    val archived: Boolean = false,
+    val sortOrder: Int = 0,
 )
 
 @Entity(tableName = "investment", indices = [Index("babyId")])
@@ -291,9 +326,11 @@ data class ContributionEntity(
     val investmentId: Long,
     val amountInr: Long,
     val date: LocalDate,
-    /** Whether the money came out of the savings account rather than from elsewhere. */
-    val paidFromFund: Boolean = true,
-)
+    /** Which savings account funded it, or null when the money came from elsewhere. */
+    val fundAccountId: Long? = null,
+) {
+    val paidFromFund: Boolean get() = fundAccountId != null
+}
 
 
 /**

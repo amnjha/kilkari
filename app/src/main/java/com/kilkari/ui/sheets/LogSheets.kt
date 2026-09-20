@@ -2,6 +2,7 @@ package com.kilkari.ui.sheets
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,6 +43,11 @@ import com.kilkari.ui.components.SheetStatic
 import com.kilkari.ui.components.Stepper
 import com.kilkari.ui.components.rememberMoment
 import com.kilkari.ui.theme.BarTitle
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.kilkari.ui.components.KSwitch
+import androidx.compose.ui.Alignment
 import com.kilkari.ui.theme.KC
 import com.kilkari.ui.theme.Sans
 import java.time.LocalDate
@@ -55,6 +61,70 @@ fun SheetTitle(text: String) {
 @Composable
 fun SheetHint(text: String) {
     Text(text, fontFamily = Sans, fontSize = 13.sp, color = KC.Muted)
+}
+
+/** A small heading inside a sheet, above a group of choices. */
+@Composable
+fun SheetLabel(text: String) {
+    Text(
+        text.uppercase(),
+        fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp,
+        color = KC.Muted, letterSpacing = 0.6.sp,
+    )
+}
+
+/** A pickable line in a sheet: what it is, what it says, and whatever marks it as chosen. */
+@Composable
+fun SheetChoiceRow(
+    title: String,
+    subtitle: String?,
+    selected: Boolean,
+    onPick: () -> Unit,
+    marker: @Composable () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (selected) KC.CoralBg else KC.Screen)
+            .clickable(onClick = onPick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                title, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp, color = KC.Ink,
+            )
+            if (subtitle != null) {
+                Text(subtitle, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted)
+            }
+        }
+        marker()
+    }
+}
+
+/** A switch row inside a sheet. */
+@Composable
+fun SheetToggleRow(title: String, subtitle: String, checked: Boolean, onToggle: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                title, fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp, color = KC.Ink,
+            )
+            Text(subtitle, fontFamily = Sans, fontSize = 12.sp, lineHeight = 17.sp, color = KC.Muted)
+        }
+        KSwitch(checked)
+    }
 }
 
 /** The destructive footer an editable sheet offers once it has opened an existing entry. */

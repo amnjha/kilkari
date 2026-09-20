@@ -128,6 +128,18 @@ top-up (amount, day, account name) and Kilkari nudges you when it is due. The ba
 fund*, less investment contributions funded from it. Deleting an expense or a holding restores
 the balance on its own — there are no duplicate rows to keep in sync.
 
+**The fund can hold more than one account** — a bank account, a gift envelope, a cash tin —
+each with its own balance, and money moves between them as a matched withdrawal and deposit, so
+neither balance is anything but the sum of what went through it. Every expense and contribution
+paid from the fund says which account paid. A family with one account never meets the idea: the
+first account is created the moment money is first recorded, and the extra controls only appear
+once a second one exists.
+
+**Checking against a statement** ticks off deposits and withdrawals up to a statement date,
+compares the ticked total against the closing balance, and shows the difference until it is
+nothing. Ticked lines are stamped with that date, so the next check starts where the last one
+finished. Each side of a transfer is ticked on its own account's statement.
+
 **Investments** cover the instruments a parent actually opens for a child: fixed and recurring
 deposits, mutual fund SIPs, PPF, Sukanya Samriddhi, gold, or anything else. Each holding tracks
 what has been put in (its contribution ledger), what it is worth now (you restate the value when
@@ -248,8 +260,6 @@ Nothing leaves the device unless you export it.
 ## Not done yet
 
 - Multi-baby support — the schema has a `babyId` throughout but the UI assumes one baby.
-- The fund assumes a single account. Multiple accounts, transfers between them, and reconciling
-  against a bank statement are not modelled.
 - Investment values are whatever you last entered. There is no price feed, no XIRR, and no
   maturity projection — an FD's maturity value is a field you fill in from the bank, not a
   calculation.

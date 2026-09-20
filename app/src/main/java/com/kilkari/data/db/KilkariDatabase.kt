@@ -26,18 +26,20 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         EventEntity::class,
         ReminderEntity::class,
         FundTxnEntity::class,
+        FundAccountEntity::class,
         InvestmentEntity::class,
         ContributionEntity::class,
         TaskStateEntity::class,
         DoctorEntity::class,
         PaperworkEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
 abstract class KilkariDatabase : RoomDatabase() {
     abstract fun babyDao(): BabyDao
+    abstract fun fundAccountDao(): FundAccountDao
     abstract fun logDao(): LogDao
     abstract fun growthDao(): GrowthDao
     abstract fun toothDao(): ToothDao
@@ -64,7 +66,7 @@ abstract class KilkariDatabase : RoomDatabase() {
                 context.applicationContext,
                 KilkariDatabase::class.java,
                 DB_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12).build().also { instance = it }
         }
 
         /** Drops the cached handle so a restore can swap the file underneath us. */
@@ -235,6 +237,72 @@ abstract class KilkariDatabase : RoomDatabase() {
                     "INSERT OR IGNORE INTO reminder " +
                         "(`key`, `title`, `subtitle`, `enabled`, `builtIn`, `repeatRule`) VALUES " +
                         "('docs', 'Paperwork', 'Birth certificate, Aadhaar, passport, PAN — one at a time', 1, 1, 'none')"
+                )
+            }
+        }
+
+        /**
+         * Gives the fund more than one account, and the ledger a way to be checked off.
+         *
+         * Everything recorded so far belonged to a single unnamed account, so one is created
+         * and every existing movement, expense and contribution is pointed at it. The "paid
+         * from the fund" flag becomes the account's id, which says the same thing and can also
+         * say which account; SQLite on the oldest phones this app supports cannot drop a
+         * column, so the two tables are rebuilt around it.
+         */
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `fund_account` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`babyId` INTEGER NOT NULL, `name` TEXT NOT NULL, `note` TEXT, " +
+                        "`archived` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_fund_account_babyId` ON `fund_account` (`babyId`)")
+
+                db.execSQL("ALTER TABLE `fund_txn` ADD COLUMN `accountId` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `fund_txn` ADD COLUMN `transferGroup` TEXT")
+                db.execSQL("ALTER TABLE `fund_txn` ADD COLUMN `reconciledOn` TEXT")
+
+                // One account per child already on file, carrying everything recorded so far.
+                db.execSQL(
+                    "INSERT INTO `fund_account` (`babyId`, `name`, `note`, `archived`, `sortOrder`) " +
+                        "SELECT `id`, 'Baby fund', NULL, 0, 0 FROM `baby`"
+                )
+                db.execSQL(
+                    "UPDATE `fund_txn` SET `accountId` = " +
+                        "(SELECT `id` FROM `fund_account` WHERE `fund_account`.`babyId` = `fund_txn`.`babyId`)"
+                )
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `expense_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`babyId` INTEGER NOT NULL, `title` TEXT NOT NULL, `vendor` TEXT, `category` TEXT NOT NULL, " +
+                        "`amountInr` INTEGER NOT NULL, `date` TEXT NOT NULL, `icon` TEXT NOT NULL, `fundAccountId` INTEGER)"
+                )
+                db.execSQL(
+                    "INSERT INTO `expense_new` (`id`, `babyId`, `title`, `vendor`, `category`, `amountInr`, `date`, `icon`, `fundAccountId`) " +
+                        "SELECT e.`id`, e.`babyId`, e.`title`, e.`vendor`, e.`category`, e.`amountInr`, e.`date`, e.`icon`, " +
+                        "CASE WHEN e.`paidFromFund` = 1 THEN (SELECT a.`id` FROM `fund_account` a WHERE a.`babyId` = e.`babyId`) ELSE NULL END " +
+                        "FROM `expense` e"
+                )
+                db.execSQL("DROP TABLE `expense`")
+                db.execSQL("ALTER TABLE `expense_new` RENAME TO `expense`")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_expense_babyId_date` ON `expense` (`babyId`, `date`)")
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `investment_contribution_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`investmentId` INTEGER NOT NULL, `amountInr` INTEGER NOT NULL, `date` TEXT NOT NULL, `fundAccountId` INTEGER)"
+                )
+                db.execSQL(
+                    "INSERT INTO `investment_contribution_new` (`id`, `investmentId`, `amountInr`, `date`, `fundAccountId`) " +
+                        "SELECT c.`id`, c.`investmentId`, c.`amountInr`, c.`date`, " +
+                        "CASE WHEN c.`paidFromFund` = 1 THEN (SELECT a.`id` FROM `fund_account` a LIMIT 1) ELSE NULL END " +
+                        "FROM `investment_contribution` c"
+                )
+                db.execSQL("DROP TABLE `investment_contribution`")
+                db.execSQL("ALTER TABLE `investment_contribution_new` RENAME TO `investment_contribution`")
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_investment_contribution_investmentId_date` " +
+                        "ON `investment_contribution` (`investmentId`, `date`)"
                 )
             }
         }

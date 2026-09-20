@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kilkari.data.db.ContributionEntity
 import com.kilkari.data.db.ExpenseEntity
+import com.kilkari.data.db.FundAccountEntity
 import com.kilkari.data.db.FundTxnEntity
 import com.kilkari.domain.Currency
 import com.kilkari.domain.ExpenseCategory
@@ -55,10 +56,16 @@ import com.kilkari.ui.components.KFab
 import com.kilkari.ui.components.KIcons
 import com.kilkari.ui.components.KSegmented
 import com.kilkari.ui.components.KSheet
+import com.kilkari.ui.components.SecondaryButton
 import com.kilkari.ui.components.SectionLabel
 import com.kilkari.ui.sheets.ContributionSheet
 import com.kilkari.ui.sheets.ExpenseSheet
 import com.kilkari.ui.sheets.FundPlanSheet
+import com.kilkari.ui.sheets.FundAccountSheet
+import com.kilkari.ui.sheets.TransferSheet
+import com.kilkari.ui.nav.NavActions
+import com.kilkari.ui.nav.Routes
+import com.kilkari.ui.sheets.FundSources
 import com.kilkari.ui.sheets.FundTxnSheet
 import com.kilkari.ui.sheets.InvestmentDetailSheet
 import com.kilkari.ui.sheets.InvestmentSheet
@@ -70,7 +77,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
-private enum class MoneySheet { EXPENSE, FUND_TXN, FUND_PLAN, INVESTMENT }
+private enum class MoneySheet { EXPENSE, FUND_TXN, FUND_PLAN, INVESTMENT, ACCOUNT, TRANSFER }
 
 /** How much of the account's history the Fund view lists. */
 private const val LEDGER_SHOWN = 60
@@ -80,7 +87,7 @@ private const val LEDGER_SHOWN = 60
  * **funded** from, and what is being **invested** for later.
  */
 @Composable
-fun MoneyScreen(vm: KilkariViewModel) {
+fun MoneyScreen(vm: KilkariViewModel, go: NavActions) {
     val currency by vm.currency.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
 
@@ -110,6 +117,10 @@ fun MoneyScreen(vm: KilkariViewModel) {
     }
 
     val fundName = settings.fundAccountName
+    val accounts by vm.fundAccounts.collectAsStateWithLifecycle()
+    val balances by vm.fundBalances.collectAsStateWithLifecycle()
+    val sources = FundSources(accounts, balances, fundName)
+    var editingAccount by remember { mutableStateOf<FundAccountEntity?>(null) }
 
     fun openLedgerRow(row: FundLedgerRow) {
         when (row.origin) {
@@ -153,7 +164,14 @@ fun MoneyScreen(vm: KilkariViewModel) {
                 when (tab) {
                     1 -> FundView(
                         vm, currency, fundName,
+                        accounts = accounts,
+                        balances = balances,
+                        unreconciled = fundTransactions.count { it.reconciledOn == null },
                         onEditPlan = { sheet = MoneySheet.FUND_PLAN },
+                        onAddAccount = { editingAccount = null; sheet = MoneySheet.ACCOUNT },
+                        onEditAccount = { editingAccount = it; sheet = MoneySheet.ACCOUNT },
+                        onTransfer = { sheet = MoneySheet.TRANSFER },
+                        onReconcile = { go.push(Routes.RECONCILE) },
                         onOpenRow = { openLedgerRow(it) },
                     )
                     2 -> InvestView(vm, currency) { openInvestment = it }
@@ -172,17 +190,19 @@ fun MoneyScreen(vm: KilkariViewModel) {
 
         KSheet(sheet != null, onDismiss = { sheet = null }) {
             when (sheet) {
-                MoneySheet.EXPENSE -> ExpenseSheet(currency, fundName) { title, vendor, category, amount, date, fromFund ->
-                    vm.addExpense(title, vendor, category, amount, date, fromFund)
+                MoneySheet.EXPENSE -> ExpenseSheet(currency, fundName, sources) {
+                    title, vendor, category, amount, date, fromFund, accountId ->
+                    vm.addExpense(title, vendor, category, amount, date, fromFund, accountId)
                     sheet = null
                 }
                 MoneySheet.FUND_TXN -> FundTxnSheet(
                     currency = currency,
                     fundName = fundName,
                     suggestedDeposit = settings.fundMonthlyInr,
-                ) { deposit, amount, date, note ->
-                    if (deposit) vm.addFundDeposit(amount, date, note)
-                    else vm.addFundWithdrawal(amount, date, note)
+                    sources = sources,
+                ) { deposit, amount, date, note, accountId ->
+                    if (deposit) vm.addFundDeposit(amount, date, note, accountId)
+                    else vm.addFundWithdrawal(amount, date, note, accountId)
                     sheet = null
                 }
                 MoneySheet.FUND_PLAN -> FundPlanSheet(
@@ -194,12 +214,35 @@ fun MoneyScreen(vm: KilkariViewModel) {
                     vm.setFundPlan(monthly, day, name)
                     sheet = null
                 }
-                MoneySheet.INVESTMENT -> InvestmentSheet(currency, fundName) {
-                    name, kind, institution, opening, monthly, rate, start, maturity, maturityValue, fromFund ->
+                MoneySheet.INVESTMENT -> InvestmentSheet(currency, fundName, sources) {
+                    name, kind, institution, opening, monthly, rate, start, maturity, maturityValue,
+                    fromFund, accountId ->
                     vm.addInvestment(
                         name, kind, institution, opening, monthly, rate,
-                        start, maturity, maturityValue, fromFund,
+                        start, maturity, maturityValue, fromFund, accountId,
                     )
+                    sheet = null
+                }
+                MoneySheet.ACCOUNT -> {
+                    val account = editingAccount
+                    FundAccountSheet(
+                        existing = account,
+                        onDelete = account?.let {
+                            { vm.deleteFundAccount(it); editingAccount = null; sheet = null }
+                        },
+                    ) { name, note, archived ->
+                        if (account == null) vm.addFundAccount(name, note)
+                        else vm.updateFundAccount(account, name, note, archived)
+                        editingAccount = null
+                        sheet = null
+                    }
+                }
+                MoneySheet.TRANSFER -> TransferSheet(
+                    accounts = accounts.filterNot { it.archived },
+                    currency = currency,
+                    balances = balances,
+                ) { fromId, toId, amount, date, note ->
+                    vm.transferBetweenAccounts(fromId, toId, amount, date, note)
                     sheet = null
                 }
                 null -> Unit
@@ -214,8 +257,9 @@ fun MoneyScreen(vm: KilkariViewModel) {
                     currency = currency,
                     fundName = fundName,
                     contributions = contributions.filter { it.investmentId == open.id },
-                    onContribute = { amount, date, fromFund ->
-                        vm.addContribution(open.id, amount, date, fromFund)
+                    sources = sources,
+                    onContribute = { amount, date, fromFund, accountId ->
+                        vm.addContribution(open.id, amount, date, fromFund, accountId)
                         openInvestment = null
                     },
                     onUpdateValue = { value, asOf ->
@@ -245,10 +289,11 @@ fun MoneyScreen(vm: KilkariViewModel) {
                 ExpenseSheet(
                     currency = currency,
                     fundName = fundName,
+                    sources = sources,
                     existing = expense,
                     onDelete = { vm.deleteExpense(expense); editingExpense = null },
-                ) { title, vendor, category, amount, date, fromFund ->
-                    vm.updateExpense(expense, title, vendor, category, amount, date, fromFund)
+                ) { title, vendor, category, amount, date, fromFund, accountId ->
+                    vm.updateExpense(expense, title, vendor, category, amount, date, fromFund, accountId)
                     editingExpense = null
                 }
             }
@@ -261,10 +306,11 @@ fun MoneyScreen(vm: KilkariViewModel) {
                     currency = currency,
                     fundName = fundName,
                     suggestedDeposit = 0,
+                    sources = sources,
                     existing = txn,
                     onDelete = { vm.deleteFundTransaction(txn); editingTxn = null },
-                ) { deposit, amount, date, note ->
-                    vm.updateFundTransaction(txn, deposit, amount, date, note)
+                ) { deposit, amount, date, note, accountId ->
+                    vm.updateFundTransaction(txn, deposit, amount, date, note, accountId)
                     editingTxn = null
                 }
             }
@@ -280,9 +326,10 @@ fun MoneyScreen(vm: KilkariViewModel) {
                     currency = currency,
                     fundName = fundName,
                     earliest = holding?.startDate,
+                    sources = sources,
                     onDelete = { vm.deleteContribution(contribution); editingContribution = null },
-                ) { amount, date, fromFund ->
-                    vm.updateContribution(contribution, amount, date, fromFund)
+                ) { amount, date, fromFund, accountId ->
+                    vm.updateContribution(contribution, amount, date, fromFund, accountId)
                     editingContribution = null
                 }
             }
@@ -542,7 +589,14 @@ private fun ColumnScope.FundView(
     vm: KilkariViewModel,
     currency: Currency,
     fundName: String,
+    accounts: List<FundAccountEntity>,
+    balances: Map<Long, Long>,
+    unreconciled: Int,
     onEditPlan: () -> Unit,
+    onAddAccount: () -> Unit,
+    onEditAccount: (FundAccountEntity) -> Unit,
+    onTransfer: () -> Unit,
+    onReconcile: () -> Unit,
     onOpenRow: (FundLedgerRow) -> Unit,
 ) {
     val balance by vm.fundBalance.collectAsStateWithLifecycle()
@@ -600,6 +654,57 @@ private fun ColumnScope.FundView(
                         depositStatus(settings.fundDepositDay, depositedThisMonth)
                     } else {
                         "How much you move in each month"
+                    },
+                    fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                )
+            }
+            Icon(KIcons["chevron_right"], null, tint = KC.CoralPaler, modifier = Modifier.size(20.dp))
+        }
+    }
+
+    // Accounts appear once there is more than one, or on demand. A family with a single
+    // account never has to think about the idea at all.
+    val open = accounts.filterNot { it.archived }
+    val archived = accounts.filter { it.archived }
+    if (accounts.size > 1) {
+        SectionLabel("Accounts")
+        KCard {
+            (open + archived).forEachIndexed { i, account ->
+                AccountRow(
+                    name = account.name,
+                    note = account.note,
+                    archived = account.archived,
+                    balance = balances[account.id] ?: 0,
+                    currency = currency,
+                ) { onEditAccount(account) }
+                if (i != accounts.lastIndex) Divider()
+            }
+        }
+    }
+
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        SecondaryButton("Add account", Modifier.weight(1f), icon = "account_balance") { onAddAccount() }
+        if (open.size > 1) {
+            SecondaryButton("Transfer", Modifier.weight(1f), icon = "swap_horiz") { onTransfer() }
+        }
+    }
+
+    KCard(onClick = onReconcile) {
+        Row(
+            Modifier.fillMaxWidth().padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconBadge("check_circle", KC.SeaDeep, KC.SeaBg)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Check against a statement",
+                    fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = KC.Ink,
+                )
+                Text(
+                    unreconciled.let { n ->
+                        if (n == 0) "Everything recorded is ticked off"
+                        else "$n ${Fmt.plural(n.toLong(), "line")} not ticked off yet"
                     },
                     fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
                 )
@@ -871,4 +976,50 @@ private fun EmptyLine(text: String) {
 @Composable
 private fun Divider() {
     Box(Modifier.fillMaxWidth().height(1.dp).background(KC.Divider))
+}
+
+/** An account and what is in it, on the Fund view. */
+@Composable
+private fun AccountRow(
+    name: String,
+    note: String?,
+    archived: Boolean,
+    balance: Long,
+    currency: Currency,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconBadge(
+            "account_balance",
+            if (archived) KC.Muted else KC.CoralDeep,
+            if (archived) KC.StoneBg else KC.CoralBg,
+            size = 36, corner = 10, iconSize = 18,
+        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                if (archived) "$name · archived" else name,
+                fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
+                color = if (archived) KC.Muted else KC.Ink,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            note?.takeIf { it.isNotBlank() }?.let {
+                Text(
+                    it, fontFamily = Sans, fontSize = 12.sp, color = KC.Muted,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Text(
+            Fmt.money(balance, currency),
+            fontFamily = Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp,
+            color = if (balance < 0) KC.Danger else KC.Ink,
+        )
+    }
 }

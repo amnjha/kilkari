@@ -11,6 +11,7 @@ import com.kilkari.data.db.DoctorEntity
 import com.kilkari.data.db.DocumentEntity
 import com.kilkari.data.db.EventEntity
 import com.kilkari.data.db.ExpenseEntity
+import com.kilkari.data.db.FundAccountEntity
 import com.kilkari.data.db.FundTxnEntity
 import com.kilkari.data.db.GrowthEntity
 import com.kilkari.data.db.InvestmentEntity
@@ -229,6 +230,51 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
      * paid from the fund, and investment contributions funded from it. Nothing is mirrored, so
      * deleting an expense or a holding restores the balance on its own.
      */
+    val fundAccounts: StateFlow<List<FundAccountEntity>> = repo.fundAccounts().state(emptyList())
+
+    /** Each account's own balance, by account id, on the same derivation as the total. */
+    val fundBalances: StateFlow<Map<Long, Long>> =
+        combine(fundTransactions, expenses, contributions) { txns, expenses, contributions ->
+            buildMap {
+                txns.forEach { t ->
+                    val signed = if (t.kind == FundTxnKind.DEPOSIT.key) t.amountInr else -t.amountInr
+                    merge(t.accountId, signed, Long::plus)
+                }
+                expenses.forEach { e -> e.fundAccountId?.let { merge(it, -e.amountInr, Long::plus) } }
+                contributions.forEach { c -> c.fundAccountId?.let { merge(it, -c.amountInr, Long::plus) } }
+            }
+        }.state(emptyMap())
+
+    fun addFundAccount(name: String, note: String?) = viewModelScope.launch {
+        repo.addFundAccount(name, note)
+        toast("$name added")
+    }
+
+    fun updateFundAccount(row: FundAccountEntity, name: String, note: String?, archived: Boolean) =
+        viewModelScope.launch {
+            repo.updateFundAccount(row.copy(name = name, note = note, archived = archived))
+            toast("Account updated")
+        }
+
+    /** Refuses while anything still points at the account, and says so rather than failing quietly. */
+    fun deleteFundAccount(row: FundAccountEntity) = viewModelScope.launch {
+        val removed = repo.deleteFundAccount(row)
+        toast(
+            if (removed) "${row.name} removed"
+            else "${row.name} still has movements — archive it instead"
+        )
+    }
+
+    fun transferBetweenAccounts(fromId: Long, toId: Long, amountDisplay: Double, date: LocalDate, note: String?) =
+        viewModelScope.launch {
+            repo.transferBetweenAccounts(fromId, toId, toInr(amountDisplay), date, note)
+            toast("Transfer recorded")
+        }
+
+    fun setReconciled(row: FundTxnEntity, on: LocalDate?) = viewModelScope.launch {
+        repo.setReconciled(row, on)
+    }
+
     val fundBalance: StateFlow<Long> =
         combine(fundTransactions, expenses, contributions) { txns, expenses, contributions ->
             val deposits = txns.filter { it.kind == FundTxnKind.DEPOSIT.key }.sumOf { it.amountInr }
@@ -245,17 +291,30 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             buildList {
                 txns.forEach { t ->
                     val deposit = t.kind == FundTxnKind.DEPOSIT.key
+                    val transfer = t.transferGroup != null
                     add(
                         FundLedgerRow(
                             id = "t${t.id}",
                             sourceId = t.id,
                             date = t.date,
-                            title = if (deposit) "Deposit" else "Withdrawal",
+                            title = when {
+                                transfer && deposit -> "Transfer in"
+                                transfer -> "Transfer out"
+                                deposit -> "Deposit"
+                                else -> "Withdrawal"
+                            },
                             subtitle = t.note.orEmpty(),
                             amountInr = t.amountInr,
                             incoming = deposit,
-                            icon = if (deposit) "payments" else "shopping_bag",
+                            icon = when {
+                                transfer -> "swap_horiz"
+                                deposit -> "payments"
+                                else -> "shopping_bag"
+                            },
                             origin = if (deposit) FundLedgerOrigin.DEPOSIT else FundLedgerOrigin.WITHDRAWAL,
+                            accountId = t.accountId,
+                            reconciled = t.reconciledOn != null,
+                            transfer = transfer,
                         )
                     )
                 }
@@ -274,6 +333,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
                             incoming = false,
                             icon = e.icon,
                             origin = FundLedgerOrigin.EXPENSE,
+                            accountId = e.fundAccountId,
                         )
                     )
                 }
@@ -290,6 +350,7 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
                             incoming = false,
                             icon = "savings",
                             origin = FundLedgerOrigin.INVESTMENT,
+                            accountId = c.fundAccountId,
                         )
                     )
                 }
@@ -620,9 +681,10 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         category: ExpenseCategory,
         amountDisplay: Double,
         date: LocalDate,
-        paidFromFund: Boolean,
+        fromFund: Boolean,
+        accountId: Long? = null,
     ) = viewModelScope.launch {
-        repo.addExpense(title, vendor, category, toInr(amountDisplay), date, paidFromFund)
+        repo.addExpense(title, vendor, category, toInr(amountDisplay), date, fundAccount(fromFund, accountId))
         toast("Expense saved" + forDay(date))
     }
 
@@ -633,25 +695,35 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         category: ExpenseCategory,
         amountDisplay: Double,
         date: LocalDate,
-        paidFromFund: Boolean,
+        fromFund: Boolean,
+        accountId: Long? = null,
     ) = viewModelScope.launch {
-        repo.updateExpense(row, title, vendor, category, toInr(amountDisplay), date, paidFromFund)
+        repo.updateExpense(
+            row, title, vendor, category, toInr(amountDisplay), date, fundAccount(fromFund, accountId),
+        )
         toast("Expense updated" + forDay(date))
     }
+
+    /**
+     * Which account paid, if any. A family with one account never chooses: the first is made
+     * the moment money is first recorded, and everything lands there.
+     */
+    private suspend fun fundAccount(fromFund: Boolean, chosen: Long?): Long? =
+        if (!fromFund) null else chosen ?: repo.defaultAccountId()
 
     fun deleteExpense(row: ExpenseEntity) = viewModelScope.launch {
         repo.deleteExpense(row)
         toast("Expense removed")
     }
 
-    fun addFundDeposit(amountDisplay: Double, date: LocalDate, note: String?) = viewModelScope.launch {
-        repo.addFundTransaction(FundTxnKind.DEPOSIT, toInr(amountDisplay), date, note)
+    fun addFundDeposit(amountDisplay: Double, date: LocalDate, note: String?, accountId: Long? = null) = viewModelScope.launch {
+        repo.addFundTransaction(FundTxnKind.DEPOSIT, toInr(amountDisplay), date, note, accountId)
         satisfyReminder("fund", date)
         toast("Deposit recorded" + forDay(date))
     }
 
-    fun addFundWithdrawal(amountDisplay: Double, date: LocalDate, note: String?) = viewModelScope.launch {
-        repo.addFundTransaction(FundTxnKind.WITHDRAWAL, toInr(amountDisplay), date, note)
+    fun addFundWithdrawal(amountDisplay: Double, date: LocalDate, note: String?, accountId: Long? = null) = viewModelScope.launch {
+        repo.addFundTransaction(FundTxnKind.WITHDRAWAL, toInr(amountDisplay), date, note, accountId)
         toast("Withdrawal recorded" + forDay(date))
     }
 
@@ -661,9 +733,10 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         amountDisplay: Double,
         date: LocalDate,
         note: String?,
+        accountId: Long? = null,
     ) = viewModelScope.launch {
         val kind = if (deposit) FundTxnKind.DEPOSIT else FundTxnKind.WITHDRAWAL
-        repo.updateFundTransaction(row, kind, toInr(amountDisplay), date, note)
+        repo.updateFundTransaction(row, kind, toInr(amountDisplay), date, note, accountId ?: row.accountId)
         toast("${kind.label} updated" + forDay(date))
     }
 
@@ -687,7 +760,8 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         startDate: LocalDate,
         maturityDate: LocalDate?,
         maturityValueDisplay: Double?,
-        paidFromFund: Boolean,
+        fromFund: Boolean,
+        accountId: Long? = null,
     ) = viewModelScope.launch {
         repo.addInvestment(
             name = name,
@@ -699,14 +773,20 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
             startDate = startDate,
             maturityDate = maturityDate,
             maturityValueInr = maturityValueDisplay?.let(::toInr),
-            paidFromFund = paidFromFund,
+            fundAccountId = fundAccount(fromFund, accountId),
         )
         toast("$name added")
     }
 
-    fun addContribution(investmentId: Long, amountDisplay: Double, date: LocalDate, paidFromFund: Boolean) =
+    fun addContribution(
+        investmentId: Long,
+        amountDisplay: Double,
+        date: LocalDate,
+        fromFund: Boolean,
+        accountId: Long? = null,
+    ) =
         viewModelScope.launch {
-            repo.addContribution(investmentId, toInr(amountDisplay), date, paidFromFund)
+            repo.addContribution(investmentId, toInr(amountDisplay), date, fundAccount(fromFund, accountId))
             toast("Contribution recorded" + forDay(date))
         }
 
@@ -714,9 +794,10 @@ class KilkariViewModel(private val repo: KilkariRepository) : ViewModel() {
         row: ContributionEntity,
         amountDisplay: Double,
         date: LocalDate,
-        paidFromFund: Boolean,
+        fromFund: Boolean,
+        accountId: Long? = null,
     ) = viewModelScope.launch {
-        repo.updateContribution(row, toInr(amountDisplay), date, paidFromFund)
+        repo.updateContribution(row, toInr(amountDisplay), date, fundAccount(fromFund, accountId))
         toast("Contribution updated" + forDay(date))
     }
 

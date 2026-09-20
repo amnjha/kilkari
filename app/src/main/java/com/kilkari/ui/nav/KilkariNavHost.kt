@@ -23,6 +23,7 @@ import com.kilkari.ui.components.KToast
 import com.kilkari.ui.screens.AppointmentsScreen
 import com.kilkari.ui.screens.BackupScreen
 import com.kilkari.ui.screens.CatchUpScreen
+import com.kilkari.ui.screens.ReconcileScreen
 import com.kilkari.ui.screens.DoctorsScreen
 import com.kilkari.ui.screens.PaperworkScreen
 import com.kilkari.ui.screens.InsightsScreen
@@ -94,7 +95,7 @@ fun KilkariNavHost(repository: KilkariRepository, onReady: () -> Unit = {}) {
                 composable(Routes.TODAY) { TodayScreen(vm, go) }
                 composable(Routes.LOG) { LogScreen(vm, go) }
                 composable(Routes.HEALTH) { HealthScreen(vm, go) }
-                composable(Routes.MONEY) { MoneyScreen(vm) }
+                composable(Routes.MONEY) { MoneyScreen(vm, go) }
                 composable(Routes.MORE) { MoreScreen(vm, go) }
 
                 composable(Routes.VACCINES) { VaccinesScreen(vm, go) }
@@ -106,6 +107,7 @@ fun KilkariNavHost(repository: KilkariRepository, onReady: () -> Unit = {}) {
                 composable(Routes.DOCTORS) { DoctorsScreen(vm, go) }
 
                 composable(Routes.CATCH_UP) { CatchUpScreen(vm, go) }
+                composable(Routes.RECONCILE) { ReconcileScreen(vm, go) }
                 composable(Routes.LOG_DAY) { LogDayScreen(vm, go) }
                 composable(Routes.INSIGHTS) { InsightsScreen(vm, go) }
 
