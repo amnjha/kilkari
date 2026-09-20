@@ -116,3 +116,19 @@ final class Milestone {
         self.date = date
     }
 }
+
+/// Someone you can call. Kept because at 2am nobody wants to search an inbox for a number.
+@Model
+final class Doctor {
+    var name: String
+    var speciality: String?
+    var clinic: String?
+    var phone: String?
+
+    init(name: String, speciality: String? = nil, clinic: String? = nil, phone: String? = nil) {
+        self.name = name
+        self.speciality = speciality
+        self.clinic = clinic
+        self.phone = phone
+    }
+}

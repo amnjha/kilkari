@@ -39,6 +39,23 @@ struct LogScreen: View {
                     }
                 }
 
+                NavigationLink(value: Route.insights) {
+                    HStack(spacing: 10) {
+                        IconBadge(symbol: "chart.bar.fill", tint: accent.deep,
+                                  background: accent.bg, size: 36, corner: 11, iconSize: 16)
+                        Text("Insights").font(KFont.sans(14, .semibold)).foregroundStyle(KC.ink)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold)).foregroundStyle(KC.stoneLight)
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 12)
+                    .background(KC.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .clay(corner: 18)
+                }
+                .buttonStyle(SpringPress())
+                .padding(.top, 2)
+
                 SectionLabel("Today's entries").padding(.top, 4)
                 KCard {
                     if todays.isEmpty {

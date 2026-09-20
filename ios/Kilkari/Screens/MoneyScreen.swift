@@ -8,11 +8,12 @@ import SwiftData
 struct MoneyScreen: View {
     @Environment(\.modelContext) private var context
     @Environment(\.accent) private var accent
+    @State private var prefs = Preferences.shared
 
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
     @Query(sort: \FundDeposit.date, order: .reverse) private var deposits: [FundDeposit]
 
-    @State private var tab = 0
+    @State private var tab = SampleData.moneySegment
     @State private var filter: ExpenseCategory?
     @State private var addingExpense = false
     @State private var addingDeposit = false
@@ -42,21 +43,31 @@ struct MoneyScreen: View {
                 Picker("", selection: $tab) {
                     Text("Spending").tag(0)
                     Text("Fund").tag(1)
+                    Text("Invest").tag(2)
                 }
                 .pickerStyle(.segmented)
 
-                if tab == 0 { spending } else { fund }
+                switch tab {
+                case 0: spending
+                case 1: fund
+                default: InvestScreen()
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 18)
             .padding(.bottom, 110)
         }
         .safeAreaInset(edge: .bottom) {
-            PrimaryButton(label: tab == 0 ? "Add an expense" : "Add to the fund") {
-                if tab == 0 { addingExpense = true } else { addingDeposit = true }
+            // The holdings tab carries its own add button, because "add a holding" asks for
+            // a different form and a button that changes what it does three ways is a button
+            // nobody trusts.
+            if tab < 2 {
+                PrimaryButton(label: tab == 0 ? "Add an expense" : "Add to the fund") {
+                    if tab == 0 { addingExpense = true } else { addingDeposit = true }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 96)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 96)
         }
         .sheet(isPresented: $addingExpense) {
             AddExpenseSheet { context.insert($0); addingExpense = false }
@@ -75,7 +86,7 @@ struct MoneyScreen: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Spent this month")
                     .font(KFont.sans(13)).foregroundStyle(KC.muted)
-                Text("₹\(total(thisMonth).formatted())")
+                Text(prefs.money(total(thisMonth)))
                     .font(KFont.number(34)).foregroundStyle(KC.ink)
 
                 // A split bar rather than a pie: two categories, and the question is how they
@@ -128,7 +139,7 @@ struct MoneyScreen: View {
                                     .font(KFont.sans(12)).foregroundStyle(KC.muted)
                             }
                             Spacer()
-                            Text("₹\(expense.amount.formatted())")
+                            Text(prefs.money(expense.amount))
                                 .font(KFont.sans(14, .semibold)).foregroundStyle(KC.ink)
                         }
                         .padding(.horizontal, 14).padding(.vertical, 11)
@@ -145,7 +156,7 @@ struct MoneyScreen: View {
                 Text("IN THE FUND")
                     .font(KFont.sans(12, .semibold)).tracking(0.5)
                     .foregroundStyle(.white.opacity(0.85))
-                Text("₹\(fundBalance.formatted())")
+                Text(prefs.money(fundBalance))
                     .font(KFont.number(34)).foregroundStyle(.white)
                 Text("Deposits in, less everything paid out of it.")
                     .font(KFont.sans(13)).foregroundStyle(.white.opacity(0.9))
@@ -170,7 +181,7 @@ struct MoneyScreen: View {
                                     .font(KFont.sans(12)).foregroundStyle(KC.muted)
                             }
                             Spacer()
-                            Text("+₹\(deposit.amount.formatted())")
+                            Text("+" + prefs.money(deposit.amount))
                                 .font(KFont.sans(14, .semibold)).foregroundStyle(KC.leafDeep)
                         }
                         .padding(.horizontal, 14).padding(.vertical, 11)
@@ -185,7 +196,7 @@ struct MoneyScreen: View {
         HStack(spacing: 6) {
             Circle().fill(colour).frame(width: 8, height: 8)
             Text(label).font(KFont.sans(12)).foregroundStyle(KC.mutedStrong)
-            Text("₹\(amount.formatted())").font(KFont.sans(12, .semibold)).foregroundStyle(KC.ink)
+            Text(prefs.money(amount)).font(KFont.sans(12, .semibold)).foregroundStyle(KC.ink)
         }
     }
 }
@@ -212,7 +223,7 @@ struct AddExpenseSheet: View {
                     }
                     .pickerStyle(.segmented)
 
-                    sheetField("Amount (₹)", $amount, "0", numeric: true)
+                    sheetField("Amount (\(Preferences.shared.currency.symbol))", $amount, "0", numeric: true)
                     sheetField("For", $title, "e.g. Diapers, size 1")
                     sheetField("Where", $vendor, "Shop or clinic")
 
@@ -266,7 +277,7 @@ struct AddDepositSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    sheetField("Amount (₹)", $amount, "0", numeric: true)
+                    sheetField("Amount (\(Preferences.shared.currency.symbol))", $amount, "0", numeric: true)
                     sheetField("Note", $note, "e.g. Monthly transfer")
                     DatePicker("Date", selection: $date, in: ...Date.now, displayedComponents: .date)
                         .font(KFont.sans(14, .semibold)).tint(accent.main)

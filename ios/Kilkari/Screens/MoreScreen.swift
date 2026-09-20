@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import KilkariCore
 
 /// The drawer: the child's details, and everything that does not live in a tab.
 ///
@@ -11,6 +12,7 @@ struct MoreScreen: View {
     let baby: Baby
 
     @Environment(\.accent) private var accent
+    @State private var prefs = Preferences.shared
     @Query private var milestones: [Milestone]
 
     private var items: [(route: Route, symbol: String, title: String, subtitle: String, tint: Color, bg: Color)] {
@@ -19,7 +21,10 @@ struct MoreScreen: View {
              milestones.isEmpty ? "Milestones and moments" : "\(milestones.count) \(Fmt.plural(milestones.count, "moment"))",
              KC.roseDeep, KC.roseWash),
             (.doctors, "cross.case.fill", "Doctors", "The people you see", KC.seaDeep, KC.seaWash),
-            (.settings, "gearshape.fill", "Settings", "₹ INR · IAP schedule", KC.lilacDeep, KC.lilacWash),
+            (.reminders, "bell.fill", "Reminders", "Times you want telling", KC.lilacDeep, KC.lilacWash),
+            (.settings, "gearshape.fill", "Settings",
+             "\(prefs.currency.symbol) \(prefs.currency.code) · \(VaccineSchedules.byId(prefs.scheduleId).shortName) schedule",
+             KC.lilacDeep, KC.lilacWash),
         ]
     }
 

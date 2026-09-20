@@ -47,11 +47,24 @@ enum SampleData {
         case "appointments": return .appointments
         case "doctors": return .doctors
         case "timeline": return .timeline
+        case "insights": return .insights
+        case "reminders": return .reminders
         case "settings": return .settings
         default: return nil
         }
         #else
         return nil
+        #endif
+    }
+
+    /// Which of Money's three segments to open on: `spending`, `fund` or `invest`.
+    static var moneySegment: Int {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "--money"), i + 1 < args.count else { return 0 }
+        return ["spending": 0, "fund": 1, "invest": 2][args[i + 1]] ?? 0
+        #else
+        return 0
         #endif
     }
 
@@ -68,16 +81,61 @@ enum SampleData {
             .now.addingTimeInterval(TimeInterval(-(hours * 3600 + minutes * 60)))
         }
 
-        let entries: [LogEntry] = [
-            LogEntry(kind: .feed, startAt: ago(1, 20), amount: 14, side: "L", feedType: .breast),
-            LogEntry(kind: .diaper, startAt: ago(2, 5), diaperKind: .wet),
-            LogEntry(kind: .sleep, startAt: ago(4), endAt: ago(2, 30)),
-            LogEntry(kind: .feed, startAt: ago(5), amount: 90, feedType: .bottle),
-            LogEntry(kind: .diaper, startAt: ago(6, 40), diaperKind: .both),
+        // A week of it, not a day: the insights screen averages over a window, and a single
+        // day's worth in a seven-day window reads as "0.3 feeds a day", which is arithmetic
+        // working correctly on data that does not represent anything.
+        var entries: [LogEntry] = [
             LogEntry(kind: .medicine, startAt: ago(9), note: "Vitamin D drops · 1 drop"),
             LogEntry(kind: .tooth, startAt: ago(48)),
         ]
+        for day in 0..<7 {
+            let base = day * 24
+            // Seven feeds, alternating sides, with a bottle in the evening.
+            for (i, hour) in [2, 5, 8, 11, 14, 17, 20].enumerated() {
+                let at = base + hour
+                guard at > 0 else { continue }
+                entries.append(
+                    hour == 20
+                    ? LogEntry(kind: .feed, startAt: ago(at), amount: 90, feedType: .bottle)
+                    : LogEntry(kind: .feed, startAt: ago(at), amount: 12 + i,
+                               side: i.isMultiple(of: 2) ? "L" : "R", feedType: .breast)
+                )
+            }
+            for hour in [3, 7, 12, 16, 21] where base + hour > 0 {
+                entries.append(LogEntry(kind: .diaper, startAt: ago(base + hour),
+                                        diaperKind: hour.isMultiple(of: 2) ? .wet : .both))
+            }
+            // A long night and two daytime naps.
+            for (from, to) in [(base + 23, base + 16), (base + 13, base + 11), (base + 6, base + 4)]
+            where from > 0 && to > 0 {
+                entries.append(LogEntry(kind: .sleep, startAt: ago(from), endAt: ago(to)))
+            }
+        }
         entries.forEach(context.insert)
+
+        context.insert(Reminder(title: "Vitamin D drops", minuteOfDay: 8 * 60))
+        context.insert(Reminder(title: "Tummy time", minuteOfDay: 17 * 60 + 30,
+                                cadence: .weekly, weekday: 1, enabled: false))
+
+        context.insert(Investment(
+            name: "SBI fixed deposit", kind: .fd, investedAmount: 100_000,
+            ratePercent: 7.1,
+            startedOn: cal.date(byAdding: .month, value: -14, to: .now)!,
+            maturesOn: cal.date(byAdding: .year, value: 4, to: .now)!,
+            currentValue: 108_400,
+            valuedOn: cal.date(byAdding: .day, value: -6, to: .now)!
+        ))
+        context.insert(Investment(
+            name: "Index fund SIP", kind: .sip, investedAmount: 0, monthlyAmount: 5_000,
+            ratePercent: 12,
+            startedOn: cal.date(byAdding: .month, value: -10, to: .now)!,
+            maturesOn: nil,
+            currentValue: 58_900,
+            valuedOn: cal.date(byAdding: .day, value: -6, to: .now)!
+        ))
+
+        context.insert(Doctor(name: "Dr Meera Nair", speciality: "Paediatrician",
+                              clinic: "Rainbow Clinic", phone: "+91 98450 11223"))
 
         // The birth group given, the six-week one still outstanding, so both halves of the
         // vaccine screen have something to show.

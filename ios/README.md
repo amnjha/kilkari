@@ -5,17 +5,18 @@ A native SwiftUI port, sharing reference data with the Android app rather than c
 ## Where it is
 
 **Running in the Simulator:** the app builds, launches, and persists what you log. All five
-tabs are built — Today, Log, Health, Money, More — along with Vaccinations, Growth, Teeth,
-Medications, Appointments and the Timeline behind them. Doctors and Settings say plainly that
-they are not built rather than being left out of the navigation and looking like dead ends.
+tabs are built, along with Vaccinations, Growth, Teeth, Medications, Appointments, Doctors,
+the Timeline, Insights, Reminders and Settings. Reminders schedule real system notifications;
+Settings changes units, currency, the schedule and the growth curve, and everything reads
+back in whatever is chosen.
 
 **Done and verified:** `KilkariCore`, the arithmetic half of the app — the WHO growth
 standards, unit conversion, XIRR and maturity projection, and the vaccination schedules. It
 reads the same `common/data` files the Android app is checked against, and 80 assertions run
 against WHO's published tables and the same expectations the Kotlin tests make.
 
-**Not started:** notifications, photos, backup, insights, paperwork, documents, albums,
-events, reminders, the investment side of Money, and unit switching.
+**Not started:** backup and export, paperwork, documents, photo albums, events, and the
+multi-account side of the fund.
 
 ## Building and running
 
@@ -46,10 +47,15 @@ away without tapping through the app to reach it:
 xcrun simctl launch booted com.kilkari --sample-data --tab health --route growth
 ```
 
-`--sample-data` fills an empty store with a baby, a day's entries, three weigh-ins, the birth
-vaccines, a month of spending and a milestone. `--tab` opens on one of `today`, `log`,
-`health`, `money`, `more`. `--route` pushes one of `vaccines`, `growth`, `teeth`, `meds`,
-`appointments`, `doctors`, `timeline`, `settings` on top of it.
+`--sample-data` fills an empty store with a week of feeds, naps and nappies, three weigh-ins,
+the birth vaccines, a month of spending, two holdings, two reminders and a milestone. A week
+rather than a day on purpose: Insights averages over a window, and one day's worth in a
+seven-day window reads as "0.3 feeds a day", which is arithmetic working correctly on data
+that represents nothing.
+
+`--tab` opens on one of `today`, `log`, `health`, `money`, `more`. `--route` pushes one of
+`vaccines`, `growth`, `teeth`, `meds`, `appointments`, `doctors`, `timeline`, `insights`,
+`reminders`, `settings` on top of it. `--money` picks `spending`, `fund` or `invest`.
 
 ## Running the checks
 
@@ -74,10 +80,10 @@ XCTest unchanged.
 |---|---|---|
 | App target | Gradle + AGP | Done — XcodeGen from `project.yml` |
 | Design system | `ui/theme` + `Accent` | Done — the same 87 colours, read out of the Kotlin |
-| Persistence | Room, schema at v12 | SwiftData: baby, log, doses, growth, money, visits, moments |
-| Screens | 27 Compose screens | 11, plus two that say they are not built |
-| Reminders | WorkManager + AlarmManager | `UNUserNotificationCenter`, `BGTaskScheduler` |
-| Photos | Camera, picker, in-app crop | `PhotosPicker`, `AVCapture`, a crop view |
+| Persistence | Room, schema at v12 | SwiftData: eleven models, no migration story yet |
+| Screens | 27 Compose screens | 15 |
+| Reminders | WorkManager + AlarmManager | Done — `UNUserNotificationCenter`, repeating calendar triggers |
+| Photos | Camera, picker, in-app crop | `PhotosPicker` only; no camera and no crop |
 | Backup | Zip of the DB and photos | An importer for the Android format |
 | Fonts | Bricolage Grotesque, Plus Jakarta Sans | System faces at the same metrics, for now |
 

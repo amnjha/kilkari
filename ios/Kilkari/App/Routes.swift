@@ -9,6 +9,8 @@ enum Route: Hashable {
     case appointments
     case doctors
     case timeline
+    case insights
+    case reminders
     case settings
 
     /// The colour the destination wears, grouped by what the screen is about rather than by
@@ -20,6 +22,7 @@ enum Route: Hashable {
         case .meds: return KAccents.care
         case .doctors: return KAccents.records
         case .timeline: return KAccents.memories
+        case .insights, .reminders: return KAccents.quiet
         case .settings: return KAccents.quiet
         }
     }
@@ -33,6 +36,8 @@ enum Route: Hashable {
         case .appointments: return "Appointments"
         case .doctors: return "Doctors"
         case .timeline: return "Timeline"
+        case .insights: return "Insights"
+        case .reminders: return "Reminders"
         case .settings: return "Settings"
         }
     }
@@ -52,9 +57,11 @@ struct RouteView: View {
             case .teeth: TeethScreen()
             case .meds: MedsScreen()
             case .appointments: AppointmentsScreen()
-            case .doctors: NotYetScreen(route: route, note: "Doctors you see, and their numbers.")
+            case .doctors: DoctorsScreen()
             case .timeline: TimelineScreen()
-            case .settings: NotYetScreen(route: route, note: "Currency, units and the vaccination schedule.")
+            case .insights: InsightsScreen()
+            case .reminders: RemindersScreen()
+            case .settings: SettingsScreen(baby: baby)
             }
         }
         .environment(\.accent, route.accent)

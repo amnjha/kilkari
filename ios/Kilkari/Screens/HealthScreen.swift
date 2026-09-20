@@ -7,6 +7,7 @@ struct HealthScreen: View {
     let baby: Baby
 
     @Environment(\.accent) private var accent
+    @State private var prefs = Preferences.shared
     @Query private var doses: [VaccineDose]
     @Query(sort: \GrowthRecord.date) private var growth: [GrowthRecord]
     @Query(sort: \Appointment.startAt) private var appointments: [Appointment]
@@ -60,7 +61,7 @@ struct HealthScreen: View {
                         .font(KFont.display(20, .bold))
                         .foregroundStyle(.white)
                     Spacer()
-                    Text("IAP")
+                    Text(VaccineSchedules.byId(prefs.scheduleId).shortName)
                         .font(KFont.sans(11, .semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 8).padding(.vertical, 3)
@@ -120,8 +121,8 @@ struct HealthScreen: View {
 
     private var growthDetail: String {
         guard let last = growth.last else { return "No measurements yet" }
-        return [last.weightKg.map { String(format: "%.1f kg", $0) },
-                last.lengthCm.map { String(format: "%.1f cm", $0) }]
+        return [last.weightKg == nil ? nil : prefs.weight(last.weightKg),
+                last.lengthCm == nil ? nil : prefs.length(last.lengthCm)]
             .compactMap { $0 }.joined(separator: " · ")
     }
 
@@ -141,8 +142,8 @@ struct HealthScreen: View {
     }
 
     private var recent: some View {
-        let rows = growth.suffix(3).reversed().map {
-            ($0.weightKg.map { w in String(format: "Weight %.1f kg", w) } ?? "Measurement", $0.date)
+        let rows: [(String, Date)] = growth.suffix(3).reversed().map { record in
+            (record.weightKg == nil ? "Measurement" : "Weight " + prefs.weight(record.weightKg), record.date)
         }
         return KCard {
             if rows.isEmpty {

@@ -9,6 +9,7 @@ struct TodayScreen: View {
     @Environment(\.modelContext) private var context
     @Environment(\.accent) private var accent
     @Query(sort: \LogEntry.startAt, order: .reverse) private var entries: [LogEntry]
+    @Query private var doses: [VaccineDose]
 
     @State private var logging: LogKind?
 
@@ -20,10 +21,10 @@ struct TodayScreen: View {
         entries.first { $0.kind == kind }
     }
 
-    /// The next vaccine group that has not come round yet, from the shared schedule.
-    private var nextGroup: VaccineGroupDef? {
-        let days = Calendar.current.dateComponents([.day], from: baby.dob, to: .now).day ?? 0
-        return VaccineSchedules.byId("iap").groups.first { $0.dayOffset >= days }
+    /// The oldest group still outstanding — the same answer the Vaccinations screen gives,
+    /// on the schedule actually chosen and with given doses taken into account.
+    private var nextGroup: VaccineGroupState? {
+        VaccinePlan.next(VaccinePlan.groups(for: baby, doses: doses))
     }
 
     var body: some View {
@@ -63,8 +64,17 @@ struct TodayScreen: View {
                     .foregroundStyle(KC.mutedStrong)
             }
             Spacer()
-            RoundIconButton(symbol: "bell.fill", tint: accent.deep,
-                            background: KC.surface, accessibilityLabel: "Reminders") {}
+            NavigationLink(value: Route.reminders) {
+                Circle().fill(KC.surface).frame(width: 42, height: 42)
+                    .overlay {
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 19, weight: .semibold))
+                            .foregroundStyle(accent.deep)
+                    }
+                    .frame(width: 48, height: 48)
+            }
+            .buttonStyle(SpringPress())
+            .accessibilityLabel("Reminders")
         }
         .padding(.top, 2)
     }
@@ -85,17 +95,21 @@ struct TodayScreen: View {
                 nap.endAt = .now
             }
         } else if let group = nextGroup {
-            let due = Calendar.current.date(byAdding: .day, value: group.dayOffset, to: baby.dob)!
-            HeroCard(
-                label: "NEXT UP",
-                badge: dueText(due),
-                title: "\(group.label) vaccines · \(group.vaccines.count) \(Fmt.plural(group.vaccines.count, "dose"))",
-                subtitle: "\(Fmt.date(due)) · \(group.vaccines.map(\.name).joined(separator: ", "))",
-                action: "See schedule",
-                colors: [KC.coral, KC.clay],
-                photo: baby.photo,
-                name: baby.name
-            ) {}
+            let outstanding = group.def.vaccines.filter { !group.given.contains($0.name) }
+            NavigationLink(value: Route.vaccines) {
+                HeroCard(
+                    label: "NEXT UP",
+                    badge: group.dueText,
+                    title: "\(group.def.label) vaccines · \(outstanding.count) \(Fmt.plural(outstanding.count, "dose"))",
+                    subtitle: "\(Fmt.date(group.dueDate)) · \(outstanding.map(\.name).joined(separator: ", "))",
+                    action: "See schedule",
+                    colors: group.status == .overdue ? [KC.danger, KC.coralDeep] : [KC.coral, KC.clay],
+                    photo: baby.photo,
+                    name: baby.name,
+                    actionIsLink: true
+                ) {}
+            }
+            .buttonStyle(SpringPress())
         } else {
             // Green, not the brand's coral. Coral is what the app uses for anything asking
             // something of a parent, and this card's whole point is that nothing is.
@@ -107,7 +121,8 @@ struct TodayScreen: View {
                 action: "See schedule",
                 colors: [KC.leafDeep, KC.leaf],
                 photo: baby.photo,
-                name: baby.name
+                name: baby.name,
+                actionIsLink: true
             ) {}
         }
     }
@@ -215,6 +230,9 @@ struct HeroCard: View {
     let colors: [Color]
     let photo: Data?
     let name: String
+    /// True when the card itself is wrapped in a NavigationLink: a button inside a link
+    /// swallows the tap and the card stops working, so the action becomes a label.
+    var actionIsLink: Bool = false
     let onAction: () -> Void
 
     var body: some View {
@@ -243,21 +261,31 @@ struct HeroCard: View {
                             .font(KFont.sans(13))
                             .foregroundStyle(.white.opacity(0.9))
                             .fixedSize(horizontal: false, vertical: true)
-                        Button(action: onAction) {
-                            Text(action)
-                                .font(KFont.sans(13, .bold))
-                                .foregroundStyle(colors[0])
-                                .padding(.horizontal, 14).padding(.vertical, 8)
-                                .background(.white)
-                                .clipShape(Capsule())
+                        Group {
+                            if actionIsLink {
+                                actionLabel
+                            } else {
+                                Button(action: onAction) { actionLabel }
+                                    .buttonStyle(SpringPress())
+                            }
                         }
-                        .buttonStyle(SpringPress())
                     }
                     Spacer(minLength: 0)
                     ChildAvatar(photo: photo, name: name, size: 78, ring: .white.opacity(0.55))
                 }
             }
         }
+    }
+}
+
+extension HeroCard {
+    var actionLabel: some View {
+        Text(action)
+            .font(KFont.sans(13, .bold))
+            .foregroundStyle(colors[0])
+            .padding(.horizontal, 14).padding(.vertical, 8)
+            .background(.white)
+            .clipShape(Capsule())
     }
 }
 

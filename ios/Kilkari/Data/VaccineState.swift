@@ -81,7 +81,7 @@ enum VaccinePlan {
 
     static func groups(
         for baby: Baby,
-        scheduleId: String = "iap",
+        scheduleId: String = Preferences.shared.scheduleId,
         doses: [VaccineDose]
     ) -> [VaccineGroupState] {
         let cal = Calendar.current

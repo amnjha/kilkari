@@ -13,6 +13,7 @@ struct GrowthScreen: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.accent) private var accent
+    @State private var prefs = Preferences.shared
     @Query(sort: \GrowthRecord.date) private var records: [GrowthRecord]
 
     @State private var adding = false
@@ -94,7 +95,7 @@ struct GrowthScreen: View {
         }
         return KCard(background: accent.wash.onCream(0.5), border: nil) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(String(format: "%.2f kg", last.weightKg!))
+                Text(prefs.weight(last.weightKg))
                     .font(KFont.number(30)).foregroundStyle(KC.ink)
                 if let percentile {
                     Text("\(ordinal(percentile)) percentile for \(sex == .boy ? "boys" : "girls") at \(Fmt.age(from: baby.dob, to: last.date))")
@@ -186,9 +187,8 @@ struct GrowthScreen: View {
                 ForEach(Array(rows.enumerated()), id: \.element.persistentModelID) { i, record in
                     HStack {
                         VStack(alignment: .leading, spacing: 1) {
-                            Text([record.weightKg.map { String(format: "%.2f kg", $0) },
-                                  record.lengthCm.map { String(format: "%.1f cm", $0) },
-                                  record.headCm.map { String(format: "%.1f cm head", $0) }]
+                            Text([record.weightKg == nil ? nil : prefs.weight(record.weightKg),
+                                  record.lengthCm == nil ? nil : prefs.length(record.lengthCm)]
                                 .compactMap { $0 }.joined(separator: " · "))
                                 .font(KFont.sans(14)).foregroundStyle(KC.ink)
                             Text(Fmt.age(from: baby.dob, to: record.date))
@@ -233,16 +233,21 @@ struct AddMeasurementSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    field("Weight (kg)", $weight, "e.g. 4.2")
-                    field("Length (cm)", $length, "optional")
-                    field("Head (cm)", $head, "optional")
+                    field(Preferences.shared.metric ? "Weight (kg)" : "Weight (lb)", $weight, Preferences.shared.metric ? "e.g. 4.2" : "e.g. 9.2")
+                    field(Preferences.shared.metric ? "Length (cm)" : "Length (in)", $length, "optional")
+                    field(Preferences.shared.metric ? "Head (cm)" : "Head (in)", $head, "optional")
                     DatePicker("Taken", selection: $date, in: ...Date.now, displayedComponents: .date)
                         .font(KFont.sans(14, .semibold)).tint(accent.main)
                     PrimaryButton(label: "Save measurement", enabled: anyValue) {
-                        onSave(GrowthRecord(date: date,
-                                            weightKg: Double(weight),
-                                            lengthCm: Double(length),
-                                            headCm: Double(head)))
+                        // Typed in whatever the parent reads, stored in kilograms and
+                        // centimetres, because that is what the WHO tables speak.
+                        let metric = Preferences.shared.metric
+                        onSave(GrowthRecord(
+                            date: date,
+                            weightKg: Double(weight).map { metric ? $0 : Units.lbToKg($0) },
+                            lengthCm: Double(length).map { metric ? $0 : Units.inToCm($0) },
+                            headCm: Double(head).map { metric ? $0 : Units.inToCm($0) }
+                        ))
                         dismiss()
                     }
                     .padding(.top, 4)
